@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>PRD Validation: Drawing Transformation Video Factory</title>
+<style>
+  :root {
+    --bg: #fafaf9;
+    --surface: #ffffff;
+    --border: #e7e5e4;
+    --text: #1c1917;
+    --muted: #78716c;
+
+    --verdict-strong: #16a34a;
+    --verdict-adequate: #65a30d;
+    --verdict-thin: #d97706;
+    --verdict-broken: #dc2626;
+
+    --sev-low: #64748b;
+    --sev-medium: #ca8a04;
+    --sev-high: #ea580c;
+    --sev-critical: #dc2626;
+
+    --grade-exc: #16a34a;
+    --grade-good: #65a30d;
+    --grade-fair: #d97706;
+    --grade-poor: #dc2626;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    font-size: 15px;
+  }
+  .container { max-width: 960px; margin: 0 auto; padding: 32px 24px 64px; }
+
+  header.report-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 24px;
+  }
+  .title h1 { margin: 0; font-size: 22px; font-weight: 600; letter-spacing: -0.01em; }
+  .title .subtitle { color: var(--muted); font-size: 13px; margin-top: 4px; font-family: ui-monospace, "SF Mono", Menlo, monospace; }
+  .grade {
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-weight: 600;
+    color: white;
+    font-size: 15px;
+    white-space: nowrap;
+  }
+  .grade-excellent { background: var(--grade-exc); }
+  .grade-good { background: var(--grade-good); }
+  .grade-fair { background: var(--grade-fair); }
+  .grade-poor { background: var(--grade-poor); }
+
+  .synthesis {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--grade-poor);
+    border-radius: 8px;
+    padding: 18px 22px;
+    margin-bottom: 24px;
+    font-size: 15.5px;
+  }
+  .synthesis p { margin: 0 0 10px; }
+  .synthesis p:last-child { margin-bottom: 0; }
+
+  .dimension-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 10px;
+    margin-bottom: 24px;
+  }
+  .dim-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+  }
+  .dim-card .dim-name { font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+  .dim-card .dim-verdict { font-size: 14px; font-weight: 600; text-transform: uppercase; }
+
+  section.dimension, section.reviewer-section { margin-bottom: 14px; }
+  section.dimension details, section.reviewer-section details {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  section summary {
+    padding: 14px 20px;
+    cursor: pointer;
+    user-select: none;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  section summary::-webkit-details-marker { display: none; }
+  section summary::before {
+    content: "▸";
+    display: inline-block;
+    color: var(--muted);
+    transition: transform 0.15s ease;
+  }
+  section details[open] summary::before { transform: rotate(90deg); }
+  section summary h2 {
+    display: inline;
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+    flex: 1;
+  }
+  .verdict-pill {
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: white;
+  }
+  .verdict-strong { background: var(--verdict-strong); }
+  .verdict-adequate { background: var(--verdict-adequate); }
+  .verdict-thin { background: var(--verdict-thin); }
+  .verdict-broken { background: var(--verdict-broken); }
+
+  .dim-body { padding: 4px 20px 18px; }
+  .dim-judgment { color: var(--text); font-size: 14.5px; }
+  .dim-judgment p { margin: 0 0 10px; }
+
+  .findings-list { padding: 0 20px 4px; }
+  article.finding {
+    padding: 14px 0;
+    border-top: 1px solid var(--border);
+  }
+  article.finding:first-child { border-top: none; }
+  article.finding header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 6px;
+  }
+  .badge {
+    font-size: 10.5px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    line-height: 1.4;
+  }
+  .badge-sev-low { background: rgba(100, 116, 139, 0.12); color: var(--sev-low); }
+  .badge-sev-medium { background: rgba(202, 138, 4, 0.14); color: var(--sev-medium); }
+  .badge-sev-high { background: rgba(234, 88, 12, 0.14); color: var(--sev-high); }
+  .badge-sev-critical { background: rgba(220, 38, 38, 0.14); color: var(--sev-critical); }
+  .finding-title { margin: 0; font-size: 15px; font-weight: 600; flex: 1; min-width: 200px; }
+  .finding-location { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12.5px; color: var(--muted); }
+  .finding-note, .finding-fix { margin-top: 6px; font-size: 14px; }
+  .finding-fix strong { color: var(--muted); font-weight: 600; }
+
+  .reviewer-source {
+    font-size: 12px;
+    color: var(--muted);
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  }
+
+  .mechanical {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin-top: 24px;
+    font-size: 14px;
+  }
+  .mechanical h3 { margin: 0 0 10px; font-size: 14px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+  .mechanical ul { margin: 0; padding-left: 20px; }
+  .mechanical li { margin-bottom: 4px; color: var(--text); }
+
+  footer.report-footer {
+    margin-top: 40px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--muted);
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  footer .meta { display: flex; gap: 24px; flex-wrap: wrap; }
+</style>
+</head>
+<body>
+  <div class="container">
+
+    <header class="report-header">
+      <div class="title">
+        <h1>Drawing Transformation Video Factory — Validation Report</h1>
+        <div class="subtitle">_0TaiLieu/Product Requirements Document — Drawing Transformation Video Factory.md</div>
+      </div>
+      <div class="grade grade-poor">POOR (2 Critical / 5 High)</div>
+    </header>
+
+    <div class="synthesis">
+      <p><strong>Tổng hợp kết luận:</strong> Bản PRD thể hiện tư duy kiến trúc sắc sảo khi xác định đúng đơn vị nguyên tử là "Transformation" chứ không phải video, kiên định với nguyên tắc "Deterministic Drawing" để triệt tiêu ảo giác của AI, và phân lập ranh giới độc lập giữa logic sản phẩm và công nghệ render. Tuy nhiên, sản phẩm bị xếp loại <strong>Poor</strong> do còn tồn tại 2 lỗi chí mạng (Critical) và 5 lỗi mức độ cao (High): (1) Nút thắt nghẽn tạo lập dữ liệu thủ công cho Drawing Registry làm vô hiệu hóa lời hứa "nhà máy tự động", (2) Mâu thuẫn độ dài giữa âm thanh thoại và nét vẽ tạo ra khoảng lặng chết người (Dead Air) phá vỡ retention, và (3) Thiếu các tiêu chuẩn nghiệm thu định lượng (Done-ness) cho thuật toán bám nét bút và điều hòa nhịp độ video.</p>
+      <p>Bản phản biện Adversarial chỉ ra thêm rằng nếu không có giải pháp bán tự động hóa quy trình nhập liệu Registry và cơ chế tạo biến thiên ngẫu nhiên (Diversification) nhằm tránh thuật toán quét spam của TikTok/Shorts, hệ thống sẽ trở thành một cỗ máy render cô lập không tạo ra được giá trị thương mại.</p>
+    </div>
+
+    <div class="dimension-summary">
+      <div class="dim-card">
+        <div class="dim-name">1. Decision-readiness</div>
+        <div class="dim-verdict" style="color: var(--verdict-adequate)">adequate</div>
+      </div>
+      <div class="dim-card">
+        <div class="dim-name">2. Substance over theater</div>
+        <div class="dim-verdict" style="color: var(--verdict-adequate)">adequate</div>
+      </div>
+      <div class="dim-card">
+        <div class="dim-name">3. Strategic coherence</div>
+        <div class="dim-verdict" style="color: var(--verdict-strong)">strong</div>
+      </div>
+      <div class="dim-card">
+        <div class="dim-name">4. Done-ness clarity</div>
+        <div class="dim-verdict" style="color: var(--verdict-thin)">thin</div>
+      </div>
+      <div class="dim-card">
+        <div class="dim-name">5. Scope honesty</div>
+        <div class="dim-verdict" style="color: var(--verdict-adequate)">adequate</div>
+      </div>
+      <div class="dim-card">
+        <div class="dim-name">6. Downstream usability</div>
+        <div class="dim-verdict" style="color: var(--verdict-thin)">thin</div>
+      </div>
+      <div class="dim-card">
+        <div class="dim-name">7. Shape fit</div>
+        <div class="dim-verdict" style="color: var(--verdict-strong)">strong</div>
+      </div>
+    </div>
+
+    <!-- 1. Decision-readiness -->
+    <section class="dimension">
+      <details>
+        <summary>
+          <h2>1. Decision-readiness</h2>
+          <span class="verdict-pill verdict-adequate">adequate</span>
+        </summary>
+        <div class="dim-body">
+          <div class="dim-judgment">
+            <p>PRD đưa ra 4 quyết định mang tính nền tảng (§ 26) rất dứt khoát: Drawing phải mang tính xác định (Deterministic), Transformation là primitive gốc, tách rời ranh giới kiến trúc, và Registry đi trước tự do sinh hình. Tuy nhiên, tính sẵn sàng hành động bị suy giảm do thiếu vắng quyết định về "Audio-Visual Timing Master" (ai làm chủ timeline) và quy mô tối thiểu của Registry.</p>
+          </div>
+        </div>
+        <div class="findings-list">
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-high">high</span>
+              <h3 class="finding-title">Thiếu quyết định kiến trúc về Audio-Visual Timing Master</h3>
+              <span class="finding-location">§ FR-003, FR-008, § 26</span>
+            </header>
+            <div class="finding-note">PRD yêu cầu voiceover khớp với step vẽ nhưng không định nghĩa timeline engine chạy theo độ dài audio hay độ dài animation nét vẽ. Khi câu thoại 1.2s mà nét vẽ 3.5s thì hệ thống ứng xử ra sao?</div>
+            <div class="finding-fix"><strong>Fix:</strong> Bổ sung quyết định: "Video timeline lấy TTS audio duration làm mốc tham chiếu chính (Audio-driven timeline) và co giãn tốc độ vẽ nét tương ứng (hoặc ngược lại)".</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">Chưa xác định cơ chế khởi tạo và quy mô Registry giai đoạn MVP</h3>
+              <span class="finding-location">§ FR-004, § 20</span>
+            </header>
+            <div class="finding-note">Cần tối thiểu bao nhiêu primitive components trong Registry để đạt mục tiêu 20 transformation của MVP?</div>
+            <div class="finding-fix"><strong>Fix:</strong> Thêm giới hạn phạm vi: MVP xây dựng Registry sẵn có gồm tối thiểu 10 hooks (chữ số 0-9) và 20 subject components hoàn chỉnh.</div>
+          </article>
+        </div>
+      </details>
+    </section>
+
+    <!-- 2. Substance over theater -->
+    <section class="dimension">
+      <details>
+        <summary>
+          <h2>2. Substance over theater</h2>
+          <span class="verdict-pill verdict-adequate">adequate</span>
+        </summary>
+        <div class="dim-body">
+          <div class="dim-judgment">
+            <p>Tránh được bẫy vẽ nhiều personas vô dụng và có Non-Goals rất thực chất. Tuy nhiên, các NFR hầu hết là câu chữ chung chung thiếu ngưỡng định lượng (NFR Theater), và Transformation Scoring (§ 17) chưa có công thức thực thi.</p>
+          </div>
+        </div>
+        <div class="findings-list">
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">NFR thiếu ngưỡng định lượng kỹ thuật và chi phí</h3>
+              <span class="finding-location">§ 14 NFR-001, NFR-004</span>
+            </header>
+            <div class="finding-note">Không thể kiểm chứng "Reliability" hay "Cost Efficiency" nếu chỉ dùng các tính từ chung chung mà không có số liệu đo lường.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Bổ sung ngưỡng định lượng: Chi phí API tối đa &le; 0.05$/video, thời gian render &le; 45s/video 1080p 30fps, tỷ lệ render thành công &ge; 95%.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">Bộ tiêu chí Transformation Scoring thiếu cơ chế thực thi</h3>
+              <span class="finding-location">§ 17</span>
+            </header>
+            <div class="finding-note">5 tiêu chí được liệt kê nhưng không rõ đánh giá bằng rubric prompt của LLM hay do con người chấm.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Quy định rõ: "Chấm điểm bằng LLM Validator với thang điểm 1-5 theo rubric cố định, lưu vào concept metadata; chỉ concept có điểm tổng &ge; 18/25 mới được đưa vào queue vẽ".</div>
+          </article>
+        </div>
+      </details>
+    </section>
+
+    <!-- 3. Strategic coherence -->
+    <section class="dimension">
+      <details>
+        <summary>
+          <h2>3. Strategic coherence</h2>
+          <span class="verdict-pill verdict-strong">strong</span>
+        </summary>
+        <div class="dim-body">
+          <div class="dim-judgment">
+            <p>Chiến lược sản phẩm nhất quán tuyệt vời: xoay quanh Curiosity Loop và chia lộ trình phát hành R0–R4 rất khoa học để giảm thiểu rủi ro kỹ thuật.</p>
+          </div>
+        </div>
+        <div class="findings-list">
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">Thiếu Counter-metrics để kiềm chế tối ưu hóa cục bộ</h3>
+              <span class="finding-location">§ 19</span>
+            </header>
+            <div class="finding-note">Khi hệ thống tối ưu hóa sản lượng (Batch 100) và click affiliate, nguy cơ video bị spammy hoặc bị nền tảng phạt phân phối là rất lớn.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Bổ sung Counter-metrics: Tỷ lệ video bị người dùng bấm "Không quan tâm/Ẩn", Tỷ lệ concept bị hủy bỏ ở khâu preview, và Giới hạn số lượng video đăng tải an toàn mỗi kênh/ngày.</div>
+          </article>
+        </div>
+      </details>
+    </section>
+
+    <!-- 4. Done-ness clarity -->
+    <section class="dimension">
+      <details open>
+        <summary>
+          <h2>4. Done-ness clarity</h2>
+          <span class="verdict-pill verdict-thin">thin</span>
+        </summary>
+        <div class="dim-body">
+          <div class="dim-judgment">
+            <p>Đây là điểm yếu lớn nhất của bản PRD. Các kỹ sư khi nhận yêu cầu sẽ gặp vướng mắc lớn ở các tiêu chuẩn nghiệm thu thuật toán nét vẽ, cơ chế co giãn thời lượng video, và hành vi phục hồi khi gặp lỗi hình học.</p>
+          </div>
+        </div>
+        <div class="findings-list">
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-high">high</span>
+              <h3 class="finding-title">Chưa định nghĩa tiêu chuẩn nghiệm thu kỹ thuật cho 'Pen Tip Tracking'</h3>
+              <span class="finding-location">§ FR-006</span>
+            </header>
+            <div class="finding-note">Thuật toán bám nét bút cần xác định rõ sai số tọa độ đầu bút so với điểm cuối của nét vẽ đang xuất hiện và cách xử lý khi bút nhấc chuyển nét (pen-up transition).</div>
+            <div class="finding-fix"><strong>Fix:</strong> Bổ sung Acceptance Criteria: Đầu bút bám sát tọa độ hiện thời của path với độ lệch &le; 5px; khi chuyển nét không liền mạch, hiển thị chuyển động nhấc bút tự nhiên trong 0.2s–0.4s.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-high">high</span>
+              <h3 class="finding-title">Thiếu quy tắc xử lý khi thời lượng vượt ngưỡng 15–30s</h3>
+              <span class="finding-location">§ FR-011</span>
+            </header>
+            <div class="finding-note">Giới hạn 15–30 giây cần có quy tắc điều chỉnh tốc độ vẽ tự động (Auto-pacing) khi số nét vẽ quá dài hoặc quá ngắn.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Thêm yêu cầu: "Nếu tổng thời gian vẽ tự nhiên vượt quá 25s, renderer phải tự động áp dụng hệ số tăng tốc (1.2x – 1.8x) cho các nét phụ để tổng thời lượng video không vượt quá 30s".</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">Thiếu hành vi phục hồi khi Validation thất bại</h3>
+              <span class="finding-location">§ FR-005</span>
+            </header>
+            <div class="finding-note">Chưa mô tả ứng xử của hệ thống khi một concept trong batch bị lỗi validation.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Quy định: Khi validation thất bại trong batch, hệ thống ghi log mã lỗi vào metadata, đánh dấu status 'failed_validation' và tiếp tục xử lý concept tiếp theo mà không làm crash toàn bộ batch.</div>
+          </article>
+        </div>
+      </details>
+    </section>
+
+    <!-- 5. Scope honesty -->
+    <section class="dimension">
+      <details>
+        <summary>
+          <h2>5. Scope honesty</h2>
+          <span class="verdict-pill verdict-adequate">adequate</span>
+        </summary>
+        <div class="dim-body">
+          <div class="dim-judgment">
+            <p>PRD thẳng thắn về Non-Goals và xác định rõ mục tiêu kiểm chứng nhu cầu thị trường. Tuy nhiên, các giả định ngầm về kỹ thuật và chất lượng âm thanh chưa được lập bảng theo dõi rủi ro.</p>
+          </div>
+        </div>
+        <div class="findings-list">
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">low</span>
+              <h3 class="finding-title">Chưa lập Danh mục Giả định (Assumptions Index)</h3>
+              <span class="finding-location">Toàn bộ PRD</span>
+            </header>
+            <div class="finding-note">Các giả định về chất lượng TTS tiếng Việt, chi phí API render và khả năng tương thích SVG chưa được gắn tag theo dõi.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Gắn nhãn các giả định lớn như [ASSUMPTION: TTS tiếng Việt từ Piper/viPiper đủ biểu cảm để giữ chân người xem] và lập bảng theo dõi rủi ro tương ứng.</div>
+          </article>
+        </div>
+      </details>
+    </section>
+
+    <!-- 6. Downstream usability -->
+    <section class="dimension">
+      <details open>
+        <summary>
+          <h2>6. Downstream usability</h2>
+          <span class="verdict-pill verdict-thin">thin</span>
+        </summary>
+        <div class="dim-body">
+          <div class="dim-judgment">
+            <p>Thiếu vắng hai thành phần then chốt để phục vụ chuyển giao sang Architecture và Story creation: Bảng thuật ngữ chuyên môn (Glossary) và Sơ đồ quan hệ thực thể dữ liệu (Entity Model).</p>
+          </div>
+        </div>
+        <div class="findings-list">
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">Thiếu Bảng thuật ngữ chuyên môn (Glossary)</h3>
+              <span class="finding-location">§ 1-30</span>
+            </header>
+            <div class="finding-note">Dễ dẫn đến hiểu lầm giữa Component, Primitive, Asset, Transformation khi chuyển giao sang thiết kế kỹ thuật.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Bổ sung mục Glossary định nghĩa rõ từng khái niệm domain.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">medium</span>
+              <h3 class="finding-title">Cần chuẩn hóa cấu trúc Entity Model tối thiểu cho Architecture</h3>
+              <span class="finding-location">§ 10, § 13</span>
+            </header>
+            <div class="finding-note">PRD mới chỉ có ví dụ JSON đơn lẻ ở FR-001, chưa phác thảo quan hệ 1-N giữa Concept, Transformation, DrawingStep, Asset.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Bổ sung sơ đồ thực thể Concept 1-N Transformation 1-N DrawingStep N-1 Component.</div>
+          </article>
+        </div>
+      </details>
+    </section>
+
+    <!-- 7. Shape fit -->
+    <section class="dimension">
+      <details>
+        <summary>
+          <h2>7. Shape fit</h2>
+          <span class="verdict-pill verdict-strong">strong</span>
+        </summary>
+        <div class="dim-body">
+          <div class="dim-judgment">
+            <p>Đặc tả dạng Content Factory rất phù hợp: tập trung vào data pipeline và render pipeline, không bị nhồi nhét giao diện quản trị hay tính năng SaaS người dùng cuối không cần thiết.</p>
+          </div>
+        </div>
+      </section>
+
+    <!-- Adversarial review section -->
+    <section class="reviewer-section">
+      <details open>
+        <summary>
+          <h2>Adversarial Review — Góc nhìn phản biện chuyên sâu</h2>
+          <span class="reviewer-source">review-adversarial.md</span>
+        </summary>
+        <div class="dim-body">
+          <div class="dim-judgment">
+            <p><strong>Cảnh báo từ Reviewer Phản biện:</strong> Dự án có nguy cơ vướng vào 4 điểm tử huyệt: (1) Nút thắt con gà - quả trứng của Drawing Registry, (2) Bẫy khoảng lặng chết người (Dead Air) phá vỡ nhịp điệu short-form, (3) Thuật toán TikTok/Shorts phạt nội dung trùng lặp (Spam/Unoriginal), và (4) Khả năng chuyển đổi affiliate kém của nét vẽ đen trắng đơn sắc.</p>
+          </div>
+        </div>
+        <div class="findings-list">
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-critical">critical</span>
+              <h3 class="finding-title">The Lego Myth: Cỗ máy tự động bị chặn bởi khâu vẽ tay tài sản vào Registry</h3>
+              <span class="finding-location">§ FR-004, § 26 Decision 4</span>
+            </header>
+            <div class="finding-note">Quyết định 4 cấm LLM tự sinh SVG tùy tiện và bắt buộc chỉ lắp ráp components có sẵn trong Registry. Nhưng nếu toàn bộ component phải vẽ tay và bóc tách từng nét bằng Illustrator/Inkscape, dự án sẽ biến thành xưởng may thủ công dùng máy khâu tự động thay vì nhà máy tự động hóa. Khi Registry chỉ có vài chục mẫu, batch 50-100 video sẽ trùng lặp và nhàm chán.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Định nghĩa ngay trong PRD một <strong>Registry Ingestion Pipeline</strong>: Quy trình chuyển đổi bán tự động từ ảnh/SVG có sẵn trên mạng thành các Drawing Components chuẩn hóa (tự động tách stroke, tính bounding box, chuẩn hóa tọa độ) hoặc chỉ rõ công cụ nhập liệu (Authoring Tool) dành cho operator.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-critical">critical</span>
+              <h3 class="finding-title">Mâu thuẫn thời lượng giữa Giọng đọc và Tốc độ vẽ nét gây 'Khoảng lặng chết người'</h3>
+              <span class="finding-location">§ FR-003, FR-008, § 15 Q5</span>
+            </header>
+            <div class="finding-note">Trong short-form video, khoảng lặng (dead air) > 1s khiến người xem lướt qua ngay lập tức. Nếu câu thoại ngắn ("Thêm hai cái tai") kéo dài 1.1s mà nét vẽ kéo dài 3.5s, việc thiếu thuật toán điều phối nhịp độ (Pacing Orchestration) sẽ gây đứt gãy retention nghiêm trọng.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Quy định rõ thuật toán Pacing: Tự động chèn SFX tiếng vẽ bút chì/nhạc nền lấp khoảng trống, hoặc tự động co giãn thời gian nghỉ (pause) và tốc độ vẽ để video luôn có dòng chảy âm thanh liên tục không có dead air > 0.5s.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-high">high</span>
+              <h3 class="finding-title">Batch 100 video có cấu trúc đồng nhất kích hoạt cơ chế quét Spam của TikTok / Shorts</h3>
+              <span class="finding-location">§ FR-013, § 18</span>
+            </header>
+            <div class="finding-note">Batch size = 100 video/ngày với cùng một nền trắng, cùng giọng TTS, cùng cấu trúc sẽ bị nền tảng đánh dấu là unoriginal/low-effort content và bị shadowban kênh.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Bổ sung yêu cầu Video Diversification Engine: biến thiên ngẫu nhiên có kiểm soát về màu nền giấy, độ nghiêng canvas, màu mực nét vẽ, các biến thể giọng đọc TTS và nhạc nền ngẫu nhiên từ thư viện bản quyền.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-high">high</span>
+              <h3 class="finding-title">Non-Goal cấm tô màu đối nghịch với khả năng kích thích mua sắm Affiliate</h3>
+              <span class="finding-location">§ 8, § 22</span>
+            </header>
+            <div class="finding-note">Nét vẽ đen trắng đơn sắc (monochrome line art) trên nền trắng khó đạt tỷ lệ chuyển đổi mua hàng affiliate cho các sản phẩm như bút vẽ, tập vẽ màu.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Nới lỏng một phần Non-Goal: Cho phép tính năng Color Fill Reveal đơn giản ở bước cuối cùng (sau khi vẽ xong, tự động fill màu phẳng trong 1 giây trước khi hiện CTA).</div>
+          </article>
+        </div>
+      </details>
+    </section>
+
+    <!-- Mechanical notes -->
+    <div class="mechanical">
+      <h3>Mechanical notes</h3>
+      <ul>
+        <li>Hệ thống mã định danh FR-001 đến FR-017 và NFR-001 đến NFR-005 hoàn toàn liền mạch, không có ID trùng lặp hay gãy vỡ.</li>
+        <li>User Journey hiện đang dùng danh xưng trừu tượng "User" thay vì nhân vật có danh tính cụ thể (ví dụ: "Huy - solo affiliate creator").</li>
+        <li>Chưa có danh mục tra cứu tập trung cho các câu hỏi mở (Open Questions Index) và giả định (Assumptions Index).</li>
+      </ul>
+    </div>
+
+    <footer class="report-footer">
+      <div class="meta">
+        <span>Rubric: .agents/skills/bmad-prd/assets/prd-validation-checklist.md</span>
+        <span>Generated: 2026-09-04T14:46:00+07:00</span>
+      </div>
+    </footer>
+  </div>
+</body>
+</html>
