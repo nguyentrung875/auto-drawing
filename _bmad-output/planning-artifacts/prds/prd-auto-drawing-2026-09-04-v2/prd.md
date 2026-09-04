@@ -1,0 +1,371 @@
+---
+title: Drawing Transformation Video Factory
+created: 2026-09-04
+updated: 2026-09-04
+status: draft
+---
+
+# PRD: Drawing Transformation Video Factory
+
+## 0. Document Purpose
+
+Tài liệu này xác định các yêu cầu sản phẩm cho **Drawing Transformation Video Factory** — hệ thống nội bộ sản xuất video short-form tự động dựa trên quy trình biến đổi hình vẽ từng nét (Drawing Transformation). Tài liệu đóng vai trò là kim chỉ nam kỹ thuật và tiêu chuẩn nghiệm thu duy nhất cho các giai đoạn thiết kế kiến trúc (`bmad-architecture`), thiết kế trải nghiệm người dùng (`bmad-ux`), và phân rã công việc lập trình (`bmad-create-epics-and-stories`). 
+
+Mọi thuật ngữ trong tài liệu đều được neo chặt tại [Mục 3. Glossary](#3-glossary). Các giả định kỹ thuật lớn được đánh dấu bằng nhãn `[ASSUMPTION]` và tổng hợp tại [Mục 10. Assumptions Index](#10-assumptions-index). Các chi tiết triển khai kỹ thuật sâu hoặc nghiên cứu thư viện mã nguồn mở được lưu trữ tại [`addendum.md`](file:///d:/My%20Folder/source_code/auto-drawing/_bmad-output/planning-artifacts/prds/prd-auto-drawing-2026-09-04-v2/addendum.md).
+
+---
+
+## 1. Vision
+
+> **Turn simple shapes into surprising drawings — automatically, repeatedly, and at zero marginal cost.**
+
+Drawing Transformation Video Factory không phải là một ứng dụng chỉnh sửa video thông thường, cũng không sử dụng AI tạo video đen (black-box generative AI) để giả mạo quá trình vẽ. Đây là một **nhà máy nội dung (Content Factory)** tự động hóa 100% quy trình:
+$$\text{Hook đơn giản (số/chữ/ký hiệu)} \xrightarrow{\text{Tò mò}} \text{Quy trình vẽ từng nét} \xrightarrow{\text{Bất ngờ}} \text{Reveal tranh hoàn thiện} \xrightarrow{\text{Hành động}} \text{CTA}$$
+
+Hệ thống giải quyết bài toán nút thắt nhân lực của nhà sáng tạo nội dung đơn lẻ (solo creator / affiliate operator): thay vì mất 2–4 giờ vẽ tay, ghi âm, cắt ghép và dựng animation cho một video 20 giây, hệ thống cho phép sinh hàng loạt 50–100 video độc bản mỗi ngày với chi phí tiệm cận 0đ nhờ kiến trúc Local-first (chạy offline hoàn toàn trên máy trạm cá nhân, sử dụng thư viện nguồn mở MIT/Apache 2.0).
+
+---
+
+## 2. Target User
+
+### 2.1 Jobs To Be Done (JTBD)
+- **Functional Job:** Tự động chuyển đổi các ý tưởng biến hình (ví dụ: "Số 8 thành Con Gấu") thành video ngắn hoàn chỉnh (1080×1920 MP4, 30fps) có âm thanh thuyết minh tiếng Việt và nhạc nền đồng bộ mà không cần can thiệp dựng thủ công.
+- **Economic Job:** Sản xuất quy mô lớn (batch 50–100 video/ngày) phục vụ tiếp thị liên kết (affiliate) hoặc xây kênh short-form với chi phí tính toán và vận hành thấp nhất có thể.
+- **Quality Job:** Đảm bảo 100% video xuất xưởng có chuyển động ngòi bút bám sát nét vẽ thực tế, không có hiện tượng "teleport" hay nét vẽ tự hiện ra như các công cụ AI thông thường.
+
+### 2.2 Non-Users (v1)
+- **Họa sĩ diễn hoạt chuyên nghiệp:** Sản phẩm không phục vụ những người cần công cụ vẽ tay tự do (như Procreate hay Adobe Animate).
+- **Khách hàng đại chúng (B2C Public Users):** Hệ thống được thiết kế như một công cụ vận hành nội bộ (Internal Factory Tool) cho operator, không phải nền tảng SaaS đại trà có quản lý người dùng phức tạp.
+
+### 2.3 Key User Journeys
+
+#### UJ-1: Huy sản xuất một video đơn lẻ để kiểm chứng concept mới
+- **Protagonist:** Huy — solo creator kiêm affiliate operator trong ngành văn phòng phẩm và dụng cụ mỹ thuật.
+- **Entry state:** Huy mở giao diện dòng lệnh hoặc dashboard cục bộ trên laptop của mình.
+- **Path:**
+  1. Huy nhập lệnh tạo video với input: `"8 -> Bear"`, phong cách `"cute_simple"`, ngôn ngữ `"vi"`.
+  2. Hệ thống kiểm tra Registry, tìm thấy Hook `"8"` và Subject `"Bear"` hợp lệ; tự động lập kế hoạch vẽ (Drawing Plan) gồm 6 bước: số 8, tai trái, tai phải, mắt, mũi, miệng.
+  3. Hệ thống tạo giọng đọc tiếng Việt qua viPiper, tự động căn chỉnh thời gian từng nét vẽ khớp hoàn hảo với nhịp điệu giọng nói, chèn SFX sột soạt của bút chì.
+  4. Hệ thống thực hiện Color Fill Reveal (đổ màu phẳng cho gấu) trong 1.5 giây và hiển thị CTA "Link bút vẽ ở bio nhé!".
+  5. Trình phát preview bật lên ngay trên máy để Huy xem thử.
+- **Climax:** Video chạy mượt mà từ đầu đến cuối: đầu bút đi tới đâu nét hiện tới đó, giọng đọc nói "Thêm hai cái tai" đúng khoảnh khắc tai gấu được vẽ xong.
+- **Resolution:** Huy bấm xác nhận xuất bản, nhận file `export/8_bear_v1.mp4` sẵn sàng đăng TikTok.
+- **Edge case:** Nếu một nét tai bị lệch ra ngoài khung hình canvas (Canvas Bounds), bộ validator chặn lại ngay tại Bước 2, báo lỗi chi tiết và đề xuất tọa độ căn chỉnh thay vì để video bị render lỗi.
+
+#### UJ-2: Huy chạy mẻ sản xuất hàng loạt 50 video cho tuần mới
+- **Protagonist:** Huy, chuẩn bị content cho cả tuần.
+- **Entry state:** Huy chuẩn bị một danh sách 50 cặp biến hình dạng CSV hoặc prompt: `"50 biến hình từ chữ số 0-9 thành con vật dễ thương"`.
+- **Path:**
+  1. Huy khởi chạy tiến trình batch factory.
+  2. Hệ thống chạy bộ lọc Transformation Scoring: 46 concept đạt điểm ≥ 18/25 được đưa vào queue xử lý; 4 concept điểm thấp được đánh dấu để review sau.
+  3. Video Diversification Engine tự động phối màu nền giấy (5 mẫu), màu mực, độ nghiêng canvas (±2°) và nhạc nền ngẫu nhiên cho từng video để tránh bị thuật toán quét trùng lặp nội dung.
+  4. Hệ thống chạy render song song trên máy cục bộ; tự động retry nếu có bước gặp sự cố tạm thời.
+- **Climax:** Sau 35 phút, toàn bộ 46 video đã render xong với báo cáo validation 100% pass.
+- **Resolution:** Huy mở thư mục xuất, kiểm tra ngẫu nhiên 3 video đạt chuẩn và lên lịch đăng tải.
+
+#### UJ-3: Huy nạp thêm Component mới vào Registry mà không cần vẽ tay
+- **Protagonist:** Huy muốn bổ sung con vật mới ("Thỏ tai dài") vào thư viện.
+- **Entry state:** Huy không biết dùng phần mềm đồ họa vector chuyên nghiệp.
+- **Path:**
+  1. Huy nhập mô tả: `"Thỏ tai dài biến hình từ số 3"`. LLM sử dụng Drawing DSL để sinh cấu trúc các primitive: 2 đường cong elip dài cho tai thỏ, 2 chấm tròn cho mắt.
+  2. Hệ thống biên dịch DSL thành geometry và bật cửa sổ xem trước (Preview) trong 10 giây.
+  3. Hoặc Huy kéo thả một file SVG con thỏ có sẵn tải trên mạng vào công cụ Semi-auto Ingestion. Tool tự bóc tách các path SVG theo thứ tự từ ngoài vào trong.
+- **Climax:** Huy bấm "Duyệt", component mới lập tức được lưu vào Registry với đầy đủ metadata stroke order.
+- **Resolution:** Component mới có thể được tái sử dụng ngay lập tức cho các video tiếp theo.
+
+---
+
+## 3. Glossary
+
+Mọi tài liệu, mã nguồn và giao diện người dùng downstream bắt buộc phải sử dụng chính xác các danh từ sau:
+
+- **Hook:** Ký hiệu hoặc hình vẽ đơn giản xuất hiện ở đầu video để kích thích sự tò mò của người xem (ví dụ: số "8", chữ "C", hình tròn).
+- **Subject:** Đối tượng hoàn chỉnh cuối cùng mà Hook được biến đổi thành (ví dụ: Bear, Cat, Flower).
+- **Transformation:** Cặp nguyên tử (Hook → Subject) đi kèm toàn bộ Drawing Sequence hoàn chỉnh.
+- **Drawing Sequence:** Danh sách có thứ tự các Drawing Step cấu thành một Transformation.
+- **Drawing Step:** Một bước vẽ đơn lẻ, bao gồm: ID định danh, geometry (tọa độ path), thứ tự vẽ (drawing order), quy tắc thời lượng (duration rule) và lời thoại tương ứng (voice line).
+- **Component:** Phần tử đồ họa tái sử dụng được lưu trong Registry (ví dụ: `bear_left_ear`, `bear_eyes`).
+- **Primitive:** Phần tử hình học cơ bản nhất không thể phân tách nhỏ hơn: `arc`, `circle`, `line`, `bezier_2`, `bezier_3`, `polyline`, `rect`. LLM bắt buộc phải sử dụng các primitive này khi sinh DSL.
+- **Drawing DSL:** Ngôn ngữ mô tả nét vẽ dạng JSON schema nghiêm ngặt. LLM chỉ được phép sinh DSL, tuyệt đối không được sinh mã SVG thô.
+- **DSL Compiler:** Thành phần biên dịch Drawing DSL thành tọa độ SVG path tuyệt đối trên canvas. Đảm bảo tính tất định (Deterministic).
+- **DSL Validator:** Thành phần kiểm tra tính hợp lệ của DSL trước khi biên dịch (kiểm tra schema, giới hạn tọa độ, tính liên tục).
+- **Registry:** Kho lưu trữ tập trung các Component đã qua kiểm định chất lượng.
+- **Asset:** Tài nguyên media phi hình học: file âm thanh giọng đọc (TTS), hiệu ứng âm thanh (SFX), nhạc nền (BGM), texture nền giấy.
+- **Canvas Bounds:** Khung không gian vẽ hợp lệ (chuẩn xuất 1080×1920 pixels).
+- **Pen Tip:** Tọa độ đầu ngòi bút ảo trên từng frame của animation — phải bám sát đầu mút của nét vẽ đang được tạo ra.
+- **Dead Air:** Khoảng thời gian hoàn toàn im lặng trong video (không có voice, không có SFX vẽ, không có BGM). Ngưỡng tối đa cho phép là ≤ 0.5s.
+- **Pacing Orchestration:** Động cơ điều phối nhịp độ tự động, co giãn tốc độ vẽ hoặc chèn âm thanh nền để xóa bỏ Dead Air.
+- **Color Fill Reveal:** Kỹ thuật đổ màu phẳng (flat color) lên các vùng kín của hình vẽ hoàn chỉnh trong ~1.5 giây trước khi chuyển sang CTA.
+- **Batch:** Tập hợp nhiều concept được lập lịch và sản xuất tự động trong một phiên chạy.
+- **Production-ready:** Trạng thái của video đã vượt qua 100% các cổng kiểm tra chất lượng (Quality Gates).
+- **Seed:** Giá trị ngẫu nhiên khởi tạo dùng để tái hiện 100% chính xác logic của một video đã tạo.
+
+---
+
+## 4. Features
+
+### 4.1 Transformation Registry & Ingestion Pipeline
+**Mô tả:** Quản lý kho dữ liệu các linh kiện đồ họa và giải quyết triệt để nút thắt nhập liệu bằng quy trình nạp bán tự động (thực hiện UJ-3). Ngăn chặn tình trạng solo operator phải vẽ tay từng nét bằng công cụ đồ họa phức tạp.
+
+#### FR-1: Registry Store
+Hệ thống SHALL duy trì một kho lưu trữ cục bộ có cấu trúc lưu các Component đã kiểm định.
+- **Consequences (testable):**
+  - Hệ thống đọc và nạp danh mục Component trong thời gian ≤ 500ms khi khởi động.
+  - Mỗi Component có mã ID duy nhất, bounding box, danh sách stroke có thứ tự và metadata phong cách.
+- **Out of Scope:** Lưu trữ trên đám mây đa người dùng trong giai đoạn MVP.
+
+#### FR-2: Drawing DSL Generation
+Hệ thống SHALL cho phép LLM sinh Component mới thông qua Drawing DSL có schema JSON nghiêm ngặt (chỉ sử dụng các Primitive đã khai báo).
+- **Consequences (testable):**
+  - DSL Validator từ chối ngay lập tức bất kỳ cấu trúc JSON nào chứa mã SVG thô hoặc tọa độ nằm ngoài Canvas Bounds.
+  - LLM được retry tối đa 3 lần nếu vi phạm schema trước khi đánh dấu lỗi cho operator.
+  - DSL Compiler dịch mã DSL hợp lệ thành tọa độ SVG path tuyệt đối trong thời gian ≤ 100ms.
+
+#### FR-3: Semi-Auto SVG Ingestion
+Hệ thống SHALL cung cấp công cụ nạp file SVG có sẵn, tự động phân rã các `<path>` thành các Drawing Step theo thứ tự xuất hiện trong file.
+- **Consequences (testable):**
+  - Tự động chuẩn hóa tỷ lệ (normalize scale) về kích thước chuẩn của canvas.
+  - Hiển thị cửa sổ xem trước (Preview) diễn hoạt nét vẽ cho operator duyệt trong vòng ≤ 10 giây.
+
+---
+
+### 4.2 Content Planning & Transformation Definition
+**Mô tả:** Tiếp nhận ý tưởng từ người dùng hoặc sinh tự động các cặp biến hình, đánh giá tính khả thi và lập kịch bản sản xuất chi tiết (thực hiện UJ-1, UJ-2).
+
+#### FR-4: Concept Creation
+Hệ thống SHALL hỗ trợ tạo concept biến hình gồm: `hook`, `subject`, `language`, `style`.
+- **Consequences (testable):**
+  - Đầu vào hợp lệ sinh ra một đối tượng Concept có ID duy nhất và trạng thái ban đầu là `draft`.
+
+#### FR-5: Transformation Definition & Scoring
+Hệ thống SHALL tự động chấm điểm concept theo thang 5 tiêu chí (tổng 25 điểm): Tò mò (Curiosity), Đơn giản (Simplicity), Khả thi hình học (Drawing Feasibility), Tính biến đổi (Visual Transformation), và Tiềm năng giữ chân (Retention Potential).
+- **Consequences (testable):**
+  - Chỉ các concept đạt tổng điểm ≥ 18/25 mới được tự động đưa vào hàng đợi sản xuất video.
+  - Concept dưới 18 điểm được gắn trạng thái `low_score` để operator xem xét thủ công.
+
+#### FR-6: Deterministic Seed & Asset Reuse
+Hệ thống SHALL cho phép tái hiện chính xác một kết quả logic khi cung cấp cùng input và Seed.
+- **Consequences (testable):**
+  - Hai lần chạy với cùng concept và cùng Seed tạo ra cấu trúc Drawing Step, độ dài timeline và tham số biến thiên giống nhau 100%.
+
+---
+
+### 4.3 Drawing Generation & Validation Engine
+**Mô tả:** Động cơ cốt lõi bảo đảm tính toán học và tính hợp lý của hình vẽ (thực hiện nguyên lý Deterministic Drawing).
+
+#### FR-7: Drawing Sequence Geometry
+Mỗi Drawing Step trong sequence bắt buộc phải gắn với một đối tượng hình học xác định, thứ tự nét vẽ rõ ràng và quy tắc thời lượng.
+- **Consequences (testable):**
+  - Không tồn tại bước vẽ nào mà thiếu thông tin tọa độ path hoặc thời gian thực hiện.
+
+#### FR-8: Drawing & Geometry Validation
+Hệ thống SHALL kiểm tra và từ chối kế hoạch vẽ nếu phát hiện lỗi hình học.
+- **Consequences (testable):**
+  - Từ chối kế hoạch nếu: nét vẽ vượt quá Canvas Bounds, nét vẽ tự cắt nhau bất thường, hoặc tham chiếu đến Component không tồn tại trong Registry.
+  - Trong chế độ Batch: hệ thống ghi nhận lỗi vào metadata (`status: failed_validation`) và tự động chuyển sang concept tiếp theo mà không gây sập (crash) toàn bộ tiến trình.
+
+#### FR-9: Drawing-to-Reveal Consistency
+Hình ảnh cuối cùng của bức vẽ trước khi reveal bắt buộc phải được kết xuất từ chính tập hợp geometry đã được vẽ qua các bước trước đó.
+- **Consequences (testable):**
+  - Tuyệt đối không được thay thế bằng một file ảnh bitmap hoặc vector độc lập không trải qua quá trình vẽ.
+
+---
+
+### 4.4 Audio & Pacing Orchestration
+**Mô tả:** Điều phối âm thanh và thời gian để đảm bảo video luôn cuốn hút, không bao giờ rơi vào khoảng lặng (thực hiện UJ-1).
+
+#### FR-10: Vietnamese Voiceover
+Hệ thống SHALL tạo giọng đọc tiếng Việt khớp với từng Drawing Step bằng engine viPiper cục bộ.
+- **Consequences (testable):**
+  - File audio thuyết minh được xuất dưới định dạng WAV/AAC chất lượng cao mà không tốn chi phí gọi API đám mây.
+
+#### FR-11: Audio-Visual Timing Master & Pacing Engine
+Video timeline SHALL lấy thời lượng giọng đọc (TTS audio duration) làm mốc tham chiếu chính (Audio-driven timeline).
+- **Consequences (testable):**
+  - Tốc độ vẽ của nét tương ứng được co giãn tự động để kết thúc đồng thời với câu thoại (cho phép tăng tốc tối đa 2x hoặc chèn khoảng dừng tự nhiên).
+  - Dead Air (im lặng hoàn toàn) SHALL không vượt quá 0.5 giây tại bất kỳ thời điểm nào. Nếu có khoảng trống giữa các câu thoại, hệ thống tự động lấp đầy bằng tiếng bút vẽ sột soạt (SFX) hoặc nhạc nền nhẹ (BGM).
+
+#### FR-12: SFX & Background Music
+Hệ thống SHALL tự động gắn hiệu ứng âm thanh tiếng bút vẽ khi ngòi bút di chuyển và âm thanh chuông/tinh tinh (chime) tại khoảnh khắc Reveal.
+- **Consequences (testable):**
+  - Âm lượng SFX và BGM được tự động cân bằng (ducking) để không lấn át giọng đọc chính.
+
+---
+
+### 4.5 Video Composition & Deterministic Rendering
+**Mô tả:** Kết xuất đồ họa chuyển động thành video MP4 hoàn chỉnh (thực hiện UJ-1).
+
+#### FR-13: Drawing Animation & Pen Tip Tracking
+Hệ thống SHALL tạo diễn hoạt vẽ nét trong đó đầu ngòi bút ảo (Pen Tip) bám sát tuyệt đối tọa độ thực tế của đường path.
+- **Consequences (testable):**
+  - Độ lệch giữa tọa độ đầu bút ảo và điểm đầu của nét vẽ đang xuất hiện ≤ 5 pixels trên từng frame.
+  - Khi nhấc bút chuyển nét (pen-up transition), hiển thị cử động nâng bút tự nhiên trong 0.2s–0.4s; không có hiện tượng dịch chuyển tức thời (teleport > 10px giữa 2 frame liên tiếp).
+
+#### FR-14: Color Fill Reveal
+Hệ thống SHALL hỗ trợ tính năng tùy chọn: sau khi nét vẽ hoàn tất, thực hiện đổ màu phẳng (flat SVG fill) lên các mảng kín của hình vẽ trong 1.0s – 2.0s trước khi hiển thị CTA.
+- **Consequences (testable):**
+  - Tăng độ thẩm mỹ và tỷ lệ chuyển đổi cho sản phẩm affiliate mà không làm phức tạp hóa engine vẽ.
+
+#### FR-15: Configurable CTA & Video Composition
+Khung hình kết thúc (CTA) có thể cấu hình linh hoạt (ví dụ: text, icon giỏ hàng, lời kêu gọi) và không được hard-code vào renderer.
+- **Consequences (testable):**
+  - Thay đổi nội dung CTA chỉ qua file cấu hình JSON mà không cần biên dịch lại mã nguồn.
+
+#### FR-16: Video Export
+Hệ thống SHALL xuất video định dạng MP4 (H.264 / AAC), kích thước chuẩn 1080×1920 (tỷ lệ 9:16), tốc độ 30 FPS.
+- **Consequences (testable):**
+  - Tổng thời lượng video nằm trong khoảng mục tiêu: 15 đến 30 giây.
+  - Nếu thời lượng vẽ vượt quá 25s, hệ thống tự động áp dụng hệ số tăng tốc (1.2x–1.8x) cho các nét phụ để tổng thời lượng không vượt quá 30 giây.
+
+---
+
+### 4.6 Batch Factory & Diversification Engine
+**Mô tả:** Tự động hóa sản xuất quy mô lớn và chống thuật toán quét trùng lặp nội dung của nền tảng (thực hiện UJ-2).
+
+#### FR-17: Batch Generation Pipeline
+Hệ thống SHALL có khả năng nhận một danh sách hàng chục/hàng trăm concept và tự động xử lý qua toàn bộ pipeline từ planning, validation, synthesis đến rendering.
+- **Consequences (testable):**
+  - Hỗ trợ xử lý song song dựa trên số nhân CPU của máy cục bộ, quản lý hàng đợi không gây tràn bộ nhớ RAM.
+
+#### FR-18: Video Diversification Engine
+Hệ thống SHALL tự động áp dụng các biến thiên ngẫu nhiên có kiểm soát cho từng video trong batch.
+- **Consequences (testable):**
+  - Mỗi video trong batch bắt buộc phải mang ít nhất 2 yếu tố khác biệt: chất liệu/màu nền giấy (từ thư viện ≥ 5 mẫu), màu mực vẽ, độ nghiêng khung vẽ ngẫu nhiên (±2°), hoặc bản nhạc nền ngẫu nhiên.
+  - Toàn bộ tham số biến thiên được lưu trong metadata cùng Seed để đảm bảo tính tái lập (Reproducibility).
+
+#### FR-19: Quality Gate & Error Recovery
+Hệ thống SHALL tự động phân loại video thành công vào thư mục `production-ready`, các video gặp lỗi hoặc nghi ngờ chất lượng vào thư mục `needs-review`.
+- **Consequences (testable):**
+  - Không có video hỏng nào bị gắn nhãn thành công giả (False Positive).
+
+#### FR-20: Generation Metadata & Cost Tracking
+Mỗi video xuất xưởng SHALL đi kèm một file metadata JSON chứa: ID, Seed, thời gian render, tài nguyên sử dụng, chi phí tính toán (0 USD nếu chạy local).
+- **Consequences (testable):**
+  - Phục vụ việc đối soát hiệu quả chuyển đổi affiliate downstream.
+
+---
+
+## 5. Non-Goals (Explicit)
+
+Để bảo đảm thời gian hoàn thành MVP trong 1–2 tuần, hệ thống dứt khoát **KHÔNG** làm các phần việc sau:
+- ❌ **Không làm 3D Animation hoặc Diễn hoạt nhân vật phức tạp:** Chỉ tập trung vào diễn hoạt vẽ tay 2D dạng nét phác thảo (line-art sketch).
+- ❌ **Không dùng Generative AI Video (Sora, Runway, Kling):** Không sử dụng các mô hình video AI tạo chuyển động ngẫu nhiên, không thể kiểm soát ngòi bút.
+- ❌ **Không làm bàn tay người 3D siêu thực:** Chỉ sử dụng hình ảnh ngòi bút/bút chì cách điệu 2D đơn giản, ưu tiên độ mượt và chính xác tọa độ hơn là bàn tay thực tế.
+- ❌ **Không xây dựng trình biên tập video đầy đủ (Full Video Editor GUI):** Không xây giao diện dạng Premiere hay CapCut. Mọi tùy biến thực hiện qua kịch bản dữ liệu và file cấu hình.
+- ❌ **Không tự động đăng tải đa nền tảng qua API không chính thức:** Tránh rủi ro bị khóa tài khoản mạng xã hội. MVP dừng lại ở việc xuất video hoàn chỉnh vào thư mục để người vận hành kiểm tra và đăng tải.
+- ❌ **Không xây dựng hệ thống quản lý người dùng / Multi-tenant Cloud SaaS:** Chỉ phục vụ chạy cục bộ trên máy của operator.
+
+---
+
+## 6. MVP Scope
+
+### 6.1 In Scope
+- Kho lưu trữ Registry khởi tạo tối thiểu: 10 Hook chữ số (0–9) và 20 Subject con vật hoàn chỉnh với đầy đủ các bước bóc tách chi tiết.
+- Bộ biên dịch và kiểm định Drawing DSL (DSL Compiler + Validator).
+- Công cụ Semi-auto Ingestion bóc tách nét từ file SVG có sẵn.
+- Tích hợp TTS tiếng Việt chạy offline hoàn toàn (viPiper / Piper).
+- Thuật toán bám ngòi bút chuẩn xác (độ lệch ≤ 5px, không teleport).
+- Động cơ điều phối nhịp điệu (Pacing Engine) chống Dead Air (> 0.5s).
+- Tính năng Color Fill Reveal phẳng trước khi kết thúc video.
+- Engine biến thiên video trong batch (nền giấy, màu mực, độ nghiêng, BGM).
+- Xuất video chuẩn MP4 1080×1920 30fps bằng FFmpeg.
+- Chạy batch 50 video hoàn toàn tự động trên máy cục bộ.
+
+### 6.2 Out of Scope for MVP
+- Giọng đọc đa ngôn ngữ (tiếng Anh, tiếng Tây Ban Nha) — dời sang v2.
+- Giao diện kéo thả Component trực quan nâng cao — dời sang v1.5.
+- Tự động lấy dữ liệu phân tích view/click từ TikTok/YouTube qua webhook — dời sang v2.
+- Tự động A/B test nội dung câu kêu gọi hành động (CTA) gắn với link affiliate — dời sang v2.
+
+---
+
+## 7. Success Metrics
+
+Mỗi chỉ số thành công đo lường trực tiếp năng lực vận hành và chất lượng sản phẩm:
+
+### 7.1 Primary Metrics
+- **SM-1 (Render Success Rate):** Tỷ lệ render video thành công không lỗi đạt **≥ 95%** trên mọi batch chạy từ 50 video trở lên. *(Xác thực FR-17, FR-19)*
+- **SM-2 (Pen Tip Alignment):** 100% video xuất xưởng có độ lệch ngòi bút **≤ 5px** và không có frame teleport. *(Xác thực FR-13)*
+- **SM-3 (Dead Air Elimination):** 100% video không có khoảng lặng hoàn toàn vượt quá **0.5 giây**. *(Xác thực FR-11)*
+- **SM-4 (Production Speed):** Thời gian sản xuất trung bình cho 1 video (từ concept đến MP4) **≤ 45 giây** trên máy trạm cá nhân thông thường. *(Xác thực FR-16)*
+- **SM-5 (Zero Marginal API Cost):** Chi phí API bên ngoài cho mỗi video bằng **0.00 USD** khi chạy local. *(Xác thực FR-10, NFR-3)*
+
+### 7.2 Secondary Metrics
+- **SM-6 (Registry Ingestion Time):** Operator có thể nạp và duyệt một Component mới từ SVG vào Registry trong thời gian **≤ 30 giây**. *(Xác thực FR-3)*
+- **SM-7 (Batch Review Throughput):** Operator có thể rà soát và phê duyệt mẻ 50 video trong thời gian **≤ 15 phút**. *(Xác thực UJ-2)*
+- **SM-8 (Short-form Completion Rate Hypothesis):** Video đăng tải đạt tỷ lệ giữ chân 3 giây đầu ≥ 60% và tỷ lệ xem hết (completion rate) ≥ 25% trên kênh thử nghiệm. *(Giả định nội dung)*
+
+### 7.3 Counter-metrics (Chỉ số kiềm chế)
+- **SM-C1 (Spam Rejection Rate):** Tỷ lệ tài khoản bị nền tảng TikTok/Shorts cảnh báo hoặc bóp tương tác (shadowban) do trùng lặp nội dung phải bằng **0%**. *(Kiềm chế FR-17 — không được spam số lượng mà bỏ qua biến thiên Diversification)*
+- **SM-C2 (Operator Reject Rate):** Tỷ lệ video bị operator từ chối xuất bản ở khâu preview do hình vẽ xấu hoặc giọng đọc gượng gạo phải **≤ 10%**. *(Kiềm chế việc hạ thấp tiêu chuẩn validation)*
+
+---
+
+## 8. Cross-Cutting Non-Functional Requirements
+
+### NFR-1: Reliability
+- Hệ thống không bao giờ được tạo ra "thành công giả" (silent failure): nếu thiếu asset âm thanh, nét vẽ lỗi tọa độ hoặc render đứt đoạn, video phải lập tức bị đánh dấu thất bại kèm mã lỗi chi tiết trong file log.
+- **SLO:** Tỷ lệ sập hệ thống (crash) khi xử lý batch 100 video là **0%**.
+
+### NFR-2: Reproducibility
+- Đảm bảo tính tất định 100%: Cùng một bộ tham số concept + cùng một giá trị Seed bắt buộc phải tạo ra video có cấu trúc thời gian, geometry và nội dung giống hệt nhau.
+
+### NFR-3: Cost & Performance
+- **100% Local-first:** Không phát sinh cước phí API ngoài (Zero Cloud API Dependency) trong chế độ tiêu chuẩn.
+- Thời gian render không vượt quá **45 giây / video** 1080×1920 30fps trên CPU 8 nhân thông thường.
+- Chiếm dụng bộ nhớ RAM tối đa không quá **4GB** trong suốt quá trình chạy batch.
+
+### NFR-4: Observability
+- Mỗi lần render đều tự động ghi vết (logging) chi tiết: thời gian thực thi từng công đoạn (Planning, TTS, Drawing, Compose, Encode), dung lượng file, danh sách Component tham chiếu và giá trị Seed tương ứng.
+
+### NFR-5: Extensibility & Open-source Stack
+- Hệ thống được cấu trúc dạng module hóa cao:
+  - Cho phép thay thế TTS engine (từ viPiper sang ElevenLabs/Edge TTS) bằng cách cấu hình interface mà không phải sửa logic vẽ.
+  - Ưu tiên tối đa các thư viện có giấy phép bản quyền **MIT hoặc Apache 2.0** (như Motion Canvas, chalkboard, Sketchling, viPiper) để không bị ràng buộc bản quyền thương mại khi quy mô dự án mở rộng.
+
+---
+
+## 9. Open Questions
+
+1. **Chất lượng giọng viPiper trên thiết bị di động:** Giọng đọc offline của viPiper đã đủ truyền cảm để người xem TikTok nghe tự nhiên như giọng người thật chưa, hay cần bổ sung thêm bộ lọc ngữ điệu/EQ âm thanh?
+2. **Ngưỡng nhạy cảm trùng lặp của TikTok:** Liệu 4 yếu tố biến thiên hiện tại (màu giấy, góc nghiêng, màu mực, nhạc nền) đã đủ để thuật toán kiểm duyệt của TikTok coi 50 video cùng hook là nội dung độc bản hoàn toàn chưa?
+3. **Độ phức tạp tối đa của nét vẽ:** Một bức vẽ có tối đa bao nhiêu nét (stroke count) thì bắt đầu làm người xem mất kiên nhẫn trong khung thời gian 25–30 giây?
+
+---
+
+## 10. Assumptions Index
+
+| Mã ID | Giả định `[ASSUMPTION]` | Mức độ rủi ro | Kế hoạch kiểm chứng |
+|---|---|:---:|---|
+| **A-01** | `[ASSUMPTION]` Engine viPiper (chạy local offline, license MIT) có phát âm tiếng Việt đủ tự nhiên và rõ chữ cho video ngắn mà không cần đến API trả phí. | Trung bình | Thử nghiệm render 5 mẫu giọng với các câu thoại phức tạp ở tuần đầu tiên (Release R0). |
+| **A-02** | `[ASSUMPTION]` Quy tắc trích xuất thứ tự path trong file SVG từ Illustrator/Inkscape phản ánh đúng thứ tự vẽ tự nhiên của người vẽ tay. | Cao | Thử nghiệm công cụ Semi-auto Ingestion với 20 file SVG mẫu; nếu không tự nhiên, bổ sung giao diện cho phép operator kéo thả đổi thứ tự nét trong 5 giây. |
+| **A-03** | `[ASSUMPTION]` Framework Motion Canvas / headless canvas có thể render mượt mà 30fps MP4 ở độ phân giải 1080×1920 trong thời gian ≤ 45s trên máy tính cá nhân. | Trung bình | Benchmark hiệu năng render tại Release R0. |
+| **A-04** | `[ASSUMPTION]` Kỹ thuật Color Fill Reveal đổ màu phẳng (flat color) trong 1.5s làm tăng tỷ lệ xem hết và tương tác mà không khiến người xem cảm thấy video bị cắt cụt. | Thấp | So sánh số liệu giữ chân giữa 10 video có màu và 10 video chỉ vẽ nét trắng đen. |
+| **A-05** | `[ASSUMPTION]` Solo operator có thể dễ dàng quản lý việc đăng 20–30 video/ngày bằng công cụ lên lịch thủ công mà chưa cần đến auto-upload API. | Thấp | Kiểm chứng thực tế sau khi hoàn thành mẻ sản xuất đầu tiên. |
+
+---
+
+## 11. Entity Model
+
+Cấu trúc quan hệ dữ liệu giữa các thực thể trong hệ thống:
+
+```text
+Concept (ID, Hook, Subject, Language, Style, Score, Status)
+ │
+ └── 1..N ──► Transformation (Input, Output, Seed)
+               │
+               └── 1..N ──► DrawingStep (ID, DrawingOrder, DurationRule, VoiceCue)
+                             │
+                             └── N..1 ──► Component (Lưu trong Registry)
+                                           ├── ID: string
+                                           ├── Type: enum (glyph | animal_part | primitive)
+                                           ├── Geometry: SVGPath / PrimitiveParams
+                                           ├── BoundingBox: Rect(x, y, w, h)
+                                           └── StrokeOrderMetadata: Array<StrokeID>
+
+VideoAsset (ProjectID, ConceptRef, Seed, Version, GenerationTime)
+ ├── AudioTrack: VoiceoverAudio + SFXClips + BackgroundMusic
+ ├── DiversificationConfig: PaperTexture + CanvasTilt + InkColor + BGMSong
+ ├── ValidationReport: Boolean (All Gates Passed)
+ └── OutputFile: FilePath (.mp4)
+```
