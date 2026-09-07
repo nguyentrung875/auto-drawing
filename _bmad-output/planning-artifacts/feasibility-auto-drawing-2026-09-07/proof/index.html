@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Proof R0 — Glyph-Anchored Transformation Gate</title>
+<style>
+  :root{
+    --bg:#0e1a17; --panel:#132420; --panel2:#0b1614; --line:#25463e;
+    --chalk:#eef4f0; --dim:#8fa8a0; --accent:#5fd3a8; --warn:#f0b429; --bad:#ff6b6b; --good:#5fd3a8;
+  }
+  *{box-sizing:border-box}
+  body{margin:0; background:var(--bg); color:var(--chalk);
+    font-family:"Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif; line-height:1.55}
+  header{padding:28px 24px 14px; max-width:1500px; margin:0 auto}
+  h1{font-size:23px; margin:0 0 6px; letter-spacing:.2px}
+  h1 .tag{font-size:12px; background:var(--accent); color:#06120e; padding:2px 8px; border-radius:20px; vertical-align:middle; margin-left:10px; font-weight:700}
+  .sub{color:var(--dim); font-size:14px; max-width:1080px}
+  .sub b{color:var(--chalk)}
+  .toolbar{display:flex; flex-wrap:wrap; gap:10px 16px; align-items:center;
+    padding:13px 24px; max-width:1500px; margin:0 auto;
+    border-top:1px solid var(--line); border-bottom:1px solid var(--line);
+    background:var(--panel2); position:sticky; top:0; z-index:20}
+  button{background:var(--panel); color:var(--chalk); border:1px solid var(--line);
+    padding:8px 15px; border-radius:8px; cursor:pointer; font-size:13.5px; font-family:inherit}
+  button:hover{border-color:var(--accent); color:var(--accent)}
+  button.primary{background:var(--accent); color:#06120e; border-color:var(--accent); font-weight:700}
+  button.primary:hover{color:#06120e; filter:brightness(1.1)}
+  label.tg{display:flex; align-items:center; gap:7px; font-size:13px; color:var(--dim); cursor:pointer; user-select:none}
+  label.tg input{accent-color:var(--accent); width:15px; height:15px}
+  .spd{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--dim)}
+  input[type=range]{accent-color:var(--accent)}
+
+  .grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(335px,1fr)); gap:18px; padding:20px 24px; max-width:1500px; margin:0 auto}
+  .card{background:var(--panel); border:1px solid var(--line); border-radius:14px; overflow:hidden; display:flex; flex-direction:column}
+  .card.pass{border-color:#2c6b56}
+  .card.fail{border-color:#6b2c2c}
+  .chead{padding:14px 16px 10px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:flex-start; gap:10px}
+  .chead h2{font-size:16px; margin:0}
+  .chead .arrow{color:var(--accent); font-weight:700}
+  .chead .note{font-size:12px; color:var(--dim); margin-top:3px}
+  .verdict{font-size:11.5px; font-weight:800; padding:4px 10px; border-radius:20px; white-space:nowrap; letter-spacing:.4px}
+  .verdict.pass{background:#123c2e; color:var(--good); border:1px solid #2c6b56}
+  .verdict.fail{background:#3c1414; color:var(--bad); border:1px solid #6b2c2c}
+  .verdict.warn{background:#3c3114; color:var(--warn); border:1px solid #6b5a2c}
+
+  .stage{position:relative; background:#0a1412; aspect-ratio:9/12.7}
+  .stage svg{width:100%; height:100%; display:block}
+  .board{fill:#0f211d}
+  .stroke{fill:none; stroke:var(--chalk); stroke-width:7; stroke-linecap:round; stroke-linejoin:round; transition:opacity .18s}
+  .stroke.hook{stroke:#ffd479; stroke-width:8}
+  .stroke.dot{stroke-width:15}
+  .stroke.thin{stroke-width:5}
+  .stroke.orphan-flag{stroke:var(--bad) !important; stroke-width:9}
+  .pen{opacity:0}
+  .pen .body{fill:#c9a227}
+  .pen .tip{fill:#f2f2f2}
+
+  .metrics{padding:12px 16px 16px; border-top:1px solid var(--line); font-size:13px}
+  table{width:100%; border-collapse:collapse}
+  td{padding:4px 0; vertical-align:top}
+  td.k{color:var(--dim); width:57%}
+  td.v{text-align:right; font-variant-numeric:tabular-nums; font-weight:600; white-space:nowrap}
+  .g-pass{color:var(--good)} .g-fail{color:var(--bad)} .g-warn{color:var(--warn)}
+  .gate{font-size:10.5px; font-weight:700; padding:1px 6px; border-radius:4px; margin-left:6px}
+  .gate.pass{background:#123c2e;color:var(--good)} .gate.fail{background:#3c1414;color:var(--bad)} .gate.warn{background:#3c3114;color:var(--warn)}
+  .explain{font-size:12.5px; color:var(--dim); border-top:1px dashed var(--line); margin:0 16px; padding:12px 0 16px}
+  .explain b{color:var(--chalk)}
+
+  section.doc{max-width:1500px; margin:0 auto; padding:8px 24px 70px}
+  section.doc h2{font-size:18px; margin:36px 0 10px; padding-bottom:7px; border-bottom:1px solid var(--line)}
+  section.doc p, section.doc li{font-size:14px; color:#cfe0da}
+  code{background:var(--panel2); padding:1px 6px; border-radius:4px; font-size:12.5px; color:var(--accent)}
+  .tblwrap{overflow-x:auto; border:1px solid var(--line); border-radius:10px}
+  table.big{width:100%; border-collapse:collapse; font-size:13px; min-width:820px}
+  table.big th, table.big td{padding:9px 12px; text-align:left; border-bottom:1px solid var(--line); vertical-align:top}
+  table.big th{background:var(--panel2); color:var(--dim); font-weight:600; font-size:11.5px; text-transform:uppercase; letter-spacing:.5px}
+  table.big tr:last-child td{border-bottom:none}
+  .kbd{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+  .callout{border-left:3px solid var(--accent); background:var(--panel); padding:12px 16px; border-radius:0 10px 10px 0; margin:14px 0}
+  .callout.bad{border-left-color:var(--bad)}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Proof R0 — Cổng kiểm tra Transformation <span class="tag">GLYPH-ANCHORED</span></h1>
+  <p class="sub">
+    Trang này chứng minh 3 điều mà tài liệu dự án (<span class="kbd">prd.md</span>, <span class="kbd">ARCHITECTURE-SPINE.md</span>) <b>chưa</b> có:
+    <b>(1)</b> phần "bút bám nét" là bài toán <b>đã giải xong</b>, không phải rủi ro;
+    <b>(2)</b> rủi ro thật nằm ở chỗ <b>hook có thực sự hoá thân thành con vật hay không</b>;
+    <b>(3)</b> điều đó <b>đo được bằng máy</b>, không cần tin vào "sự sáng tạo của AI".
+    Số liệu ở đây khớp từng chữ số với <span class="kbd">gate.mjs</span> (chạy trong CI được).
+    Hãy bật <b>"Ẩn nét hook"</b> và <b>"Tô đỏ nét mồ côi"</b> để tự kiểm chứng.
+  </p>
+</header>
+
+<div class="toolbar">
+  <button class="primary" id="btnPlay">▶ Chạy cả 3</button>
+  <button id="btnReset">↺ Reset</button>
+  <span class="spd">Tốc độ <input type="range" id="spd" min="0.5" max="3" step="0.25" value="1" style="width:110px"> <span id="spdv">1×</span></span>
+  <label class="tg"><input type="checkbox" id="tgHideHook"> Ẩn nét hook (C1 — hook có chịu lực?)</label>
+  <label class="tg"><input type="checkbox" id="tgOrphan"> Tô đỏ nét mồ côi (C0 — glyph absorption)</label>
+  <label class="tg"><input type="checkbox" id="tgLabels"> Hiện nhãn bộ phận</label>
+  <label class="tg"><input type="checkbox" id="tgPen" checked> Hiện đầu bút</label>
+</div>
+
+<main class="grid" id="grid"></main>
+
+<section class="doc">
+  <h2>Cổng kiểm tra (Gate) — thay cho "Transformation Scoring 25 điểm" trong PRD §FR-5</h2>
+  <p>
+    PRD chấm điểm concept theo 5 tiêu chí cảm tính (Curiosity, Simplicity, Drawing Feasibility,
+    Visual Transformation, Retention Potential) với ngưỡng <code>≥ 18/25</code>, nhưng <b>không định nghĩa ai chấm và chấm bằng gì</b> —
+    chính <span class="kbd">validation-report.md</span> của dự án đã flag đây là finding HIGH. Bảng dưới là phiên bản <b>đo được</b>:
+  </p>
+  <div class="tblwrap">
+  <table class="big">
+    <thead><tr><th style="width:56px">Gate</th><th style="width:180px">Tên</th><th>Định nghĩa</th><th style="width:210px">Cách đo</th><th style="width:120px">Ngưỡng</th></tr></thead>
+    <tbody>
+      <tr><td class="kbd">C0</td><td><b>Glyph Absorption</b><br><span style="color:var(--dim);font-size:12px">điều kiện cần · hard gate</span></td>
+        <td>Mọi nét của hook phải hoá thân thành <b>một bộ phận có tên</b> của subject. Không nét nào "dư thừa" — vẽ ra rồi bị đè lên, bị che đi, hoặc không thuộc về con vật.</td>
+        <td>Khai báo lúc authoring, <b>xác minh bằng ảnh</b> qua toggle "Tô đỏ nét mồ côi". Ở R0 thay bằng VLM: chỉ vào từng nét hook và hỏi "nét này là bộ phận gì?" — không trả lời được ⇒ orphan.</td>
+        <td><span class="g-fail">orphanCount = 0</span></td></tr>
+      <tr><td class="kbd">C1</td><td><b>Hook Load-bearing</b></td>
+        <td>Bỏ nét hook đi thì hình <b>phải sập</b>. Nếu bỏ hook mà con vật vẫn nguyên vẹn ⇒ hook chỉ là trang trí ⇒ đúng lỗi "đề xuất đại 99 → hổ".</td>
+        <td>Tự động 100%: <b>Fragmentation Index</b> = số cụm nét rời rạc còn lại sau khi bỏ hook (đồ thị bbox-overlap, pad 14px).</td>
+        <td><span class="g-pass">≥ 3 cụm</span></td></tr>
+      <tr><td class="kbd">C2</td><td><b>Hook Ink Ratio</b></td>
+        <td>Tỷ lệ chiều dài mực của hook trên tổng chiều dài mực của hình cuối.</td>
+        <td>Tự động, chính xác: <code>SVGPathElement.getTotalLength()</code>.</td>
+        <td><span class="g-pass">≥ 0.30</span></td></tr>
+      <tr><td class="kbd">C3</td><td><b>Stroke &amp; Time Budget</b></td>
+        <td>Số nét và thời lượng vẽ phải chui lọt khung 15–30s sau khi cộng narration + pause.</td>
+        <td>Tự động: đếm stroke, tổng duration.</td>
+        <td><span class="g-pass">≤ 14 nét<br>≤ 25s vẽ</span></td></tr>
+      <tr><td class="kbd">C4</td><td><b>Final Recognizability</b></td>
+        <td>Hình cuối (line-art, chưa tô màu) phải được <b>nhận diện đúng</b> là subject. Đây là gate mà <b>DSL Validator trong PRD hoàn toàn không có</b>: nó chỉ check schema + Canvas Bounds, nên một con thỏ "đúng toạ độ nhưng xấu" vẫn pass 100%.</td>
+        <td><b>Cần R0:</b> sketch classifier (QuickDraw — 50M ảnh, 345 lớp, CC-BY-4.0) hoặc VLM, chạy trên frame cuối.</td>
+        <td><span class="g-warn">top-1 = subject</span></td></tr>
+      <tr><td class="kbd">C5</td><td><b>Progressive Surprise</b></td>
+        <td>Đo "sự tò mò" bằng số: confidence(subject) ở nét đầu phải <b>thấp</b>, ở nét cuối phải <b>cao</b>, và tăng gần đơn điệu. Cao ngay từ đầu ⇒ hết bất ngờ. Không bao giờ cao ⇒ hình sai.</td>
+        <td><b>Cần R0:</b> chạy chính classifier đó trên <b>từng frame trung gian</b> — pipeline vốn đã render từng bước nên gần như miễn phí.</td>
+        <td><span class="g-warn">Δconfidence ≥ 0.5</span></td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="callout bad">
+    <b>Vì sao C2 một mình không đủ — và đó là lý do cần cả bộ 5 gate.</b><br>
+    Cặp <b>99 → Hổ</b> đạt <b>C2 = 0.328 (PASS)</b> nhưng vẫn bị <b>REJECT</b> vì fail C0, C1, C3.
+    Một con số vô hướng luôn bị "game" được: chỉ cần vẽ hook thật dài (hai cái đuôi số 9 lê thê) là ratio tăng,
+    trong khi transformation vẫn rỗng. Đây chính là lỗi thiết kế của thang 25 điểm trong PRD —
+    nó cộng 5 tiêu chí mềm thành 1 số cứng.
+  </div>
+
+  <h2>Vì sao "99 → Hổ" fail ngay từ thiết kế, không phải do AI kém</h2>
+  <p>
+    Bật toggle <b>"Tô đỏ nét mồ côi"</b> ở thẻ thứ ba: hai cái <b>đuôi của số 9</b> không map được vào bộ phận nào của con hổ —
+    chúng đâm xuyên qua mặt hổ. Bạn chỉ còn 2 lựa chọn, và <b>cả hai đều vi phạm requirement sẵn có của chính dự án</b>:
+  </p>
+  <ul>
+    <li><b>Giấu nét thừa đi</b> ⇒ vi phạm <code>FR-9 Drawing-to-Reveal Consistency</code>: "hình cuối phải được kết xuất từ chính tập geometry đã vẽ qua các bước trước".</li>
+    <li><b>Giữ nguyên nét thừa</b> ⇒ vi phạm <code>Q3 Final Recognition</code>: người xem không thấy con hổ, mà thấy "số 99 dán lên mặt con hổ".</li>
+  </ul>
+  <p>
+    Ngược lại ở <b>8 → Gấu</b>: vòng trên = đầu, vòng dưới = thân, không dư nét nào.
+    Bỏ số 8 đi thì hình tan thành <b>9 cụm rời rạc</b> (tai, mắt, mũi, tay, chân trôi lơ lửng) ⇒ số 8 <b>chịu lực</b>. Đó là một transformation thật.
+  </p>
+  <div class="callout">
+    <b>Kết luận cốt lõi:</b> C0 và C1 là tính chất của <b>cặp (hook, subject)</b>, không phải của mô hình AI.
+    Không LLM nào "sáng tạo" ra được cặp hợp lệ nếu cặp đó <b>không tồn tại về mặt hình học</b>.
+    Vì vậy số transformation tốt là <b>hữu hạn và phải được thiết kế trước</b> — đó vừa là nút thắt, vừa là moat thật sự của dự án.
+    Đổi model AI mạnh hơn không sửa được <span class="kbd">99 → hổ</span>.
+  </div>
+
+  <h2>Phần "khó 9/10" theo <span class="kbd">gpt_review_clip.md</span> thực ra là ~30 dòng JavaScript</h2>
+  <p>
+    Đầu bút trong demo chạy bằng đúng công thức tài liệu mô tả:
+    <code>p = path.getPointAtLength(L·t)</code> và <code>θ = atan2(dy, dx)</code>.
+    Không AI, không ML, tất định 100%, và <b>độ lệch = 0px</b> — tốt hơn cả ngưỡng <code>≤ 5px</code> mà <code>SM-2</code> đòi hỏi,
+    vì nó <i>định nghĩa</i> vị trí nét chứ không <i>bám theo</i> nét.
+  </p>
+  <p>
+    Phần khó thật của Hand Engine là <b>thẩm mỹ của asset PNG + occlusion + cảm giác nhấc tay</b>, không phải toán bám nét.
+    Nghĩa là nhận định "90% độ khó nằm ở bàn tay" trong tài liệu là <b>nhầm chỗ</b>:
+    độ khó nằm ở khâu <b>authoring hình vẽ</b> — thứ mà PRD đang định giao cho LLM sinh toạ độ tự do.
+  </p>
+</section>
+
+<script>
+const NS = "http://www.w3.org/2000/svg";
+const W = 540, H = 760, PAD = 14;
+const THRESH = { C1: 3, C2: 0.30, C3_STROKES: 14, C3_SEC: 25 };
+
+function mk(tag, attrs, parent){
+  const e = document.createElementNS(NS, tag);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(e);
+  return e;
+}
+function overlap(a, b, pad){
+  return !(a.x - pad > b.x + b.width || b.x - pad > a.x + a.width ||
+           a.y - pad > b.y + b.height || b.y - pad > a.y + a.height);
+}
+function fragmentation(part){
+  const boxes = part.map(p => p.el.getBBox());
+  const parent = boxes.map((_, i) => i);
+  const find = i => parent[i] === i ? i : (parent[i] = find(parent[i]));
+  for (let i = 0; i < boxes.length; i++)
+    for (let j = i + 1; j < boxes.length; j++)
+      if (overlap(boxes[i], boxes[j], PAD)) parent[find(i)] = find(j);
+  return new Set(boxes.map((_, i) => find(i))).size;
+}
+
+const grid = document.getElementById("grid");
+const cards = [];
+let TEMPLATES = [];
+
+async function boot(){
+  try { TEMPLATES = await (await fetch("templates.json")).json(); }
+  catch(e){ grid.innerHTML = '<p style="padding:20px;color:var(--bad)">Không tải được templates.json — trang phải được phục vụ qua HTTP (node serve.mjs), không mở trực tiếp bằng file://</p>'; return; }
+  TEMPLATES.forEach(buildCard);
+  cards.forEach(renderMetrics);
+  applyToggles(); draw(0);
+  setTimeout(() => document.getElementById("btnPlay").click(), 500);
+}
+
+function buildCard(tpl){
+  const card = document.createElement("article");
+  card.className = "card";
+  card.innerHTML = `
+    <div class="chead">
+      <div><h2>${tpl.hook} <span class="arrow">→</span> ${tpl.subject}</h2>
+      <div class="note">${tpl.note}</div></div>
+      <span class="verdict">…</span>
+    </div>
+    <div class="stage"></div>
+    <div class="metrics"></div>
+    <div class="explain"></div>`;
+  grid.appendChild(card);
+
+  const svg = mk("svg", { viewBox: `0 0 ${W} ${H}`, preserveAspectRatio: "xMidYMid meet" }, null);
+  card.querySelector(".stage").appendChild(svg);
+  mk("rect", { class:"board", x:0, y:0, width:W, height:H }, svg);
+  const gStrokes = mk("g", {}, svg);
+  const gLabels  = mk("g", { "font-size":"14", fill:"#7f9a92", opacity:0 }, svg);
+  const gPen     = mk("g", { class:"pen" }, svg);
+  mk("rect", { class:"body", x:-6, y:-48, width:12, height:42, rx:3 }, gPen);
+  mk("path", { class:"tip", d:"M -6 -6 L 6 -6 L 0 4 Z" }, gPen);
+
+  const paths = tpl.strokes.map((s, i) => {
+    const p = mk("path", { d: s.d, class: "stroke " + s.role + (s.dot ? " dot" : "") + (s.thin ? " thin" : "") }, gStrokes);
+    const L = p.getTotalLength();
+    p.style.strokeDasharray = L;
+    p.style.strokeDashoffset = L;
+    return { el:p, L, s };
+  });
+
+  tpl.strokes.forEach((s, i) => {
+    const bb = paths[i].el.getBBox();
+    const t = mk("text", { x: Math.min(W - 6, bb.x + bb.width + 12), y: bb.y + bb.height / 2 + 5 }, gLabels);
+    t.textContent = s.part;
+  });
+
+  let acc = 0;
+  const segs = paths.map(p => { const seg = { p, start:acc, end:acc + (p.s.dur || 1) }; acc = seg.end; return seg; });
+  cards.push({ tpl, card, paths, segs, TOTAL:acc, gPen, gLabels,
+               metricsEl: card.querySelector(".metrics"),
+               verdictEl: card.querySelector(".verdict"),
+               explainEl: card.querySelector(".explain") });
+}
+
+function computeMetrics(c){
+  const hook = c.paths.filter(p => p.s.role === "hook");
+  const part = c.paths.filter(p => p.s.role === "part");
+  const hookLen = hook.reduce((a,p)=>a+p.L,0);
+  const totalLen = c.paths.reduce((a,p)=>a+p.L,0);
+  const ratio = hookLen / totalLen;
+  const orphans = hook.filter(p => p.s.absorbed === false);
+  const comps = fragmentation(part);
+  const gates = {
+    C0: { pass: orphans.length === 0, label: `${orphans.length} nét mồ côi` },
+    C1: { pass: comps >= THRESH.C1,   label: `${comps} cụm` },
+    C2: { pass: ratio >= THRESH.C2,   label: ratio.toFixed(3) },
+    C3: { pass: c.paths.length <= THRESH.C3_STROKES && c.TOTAL <= THRESH.C3_SEC, label: `${c.paths.length} nét / ${c.TOTAL.toFixed(1)}s` },
+  };
+  const failed = Object.entries(gates).filter(([,g])=>!g.pass).map(([k])=>k);
+  return { gates, failed, comps, orphans, ratio, totalLen,
+           verdict: failed.length === 0 ? "PASS" : failed.length === 1 ? "REVIEW" : "REJECT" };
+}
+
+function renderMetrics(c){
+  const m = computeMetrics(c), g = m.gates;
+  const cl = p => p ? "pass" : "fail";
+  c.metricsEl.innerHTML = `<table>
+    <tr><td class="k">C0 · Glyph Absorption</td><td class="v"><span class="g-${cl(g.C0.pass)}">${g.C0.label}</span><span class="gate ${cl(g.C0.pass)}">${g.C0.pass?"PASS":"FAIL"}</span></td></tr>
+    <tr><td class="k">C1 · Hook Load-bearing</td><td class="v"><span class="g-${cl(g.C1.pass)}">${g.C1.label}</span><span class="gate ${cl(g.C1.pass)}">${g.C1.pass?"PASS":"FAIL"}</span></td></tr>
+    <tr><td class="k">C2 · Hook Ink Ratio</td><td class="v"><span class="g-${cl(g.C2.pass)}">${g.C2.label}</span><span class="gate ${cl(g.C2.pass)}">${g.C2.pass?"PASS":"FAIL"}</span></td></tr>
+    <tr><td class="k">C3 · Stroke Budget</td><td class="v"><span class="g-${cl(g.C3.pass)}">${g.C3.label}</span><span class="gate ${cl(g.C3.pass)}">${g.C3.pass?"PASS":"FAIL"}</span></td></tr>
+    <tr><td class="k">C4 / C5 · Recognizability &amp; Surprise</td><td class="v"><span class="g-warn">cần classifier</span><span class="gate warn">R0</span></td></tr>
+    <tr><td class="k">Tổng mực vẽ</td><td class="v">${Math.round(m.totalLen)} px</td></tr>
+  </table>`;
+  c.verdictEl.textContent = m.verdict;
+  c.verdictEl.className = "verdict " + (m.verdict === "PASS" ? "pass" : m.verdict === "REVIEW" ? "warn" : "fail");
+  c.card.classList.toggle("pass", m.verdict === "PASS");
+  c.card.classList.toggle("fail", m.verdict === "REJECT");
+
+  if (m.orphans.length){
+    c.explainEl.innerHTML = `<b style="color:var(--bad)">Vi phạm C0:</b> ${m.orphans.map(o=>o.s.orphan || o.s.part).join("; ")}.
+      Bật <b>"Tô đỏ nét mồ côi"</b> để thấy. <b>Không sửa được bằng cách đổi model AI</b> — cặp
+      ${c.tpl.hook} → ${c.tpl.subject} bản thân nó không tồn tại về hình học.
+      Lưu ý C2 vẫn PASS (${m.ratio.toFixed(3)}) — một mình ratio không bắt được lỗi này.`;
+  } else if (m.comps <= 3) {
+    c.explainEl.innerHTML = `Fragmentation = ${m.comps} (thấp hơn gấu) vì thân ${c.tpl.subject.toLowerCase()} là <b>một khối liền</b>.
+      Đây là lý do C1 đặt ngưỡng ≥ 3 chứ không phải ≥ 5, và vì sao <b>không một scalar metric nào đủ</b> —
+      phải chạy thêm C4/C5 bằng classifier để xác nhận "bỏ hook thì còn nhận ra con vật không".`;
+  } else {
+    c.explainEl.innerHTML = `Bật <b>"Ẩn nét hook"</b>: con ${c.tpl.subject.toLowerCase()} tan thành <b>${m.comps} mảnh rời rạc</b>
+      ⇒ hook là nét <b>chịu lực</b>, không phải trang trí. Đây chính là điều "99 → Hổ" không làm được (fragmentation = 1).`;
+  }
+}
+
+/* ---------- playback ---------- */
+let playing = false, tCur = 0, last = 0, speed = 1;
+const spd = document.getElementById("spd"), spdv = document.getElementById("spdv");
+spd.addEventListener("input", () => { speed = parseFloat(spd.value); spdv.textContent = speed + "×"; });
+
+function draw(at){
+  cards.forEach(c => {
+    let active = null, prog = 0;
+    c.segs.forEach(sg => {
+      const p = Math.max(0, Math.min(1, (at - sg.start) / (sg.p.s.dur || 1)));
+      sg.p.el.style.strokeDashoffset = sg.p.L * (1 - p);
+      if (p > 0 && p < 1){ active = sg.p; prog = p; }
+    });
+    if (active && document.getElementById("tgPen").checked){
+      const pt  = active.el.getPointAtLength(active.L * prog);
+      const pt2 = active.el.getPointAtLength(Math.min(active.L, active.L * prog + 1.5));
+      const ang = Math.atan2(pt2.y - pt.y, pt2.x - pt.x) * 180 / Math.PI + 90;
+      c.gPen.setAttribute("transform", `translate(${pt.x} ${pt.y}) rotate(${ang})`);
+      c.gPen.style.opacity = 1;
+    } else c.gPen.style.opacity = 0;
+  });
+}
+function loop(ts){
+  if (!playing) return;
+  if (!last) last = ts;
+  tCur += (ts - last) / 1000 * speed; last = ts;
+  const maxT = Math.max(...cards.map(c => c.TOTAL));
+  if (tCur > maxT + 1.4){ tCur = maxT + 1.4; playing = false; document.getElementById("btnPlay").textContent = "▶ Chạy lại"; }
+  draw(tCur);
+  if (playing) requestAnimationFrame(loop);
+}
+document.getElementById("btnPlay").addEventListener("click", e => {
+  if (playing){ playing = false; e.target.textContent = "▶ Chạy tiếp"; return; }
+  if (tCur >= Math.max(...cards.map(c => c.TOTAL))) tCur = 0;
+  playing = true; last = 0; e.target.textContent = "⏸ Tạm dừng";
+  requestAnimationFrame(loop);
+});
+document.getElementById("btnReset").addEventListener("click", () => {
+  playing = false; tCur = 0; last = 0; draw(0);
+  document.getElementById("btnPlay").textContent = "▶ Chạy cả 3";
+});
+function applyToggles(){
+  const hide = document.getElementById("tgHideHook").checked;
+  const orph = document.getElementById("tgOrphan").checked;
+  const lab  = document.getElementById("tgLabels").checked;
+  cards.forEach(c => {
+    c.gLabels.setAttribute("opacity", lab ? 1 : 0);
+    c.paths.forEach(p => {
+      if (p.s.role === "hook") p.el.style.opacity = hide ? 0 : 1;
+      p.el.classList.toggle("orphan-flag", orph && p.s.absorbed === false);
+    });
+  });
+}
+["tgHideHook","tgOrphan","tgLabels"].forEach(id =>
+  document.getElementById(id).addEventListener("change", applyToggles));
+document.getElementById("tgPen").addEventListener("change", () => draw(tCur));
+
+boot();
+</script>
+</body>
+</html>
