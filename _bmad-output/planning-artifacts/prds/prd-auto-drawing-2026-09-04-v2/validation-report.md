@@ -1,65 +1,96 @@
 # Validation Report — Drawing Transformation Video Factory
 
-- **PRD:** `_bmad-output/planning-artifacts/prds/prd-auto-drawing-2026-09-04-v2/prd.md`
-- **Rubric:** `.agents/skills/bmad-prd/assets/prd-validation-checklist.md`
-- **Run at:** 2026-09-04T17:28:00+07:00
+- **PRD:** `d:\source_code\auto-drawing\_bmad-output\planning-artifacts\prds\prd-auto-drawing-2026-09-04-v2\prd.md`
+- **Rubric:** `assets/prd-validation-checklist.md`
+- **Run at:** 2026-09-05T21:28:00+07:00
 - **Grade:** Good
 
 ## Overall verdict
-Bản PRD đạt chất lượng rất cao (**Strong trên cả 7 chiều kích của Rubric**), thể hiện sự thấu hiểu sâu sắc bài toán kinh doanh và kỹ thuật của một hệ thống Content Factory nội bộ. Mọi quyết định kiến trúc then chốt (Local-first, 100% MIT, chống Dead Air bằng Pacing Engine, giải quyết nút thắt dữ liệu bằng DSL + Semi-auto SVG Ingestion) đều được định hình rõ ràng, có tiêu chuẩn nghiệm thu định lượng và liên kết trực tiếp với các chỉ số đo lường hiệu quả.
 
-Bản phản biện Adversarial bổ sung 1 cảnh báo mức Cao (High) về việc cần kiểm soát chặt chẽ số luồng render song song (Concurrency Semaphore) để tránh nguy cơ tràn bộ nhớ RAM (đỉnh tải 4GB) trên máy cá nhân của operator.
+PRD v2 là một tài liệu chất lượng cao — thesis chiến lược rõ ràng (zero-API-cost content factory cho solo affiliate operator), FRs có testable consequences chi tiết đến mức pixel (≤ 5px deviation, ±35° clamping, 0.2s–0.4s lift), Entity Model sẵn sàng cho architecture team source-extract. Tuy nhiên, adversarial review bổ sung hai blind spot đáng kể: (1) PRD thiếu content-level diversification strategy — chỉ diversify visual trong khi TikTok algorithm phát hiện trùng lặp ở tầng content structure, và (2) LLM spatial reasoning cho DSL generation là rủi ro cốt lõi chưa được assumption-tagged. Không có finding nào critical; các high findings đều fixable trong 1 iteration.
 
 ## Dimension verdicts
-- Decision-readiness — **strong**
-- Substance over theater — **strong**
-- Strategic coherence — **strong**
-- Done-ness clarity — **strong**
-- Scope honesty — **strong**
-- Downstream usability — **strong**
-- Shape fit — **strong**
-
----
+- Decision-readiness — adequate
+- Substance over theater — strong
+- Strategic coherence — strong
+- Done-ness clarity — adequate
+- Scope honesty — strong
+- Downstream usability — strong
+- Shape fit — adequate
 
 ## Findings by severity
 
 ### Critical (0)
-*Không có phát hiện mức Critical.*
 
----
+Không có finding critical.
 
-### High (1)
+### High (4)
 
-**[Adversarial Reviewer]** — Nguy cơ tràn RAM khi Render Concurrency không có giới hạn ngặt nghèo (§ 4.6 FR-17, § 8 NFR-3)  
-Bản PRD đặt mục tiêu render 50–100 video trong batch trên máy trạm cá nhân và đặt trần RAM ≤ 4GB. Tuy nhiên, nếu dùng Chromium headless hoặc Motion Canvas worker đa luồng theo số nhân CPU (ví dụ máy 8 core mở 8 luồng render), mỗi instance headless browser có thể ngốn từ 600MB đến 1GB RAM, dễ dàng dẫn tới đỉnh tải (peak memory) 6–8GB gây treo máy hoặc tràn swap disk.  
-*Fix:* Bổ sung quy định rõ ràng trong FR-17: "Hệ thống SHALL sử dụng Semaphore / Worker Pool khống chế số luồng render đồng thời (mặc định tối đa 2 worker đồng thời trên máy 16GB RAM) để đảm bảo tổng RAM không bao giờ vượt quá 4GB."
+**[Decision-readiness]** — LLM spatial reasoning cho DSL Generation không có assumption tag (§FR-2, §UJ-3)
+PRD giả định ngầm rằng LLM đủ khả năng sinh tọa độ hình học chính xác qua prompt, nhưng không có assumption tag, không có kế hoạch kiểm chứng, và không đề cập fallback nếu LLM liên tục sinh geometry sai về mặt thẩm mỹ.
+Fix: Thêm `[ASSUMPTION] A-07` cho LLM geometry reasoning, kèm kế hoạch kiểm chứng 20 concept × 3 LLM.
 
----
+**[Done-ness clarity]** — FR-5 Scoring thiếu rubric chi tiết cho 5 tiêu chí (§4.2)
+5 tiêu chí được đặt tên nhưng không có trọng số, không rõ ai chấm (LLM hay rule-based), không có ví dụ đạt/không đạt. Engineer không biết "done" trông như thế nào.
+Fix: Thêm bảng trọng số, nêu rõ scoring mechanism, kèm ≥ 1 ví dụ.
 
-### Medium (1)
+**[Adversarial]** — Diversification Engine chống sai vấn đề — thiếu content-level diversification (§FR-18)
+FR-18 chỉ diversify visual (màu, nét, góc, nhạc) trong khi TikTok phát hiện spam ở tầng content structure và narrative pattern. 50 video cùng pattern "số → con vật" sẽ bị cluster detection.
+Fix: Mở rộng FR-18 với content-level diversification: multiple narrative templates, hook category rotation, voice pacing variation.
 
-**[Adversarial Reviewer]** — Rủi ro phát âm sai tên riêng / từ mượn ngoại lai của TTS viPiper (§ 4.4 FR-10)  
-viPiper được huấn luyện tối ưu cho tiếng Việt thuần. Khi kịch bản chứa các từ tiếng Anh (như "Bear", "Cat", "Dolphin") hoặc các từ mượn, mô hình TTS offline có thể đọc ngọng hoặc ngắt quãng kỳ quặc, làm giảm cảm giác chuyên nghiệp của video short-form.  
-*Fix:* Bổ sung cơ chế Custom Pronunciation Dictionary (Từ điển phiên âm) vào Registry hoặc pipeline TTS: cho phép map tự động từ tiếng Anh sang phiên âm tiếng Việt gần đúng (ví dụ: Bear $\to$ con gấu, Cat $\to$ con mèo) trước khi đưa vào synthesis.
+**[Adversarial]** — UJ-3 thiếu quality gate cho thẩm mỹ LLM-generated components (§UJ-3, §FR-2)
+FR-2 chỉ validate schema và bounds, không validate thẩm mỹ. Con thỏ đúng schema nhưng xấu vẫn pass.
+Fix: Thêm consequence: preview kèm reference comparison, operator confirm trước khi lưu Registry.
 
----
+### Medium (5)
 
-### Low (2)
+**[Decision-readiness]** — Open Question §9.4 quá implementation-level cho PRD
+"Cần hệ số suy giảm bao nhiêu" là câu hỏi architecture, không phải product decision.
+Fix: Rephrase thành product-level question, dời chi tiết sang architecture doc.
 
-**[Rubric Validator]** — Chuẩn hóa mức giảm âm lượng (Audio Ducking) (§ 4.4 FR-12)  
-FR-12 yêu cầu tự động ducking nhạc nền khi có giọng đọc nhưng chưa chỉ định mức giảm cụ thể (ví dụ: giảm -12dB đến -18dB).  
-*Fix:* Bổ sung ngưỡng decibel cụ thể vào Consequences của FR-12.
+**[Done-ness clarity]** — FR-14 Color Fill: "mảng kín" chưa được định nghĩa kỹ thuật (§FR-14)
+Closed region detection algorithm không được nêu; edge case khi geometry không tạo closed path.
+Fix: Bổ sung consequence cho closed region detection + fallback behavior.
 
-**[Adversarial Reviewer]** — Rủi ro font tiếng Việt bị lỗi dấu khi hiển thị CTA trên các nền tảng khác nhau (§ 4.5 FR-15)  
-FFmpeg khi vẽ text tiếng Việt có dấu thường xuyên gặp lỗi hiển thị ô vuông nếu font không được đóng gói trực tiếp vào asset của project.  
-*Fix:* Đóng gói sẵn ít nhất 3 font chữ Unicode mã nguồn mở (như Be Vietnam Pro, Montserrat) vào thư mục asset của Registry.
+**[Done-ness clarity]** — FR-19 Quality Gate: "0% False Positive" là aspirational, không testable (§FR-19)
+Cần liệt kê ≥ 5 automated checks cụ thể mà Quality Gate phải pass.
+Fix: Liệt kê checks cụ thể (pen tracking, dead air, audio sync, bounds, render completion).
 
----
+**[Scope honesty]** — Thiếu Assumption riêng cho Motion Canvas headless rendering (§A-03)
+A-03 quá chung chung — "Motion Canvas / headless canvas" gộp 2 công nghệ khác nhau.
+Fix: Tách assumption riêng cho Motion Canvas headless capability.
+
+**[Shape fit]** — FR-13 bị chia quá nhỏ (FR-13, FR-13b, FR-13c) — phụ thuộc lẫn nhau hoàn toàn (§4.5)
+Downstream story creation sẽ khó cắt stories vì 3 sub-FRs này là 1 đơn vị triển khai.
+Fix: Merge hoặc ghi rõ "đơn vị triển khai không tách rời".
+
+### Low (6)
+
+**[Substance over theater]** — UJ-2 climax "35 phút" thiếu cơ sở liên kết SM-4 (§UJ-2)
+Fix: Ghi chú "(dựa trên mục tiêu SM-4: ≤ 45s/video)".
+
+**[Scope honesty]** — FR-6 Deterministic Seed: chưa clarify logic-level vs pixel-level (§FR-6)
+Fix: Clarify "Deterministic ở tầng logic, không yêu cầu pixel-perfect."
+
+**[Downstream usability]** — SM-8 gắn "(Giả định nội dung)" nhưng không có Assumption Index entry (§SM-8)
+Fix: Thêm A-07 hoặc reclassify SM-8.
+
+**[Shape fit]** — Color Fill Reveal: mâu thuẫn "tùy chọn" (FR-14) vs bắt buộc (UJ-1, §6.1) (§FR-14)
+Fix: Chọn một hướng nhất quán.
+
+**[Adversarial]** — Thiếu data retention / cleanup strategy cho disk management (§4.6)
+Batch 50 video/ngày → ~30GB/tháng trên laptop 256GB.
+Fix: Thêm NFR cho disk monitoring và auto-archive.
+
+**[Adversarial]** — SM-8 Completion Rate không actionable ở MVP (§SM-8)
+Fix: Reclassify là "Hypothesis to validate post-launch"; thêm proxy metric tự đo.
 
 ## Mechanical notes
-- Danh mục FR-1 đến FR-20: Đầy đủ, liền mạch, không trùng lặp.
-- Các liên kết thuật ngữ Glossary đồng nhất 100% trong toàn bộ các phần.
-- 5 mục giả định trong Assumptions Index đều khớp chính xác với các nhãn `[ASSUMPTION]` trong nội dung tài liệu.
+- **Glossary drift:** "Chalk Pivot" (§3) vs "ChalkPivot" (§11 Entity Model) — casing không nhất quán.
+- **ID convention:** FR-13b, FR-13c dùng sub-numbering khác convention chính (FR-N integer).
+- **Assumptions roundtrip:** SM-8 gắn "(Giả định nội dung)" nhưng không có entry trong Assumptions Index.
+- **Cross-ref path lỗi:** §0 link `addendum.md` trỏ tới path có "My Folder" — có thể sai trên workspace hiện tại.
+- **UJ naming:** Nhất quán — 3 UJs đều dùng Huy.
 
 ## Reviewer files
 - `review-rubric.md`

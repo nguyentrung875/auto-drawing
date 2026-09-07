@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <title>PRD Validation: Drawing Transformation Video Factory</title>
@@ -56,12 +56,15 @@
     font-size: 15px;
     white-space: nowrap;
   }
+  .grade-excellent { background: var(--grade-exc); }
   .grade-good { background: var(--grade-good); }
+  .grade-fair { background: var(--grade-fair); }
+  .grade-poor { background: var(--grade-poor); }
 
   .synthesis {
     background: var(--surface);
     border: 1px solid var(--border);
-    border-left: 3px solid var(--verdict-strong);
+    border-left: 3px solid var(--muted);
     border-radius: 8px;
     padding: 18px 22px;
     margin-bottom: 24px;
@@ -127,6 +130,9 @@
     color: white;
   }
   .verdict-strong { background: var(--verdict-strong); }
+  .verdict-adequate { background: var(--verdict-adequate); }
+  .verdict-thin { background: var(--verdict-thin); }
+  .verdict-broken { background: var(--verdict-broken); }
 
   .dim-body { padding: 4px 20px 18px; }
   .dim-judgment { color: var(--text); font-size: 14.5px; }
@@ -157,6 +163,7 @@
   .badge-sev-low { background: rgba(100, 116, 139, 0.12); color: var(--sev-low); }
   .badge-sev-medium { background: rgba(202, 138, 4, 0.14); color: var(--sev-medium); }
   .badge-sev-high { background: rgba(234, 88, 12, 0.14); color: var(--sev-high); }
+  .badge-sev-critical { background: rgba(220, 38, 38, 0.14); color: var(--sev-critical); }
   .finding-title { margin: 0; font-size: 15px; font-weight: 500; flex: 1; min-width: 200px; }
   .finding-location { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12.5px; color: var(--muted); }
   .finding-note, .finding-fix { margin-top: 6px; font-size: 14px; }
@@ -197,93 +204,372 @@
     <header class="report-header">
       <div class="title">
         <h1>Drawing Transformation Video Factory — Validation Report</h1>
-        <div class="subtitle">_bmad-output/planning-artifacts/prds/prd-auto-drawing-2026-09-04-v2/prd.md</div>
+        <div class="subtitle">prd-auto-drawing-2026-09-04-v2/prd.md</div>
       </div>
       <div class="grade grade-good">Good</div>
     </header>
 
     <div class="synthesis">
-      <p>Bản PRD đạt chất lượng rất cao (<strong>Strong trên cả 7 chiều kích của Rubric</strong>), thể hiện sự thấu hiểu sâu sắc bài toán kinh doanh và kỹ thuật của một hệ thống Content Factory nội bộ. Mọi quyết định kiến trúc then chốt (Local-first, 100% MIT, chống Dead Air bằng Pacing Engine, giải quyết nút thắt dữ liệu bằng DSL + Semi-auto SVG Ingestion) đều được định hình rõ ràng, có tiêu chuẩn nghiệm thu định lượng và liên kết trực tiếp với các chỉ số đo lường hiệu quả.</p>
-      <p>Bản phản biện Adversarial bổ sung 1 cảnh báo mức Cao (High) về việc cần kiểm soát chặt chẽ số luồng render song song (Concurrency Semaphore) để tránh nguy cơ tràn bộ nhớ RAM (đỉnh tải 4GB) trên máy cá nhân của operator.</p>
+      <p>PRD v2 là một tài liệu chất lượng cao — thesis chiến lược rõ ràng (zero-API-cost content factory cho solo affiliate operator), FRs có testable consequences chi tiết đến mức pixel (≤ 5px deviation, ±35° clamping, 0.2s–0.4s lift), Entity Model sẵn sàng cho architecture team source-extract. Tuy nhiên, adversarial review bổ sung hai blind spot đáng kể: (1) PRD thiếu content-level diversification strategy — chỉ diversify visual trong khi TikTok algorithm phát hiện trùng lặp ở tầng content structure, và (2) LLM spatial reasoning cho DSL generation là rủi ro cốt lõi chưa được assumption-tagged.</p>
+      <p>Không có finding nào critical; 4 high findings đều fixable trong 1 iteration. Grade: <strong>Good</strong> — ≤ 1 thin dimension, no critical findings.</p>
     </div>
 
     <div class="dimension-summary">
       <div class="dim-card">
         <div class="dim-name">Decision-readiness</div>
-        <div class="dim-verdict" style="color: var(--verdict-strong)">strong</div>
+        <div class="dim-verdict" style="color: var(--verdict-adequate)">Adequate</div>
       </div>
       <div class="dim-card">
         <div class="dim-name">Substance over theater</div>
-        <div class="dim-verdict" style="color: var(--verdict-strong)">strong</div>
+        <div class="dim-verdict" style="color: var(--verdict-strong)">Strong</div>
       </div>
       <div class="dim-card">
         <div class="dim-name">Strategic coherence</div>
-        <div class="dim-verdict" style="color: var(--verdict-strong)">strong</div>
+        <div class="dim-verdict" style="color: var(--verdict-strong)">Strong</div>
       </div>
       <div class="dim-card">
         <div class="dim-name">Done-ness clarity</div>
-        <div class="dim-verdict" style="color: var(--verdict-strong)">strong</div>
+        <div class="dim-verdict" style="color: var(--verdict-adequate)">Adequate</div>
       </div>
       <div class="dim-card">
         <div class="dim-name">Scope honesty</div>
-        <div class="dim-verdict" style="color: var(--verdict-strong)">strong</div>
+        <div class="dim-verdict" style="color: var(--verdict-strong)">Strong</div>
       </div>
       <div class="dim-card">
         <div class="dim-name">Downstream usability</div>
-        <div class="dim-verdict" style="color: var(--verdict-strong)">strong</div>
+        <div class="dim-verdict" style="color: var(--verdict-strong)">Strong</div>
       </div>
       <div class="dim-card">
         <div class="dim-name">Shape fit</div>
-        <div class="dim-verdict" style="color: var(--verdict-strong)">strong</div>
+        <div class="dim-verdict" style="color: var(--verdict-adequate)">Adequate</div>
       </div>
     </div>
 
-    <!-- Reviewer section: Adversarial -->
-    <section class="reviewer-section">
-      <details open>
+    <!-- Decision-readiness -->
+    <section class="dimension">
+      <details>
         <summary>
-          <h2>Adversarial Reviewer Findings</h2>
-          <span class="reviewer-source">review-adversarial.md</span>
+          <h2>Decision-readiness</h2>
+          <span class="verdict-pill verdict-adequate">ADEQUATE</span>
         </summary>
+        <div class="dim-body">
+          <div class="dim-judgment">
+            <p>PRD xác lập rõ ràng các quyết định cốt lõi: chọn 2D Hand Asset thay vì 3D mesh, Local-first thay vì Cloud API, Drawing DSL thay vì sinh SVG thô. Mỗi quyết định kèm lý do loại bỏ phương án thay thế (Addendum §3). Open Questions (§9) thật sự mở. Assumptions Index (§10) có kế hoạch kiểm chứng cụ thể.</p>
+            <p>Tuy nhiên, một trade-off quan trọng bị smoothed: LLM có đủ khả năng spatial reasoning để sinh geometry chính xác và đẹp không? Đây là rủi ro cốt lõi cho UJ-3 mà không có assumption tag.</p>
+          </div>
+        </div>
         <div class="findings-list">
           <article class="finding">
             <header>
-              <span class="badge badge-sev-high">high</span>
-              <h3 class="finding-title">Nguy cơ tràn RAM khi Render Concurrency không có giới hạn ngặt nghèo</h3>
-              <span class="finding-location">§ 4.6 FR-17, § 8 NFR-3</span>
+              <span class="badge badge-sev-high">HIGH</span>
+              <h3 class="finding-title">LLM spatial reasoning cho DSL Generation không có assumption tag</h3>
+              <span class="finding-location">§FR-2, §UJ-3</span>
             </header>
-            <div class="finding-note">Nếu chạy đa luồng theo số core CPU (ví dụ 8 core) với browser headless / Motion Canvas, đỉnh RAM có thể vượt trần 4GB gây treo máy cá nhân.</div>
-            <div class="finding-fix"><strong>Fix:</strong> Bổ sung quy định Semaphore / Worker Pool khống chế tối đa 2 worker render đồng thời trên máy 16GB RAM.</div>
+            <div class="finding-note">PRD giả định ngầm rằng LLM đủ khả năng sinh tọa độ hình học chính xác qua prompt, nhưng không có assumption tag, không có kế hoạch kiểm chứng, và không đề cập fallback nếu LLM liên tục sinh geometry sai về mặt thẩm mỹ (hợp schema nhưng xấu).</div>
+            <div class="finding-fix"><strong>Fix:</strong> Thêm [ASSUMPTION] A-07 cho LLM geometry reasoning, kèm kế hoạch kiểm chứng 20 concept × 3 LLM.</div>
           </article>
           <article class="finding">
             <header>
-              <span class="badge badge-sev-medium">medium</span>
-              <h3 class="finding-title">Rủi ro phát âm sai tên riêng / từ mượn ngoại lai của TTS viPiper</h3>
-              <span class="finding-location">§ 4.4 FR-10</span>
+              <span class="badge badge-sev-medium">MEDIUM</span>
+              <h3 class="finding-title">Open Question §9.4 quá implementation-level</h3>
+              <span class="finding-location">§9 Open Questions</span>
             </header>
-            <div class="finding-note">viPiper có thể phát âm gượng gạo các từ tiếng Anh (Bear, Cat) nếu không có từ điển phiên âm.</div>
-            <div class="finding-fix"><strong>Fix:</strong> Bổ sung Custom Pronunciation Dictionary ánh xạ từ tiếng Anh sang phiên âm tiếng Việt trước khi synthesis.</div>
+            <div class="finding-note">"Cần hệ số suy giảm bao nhiêu" là câu hỏi architecture, không phải product decision.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Rephrase thành product-level question, dời chi tiết damping factor sang architecture doc.</div>
+          </article>
+        </div>
+      </details>
+    </section>
+
+    <!-- Substance over theater -->
+    <section class="dimension">
+      <details>
+        <summary>
+          <h2>Substance over theater</h2>
+          <span class="verdict-pill verdict-strong">STRONG</span>
+        </summary>
+        <div class="dim-body">
+          <div class="dim-judgment">
+            <p>PRD earned its content. Vision cụ thể tới mức nêu công thức chuyển đổi cảm xúc, không thể swap vào PRD khác. Glossary chi tiết 25+ terms. UJs có protagonist Huy với edge cases thực tế. NFRs có ngưỡng cụ thể. Entity Model là chi tiết thực tế, không phải furniture.</p>
+          </div>
+        </div>
+        <div class="findings-list">
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">LOW</span>
+              <h3 class="finding-title">UJ-2 climax "35 phút" thiếu cơ sở liên kết SM-4</h3>
+              <span class="finding-location">§2.3 UJ-2</span>
+            </header>
+            <div class="finding-note">Con số 35 phút hợp lý (46 × 45s ≈ 35 phút) nhưng không liên kết rõ ràng với SM-4.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Ghi chú "(dựa trên mục tiêu SM-4: ≤ 45s/video)".</div>
+          </article>
+        </div>
+      </details>
+    </section>
+
+    <!-- Strategic coherence -->
+    <section class="dimension">
+      <details>
+        <summary>
+          <h2>Strategic coherence</h2>
+          <span class="verdict-pill verdict-strong">STRONG</span>
+        </summary>
+        <div class="dim-body">
+          <div class="dim-judgment">
+            <p>Thesis rõ ràng: zero marginal API cost content factory cho solo affiliate operator. Mọi feature phục vụ thesis. Success Metrics validate thesis (SM-5). Counter-metrics kiềm chế đúng rủi ro batch-at-scale (SM-C1 shadowban, SM-C2 reject rate). MVP scope kind nhất quán.</p>
+          </div>
+        </div>
+        <div class="findings-list">
+        </div>
+      </details>
+    </section>
+
+    <!-- Done-ness clarity -->
+    <section class="dimension">
+      <details open>
+        <summary>
+          <h2>Done-ness clarity</h2>
+          <span class="verdict-pill verdict-adequate">ADEQUATE</span>
+        </summary>
+        <div class="dim-body">
+          <div class="dim-judgment">
+            <p>Phần lớn FRs có testable consequences rất tốt: FR-13 nêu ≤ 5px deviation, ±35° clamping, 0.2s–0.4s lift time. FR-11 nêu dead air ≤ 0.5s, speed scaling max 2x. Tuy nhiên, một số FRs quan trọng thiếu clarity.</p>
+          </div>
+        </div>
+        <div class="findings-list">
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-high">HIGH</span>
+              <h3 class="finding-title">FR-5 Scoring thiếu rubric chi tiết cho 5 tiêu chí</h3>
+              <span class="finding-location">§4.2 FR-5</span>
+            </header>
+            <div class="finding-note">5 tiêu chí được đặt tên nhưng không có trọng số, không rõ ai chấm (LLM hay rule-based), không có ví dụ đạt/không đạt. Engineer không biết "done" trông như thế nào cho bộ chấm điểm.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Thêm bảng trọng số từng tiêu chí, nêu rõ scoring mechanism, kèm ≥ 1 ví dụ.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">MEDIUM</span>
+              <h3 class="finding-title">FR-14 Color Fill: "mảng kín" chưa được định nghĩa</h3>
+              <span class="finding-location">§4.5 FR-14</span>
+            </header>
+            <div class="finding-note">Closed region detection algorithm không được nêu; edge case khi geometry không tạo closed path.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Bổ sung consequence cho closed region detection + fallback behavior (skip + log warning).</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">MEDIUM</span>
+              <h3 class="finding-title">FR-19 Quality Gate: "0% False Positive" là aspirational</h3>
+              <span class="finding-location">§4.6 FR-19</span>
+            </header>
+            <div class="finding-note">Cần liệt kê ≥ 5 automated checks cụ thể mà Quality Gate phải pass.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Liệt kê checks cụ thể (pen tracking, dead air, audio sync, bounds, render completion).</div>
+          </article>
+        </div>
+      </details>
+    </section>
+
+    <!-- Scope honesty -->
+    <section class="dimension">
+      <details>
+        <summary>
+          <h2>Scope honesty</h2>
+          <span class="verdict-pill verdict-strong">STRONG</span>
+        </summary>
+        <div class="dim-body">
+          <div class="dim-judgment">
+            <p>Non-Goals làm việc thật sự — mỗi mục loại bỏ phương hướng cụ thể với lý do. Assumptions có 6 entries với risk level và verification plan. Out of Scope nêu rõ phase dời.</p>
+          </div>
+        </div>
+        <div class="findings-list">
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">MEDIUM</span>
+              <h3 class="finding-title">Thiếu Assumption riêng cho Motion Canvas headless rendering</h3>
+              <span class="finding-location">§10 A-03</span>
+            </header>
+            <div class="finding-note">A-03 quá chung chung — "Motion Canvas / headless canvas" gộp 2 công nghệ khác nhau.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Tách assumption riêng cho Motion Canvas headless capability.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">LOW</span>
+              <h3 class="finding-title">FR-6 Seed: chưa clarify logic-level vs pixel-level determinism</h3>
+              <span class="finding-location">§4.2 FR-6</span>
+            </header>
+            <div class="finding-note">Video pixel-level có giống nhau giữa 2 máy không? Hay chỉ logic-level determinism?</div>
+            <div class="finding-fix"><strong>Fix:</strong> Clarify "Deterministic ở tầng logic, không yêu cầu pixel-perfect."</div>
+          </article>
+        </div>
+      </details>
+    </section>
+
+    <!-- Downstream usability -->
+    <section class="dimension">
+      <details>
+        <summary>
+          <h2>Downstream usability</h2>
+          <span class="verdict-pill verdict-strong">STRONG</span>
+        </summary>
+        <div class="dim-body">
+          <div class="dim-judgment">
+            <p>Glossary chi tiết 25+ terms, sử dụng nhất quán. FR IDs contiguous (FR-1 → FR-20). UJs có protagonist Huy xuyên suốt. Entity Model cho phép architecture team source-extract trực tiếp. SM-FR cross-references rõ ràng.</p>
+          </div>
+        </div>
+        <div class="findings-list">
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">LOW</span>
+              <h3 class="finding-title">SM-8 gắn "(Giả định nội dung)" nhưng thiếu Assumption Index entry</h3>
+              <span class="finding-location">§7.2 SM-8</span>
+            </header>
+            <div class="finding-note">SM-8 có footnote giả định nhưng không match entry nào trong §10 Assumptions Index.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Thêm A-07 hoặc reclassify SM-8.</div>
+          </article>
+        </div>
+      </details>
+    </section>
+
+    <!-- Shape fit -->
+    <section class="dimension">
+      <details>
+        <summary>
+          <h2>Shape fit</h2>
+          <span class="verdict-pill verdict-adequate">ADEQUATE</span>
+        </summary>
+        <div class="dim-body">
+          <div class="dim-judgment">
+            <p>PRD đúng hình dáng cho internal factory tool / solo operator. Mức độ formalization hơi cao cho solo-operator (20 FRs, 3 UJs) nhưng hợp lý vì stakes affiliate revenue. Một số FRs bị chia quá nhỏ gây khó khăn cho downstream story creation.</p>
+          </div>
+        </div>
+        <div class="findings-list">
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">MEDIUM</span>
+              <h3 class="finding-title">FR-13 chia quá nhỏ (FR-13, FR-13b, FR-13c)</h3>
+              <span class="finding-location">§4.5</span>
+            </header>
+            <div class="finding-note">3 sub-FRs cho Hand Engine phụ thuộc lẫn nhau hoàn toàn. Downstream story creation sẽ khó cắt stories.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Merge hoặc ghi rõ "đơn vị triển khai không tách rời."</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">LOW</span>
+              <h3 class="finding-title">Color Fill Reveal: mâu thuẫn "tùy chọn" vs bắt buộc</h3>
+              <span class="finding-location">§FR-14, §UJ-1, §6.1</span>
+            </header>
+            <div class="finding-note">FR-14 nói "tính năng tùy chọn" nhưng UJ-1 step 4 và MVP Scope liệt kê như bắt buộc.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Chọn một hướng nhất quán.</div>
+          </article>
+        </div>
+      </details>
+    </section>
+
+    <!-- Adversarial review section -->
+    <section class="reviewer-section">
+      <details>
+        <summary>
+          <h2>Adversarial review</h2>
+          <span class="reviewer-source">review-adversarial.md</span>
+        </summary>
+        <div class="dim-body">
+          <div class="dim-judgment">
+            <p>PRD thiếu perspective từ phía nền tảng phân phối (TikTok algorithm), phía người xem cuối (viewer retention psychology), và rủi ro vận hành thực tế khi scale từ 1 video demo lên 50 video production/ngày. "Zero marginal cost" là marketing khi tính chi phí toàn phần. Diversification Engine chống sai vấn đề — visual variation không đủ để tránh TikTok content cluster detection.</p>
+          </div>
+        </div>
+        <div class="findings-list">
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-high">HIGH</span>
+              <h3 class="finding-title">Diversification Engine chống sai vấn đề — thiếu content-level diversification</h3>
+              <span class="finding-location">§FR-18, §SM-C1</span>
+            </header>
+            <div class="finding-note">FR-18 chỉ diversify visual (màu, nét, góc, nhạc) trong khi TikTok phát hiện spam ở tầng content structure và narrative pattern. 50 video cùng pattern "số → con vật" sẽ bị cluster detection.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Mở rộng FR-18 với content-level diversification: narrative templates, hook category rotation, voice pacing variation.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-high">HIGH</span>
+              <h3 class="finding-title">UJ-3 thiếu quality gate cho thẩm mỹ LLM-generated components</h3>
+              <span class="finding-location">§UJ-3, §FR-2</span>
+            </header>
+            <div class="finding-note">FR-2 chỉ validate schema và bounds, không validate thẩm mỹ. Con thỏ đúng schema nhưng xấu vẫn pass validation.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Thêm consequence: preview kèm reference comparison, operator confirm trước khi lưu Registry.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-high">HIGH</span>
+              <h3 class="finding-title">"Zero Marginal Cost" là myth khi tính chi phí toàn phần</h3>
+              <span class="finding-location">§1, §SM-5, §NFR-3</span>
+            </header>
+            <div class="finding-note">Chi phí thực bao gồm thời gian operator review (~18s/video), điện năng render, và chi phí cơ hội. "Zero marginal cost" chỉ đúng cho API cost.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Đổi Vision thành "chi phí API bằng 0"; thêm tính toán chi phí toàn phần.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">MEDIUM</span>
+              <h3 class="finding-title">30fps @ 1080×1920 — overkill cho short-form mobile?</h3>
+              <span class="finding-location">§FR-16, §NFR-3</span>
+            </header>
+            <div class="finding-note">TikTok compress xuống ~720p cho mobile viewers. 1080p tốn compute gấp ~2.25x so với 720p.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Giữ 1080p default nhưng thêm configurable resolution option.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">MEDIUM</span>
+              <h3 class="finding-title">viPiper assumption quá lạc quan</h3>
+              <span class="finding-location">§FR-10, §A-01</span>
+            </header>
+            <div class="finding-note">A-01 chỉ test 5 mẫu — quá ít. Vấn đề: ngữ điệu đơn điệu câu dài, phát âm sai từ vay mượn, thiếu cảm xúc. Không có Plan B rõ ràng.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Nâng A-01 lên "Cao" risk; mở rộng verification 20+ mẫu; nêu rõ Plan B.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-medium">MEDIUM</span>
+              <h3 class="finding-title">Entity Model thiếu Transformation → VideoAsset mapping</h3>
+              <span class="finding-location">§11 Entity Model</span>
+            </header>
+            <div class="finding-note">Cùng 1 Transformation có thể sinh N videos (khác Seed, khác Diversification) — nhưng model không diễn đạt relationship này.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Thêm link: Transformation → 1..N → VideoAsset (via Seed + DiversificationConfig).</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">LOW</span>
+              <h3 class="finding-title">Thiếu data retention / cleanup strategy</h3>
+              <span class="finding-location">§4.6, §6.1</span>
+            </header>
+            <div class="finding-note">50 video/ngày × 30 ngày → ~30GB/tháng. Solo operator laptop 256GB SSD đầy trong 6–8 tháng.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Thêm NFR cho disk monitoring và auto-archive policy.</div>
+          </article>
+          <article class="finding">
+            <header>
+              <span class="badge badge-sev-low">LOW</span>
+              <h3 class="finding-title">SM-8 Completion Rate không actionable ở MVP</h3>
+              <span class="finding-location">§SM-8</span>
+            </header>
+            <div class="finding-note">25% completion trên kênh mới gần như không thể — phụ thuộc algorithm, không phải sản phẩm.</div>
+            <div class="finding-fix"><strong>Fix:</strong> Reclassify là "Hypothesis to validate post-launch"; thêm proxy metric tự đo.</div>
           </article>
         </div>
       </details>
     </section>
 
     <div class="mechanical">
-      <h3>Mechanical Notes</h3>
+      <h3>Mechanical notes</h3>
       <ul>
-        <li>Danh mục FR-1 đến FR-20: Đầy đủ, liên tục, không trùng lặp.</li>
-        <li>Bảng Glossary gồm 18 thuật ngữ đồng nhất trong toàn văn bản.</li>
-        <li>Assumptions Index (A-01 đến A-05) khớp 100% với các nhãn [ASSUMPTION].</li>
+        <li><strong>Glossary drift:</strong> "Chalk Pivot" (§3) vs "ChalkPivot" (§11 Entity Model) — casing không nhất quán.</li>
+        <li><strong>ID convention:</strong> FR-13b, FR-13c dùng sub-numbering khác convention chính (FR-N integer).</li>
+        <li><strong>Assumptions roundtrip:</strong> SM-8 "(Giả định nội dung)" không có entry trong Assumptions Index.</li>
+        <li><strong>Cross-ref path lỗi:</strong> §0 link addendum.md trỏ tới path có "My Folder" — có thể sai trên workspace hiện tại.</li>
+        <li><strong>UJ naming:</strong> Nhất quán — 3 UJs đều dùng Huy.</li>
       </ul>
     </div>
 
     <footer class="report-footer">
       <div class="meta">
-        <div>Rubric: .agents/skills/bmad-prd/assets/prd-validation-checklist.md</div>
-        <div>Validated at: 2026-09-04T17:28:00+07:00</div>
+        <span>Rubric: assets/prd-validation-checklist.md</span>
+        <span>Generated: 2026-09-05T21:28:00+07:00</span>
       </div>
     </footer>
-
   </div>
 </body>
 </html>

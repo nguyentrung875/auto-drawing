@@ -78,3 +78,27 @@ Tài liệu này lưu trữ các chi tiết kỹ thuật sâu, so sánh kiến t
    - *Lý do loại bỏ:* Chi phí cực cao (~0.20$ - 0.50$/video), không kiểm soát được chuyển động nét vẽ chính xác (pen tip tracking), không đảm bảo tính nhất quán giữa nét vẽ và kết quả cuối cùng.
 3. **Phụ thuộc 100% vào Cloud API (Cloud TTS + Cloud Render):**
    - *Lý do loại bỏ:* Phá vỡ mục tiêu chi phí của solo operator. Với mô hình affiliate content quy mô 100 video/ngày, chi phí API tích lũy sẽ ăn mòn lợi nhuận. Chuyển sang Local-first đưa chi phí sinh video tiệm cận 0 USD.
+
+---
+
+## 4. Hand Engine & Compositing Architecture (từ gpt_review_clip.md)
+
+### 4.1. Phân rã 4 Engines chuyên biệt
+Theo tài liệu phân tích clip mẫu, 90% độ khó nằm ở việc điều phối bàn tay và đầu phấn bám nét thay vì việc sinh hình. Hệ thống được module hóa thành 4 engine:
+1. **Engine 1 — Drawing Engine ✏️:** Quản lý SVG paths, bóc tách thứ tự nét (stroke order), phân bổ timeline và co giãn tốc độ vẽ. Không phụ thuộc vào bàn tay.
+2. **Engine 2 — Hand Engine ✋:** Tính toán vị trí bàn tay ($p = \text{path.point\_at}(t)$), góc xoay theo tiếp tuyến ($\theta = \arctan2(dy, dx)$), và điều khiển cử động nhấc tay (lift).
+3. **Engine 3 — Style Engine 🖍️:** Tạo chất liệu bảng xanh/giấy vẽ, texture phấn nhám, độ rung mờ (blur/noise) và bụi phấn (chalk dust).
+4. **Engine 4 — Video Engine 🎬:** Kết hợp các lớp (Canvas + SVG + Hand + Text + Audio/SFX) qua FFmpeg hoặc WebCodecs để xuất MP4 1080×1920.
+
+### 4.2. So sánh 3 chiến lược Bàn tay (Hand Approaches)
+- **Hướng A: AI Video (Sora/Kling/Veo):** Điểm 4/10. Dễ làm thử nghiệm prompt nhưng không có tính tất định, ngón tay dễ bị dị tật và không bám nét vẽ $\rightarrow$ **Loại bỏ**.
+- **Hướng B: 2D Hand Asset + Transform (Lựa chọn cho MVP):** Điểm 7/10. Dùng ảnh PNG tách nền chất lượng cao, gán điểm neo Pivot tại chóp đầu phấn, code transform position + tangent rotation + lift motion. Rất rẻ, tất định 100%, render trong vài giây, dễ batch 100 video/ngày $\rightarrow$ **Áp dụng cho MVP**.
+- **Hướng C: 3D Hand Model + IK Rig (Lựa chọn dài hạn):** Điểm 9/10. Dựng mô hình 3D bàn tay trong Blender, gắn xương Inverse Kinematics, điều khiển ngón tay bóp theo nét vẽ. Đạt độ chân thực photorealistic tuyệt đối $\rightarrow$ **Quy hoạch cho Phase 6**.
+
+### 4.3. Nguyên lý Hand Library (Tái sử dụng Asset)
+Không sinh bàn tay mới cho từng video. Hệ thống duy trì một thư viện **Hand Library** gồm:
+- Grip A: Cầm phấn góc nghiêng chuẩn $45^\circ$ (cho bảng xanh).
+- Grip B: Cầm bút chì/bút lông góc trên nhìn xuống (cho phong cách giấy).
+- Grip C: Cầm phấn ngón tay hơi co (cho nét vẽ chi tiết nhỏ).
+Tất cả các hình vẽ (Bear, Bunny, Flower...) đều dùng chung Hand Library này qua bộ điều hợp tọa độ (Path Adapter).
+

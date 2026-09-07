@@ -1,7 +1,7 @@
 ---
 title: Drawing Transformation Video Factory
 created: 2026-09-04
-updated: 2026-09-04
+updated: 2026-09-05
 status: draft
 ---
 
@@ -92,7 +92,12 @@ Mọi tài liệu, mã nguồn và giao diện người dùng downstream bắt b
 - **Registry:** Kho lưu trữ tập trung các Component đã qua kiểm định chất lượng.
 - **Asset:** Tài nguyên media phi hình học: file âm thanh giọng đọc (TTS), hiệu ứng âm thanh (SFX), nhạc nền (BGM), texture nền giấy.
 - **Canvas Bounds:** Khung không gian vẽ hợp lệ (chuẩn xuất 1080×1920 pixels).
-- **Pen Tip:** Tọa độ đầu ngòi bút ảo trên từng frame của animation — phải bám sát đầu mút của nét vẽ đang được tạo ra.
+- **Pen Tip / Chalk Pivot:** Tọa độ điểm neo cố định tại chóp đầu viên phấn/ngòi bút trên ảnh bàn tay 2D — bắt buộc phải bám sát tuyệt đối đầu mút của nét vẽ đang xuất hiện trên từng frame.
+- **Hand Engine:** Module tính toán động học bàn tay: xác định tọa độ dịch chuyển ($p = \text{path.point\_at}(t)$), góc xoay theo tiếp tuyến vector nét vẽ ($\theta = \text{tangent.angle}$) và điều phối cử động nhấc/hạ tay.
+- **2D Hand Asset:** Tài nguyên đồ họa hình bàn tay người thật (ảnh PNG tách nền trong suốt) đang ở tư thế cầm bút hoặc cầm phấn, được gán sẵn điểm neo Pivot để render đè lên canvas.
+- **Hand Tangent Rotation:** Thuật toán tính góc nghiêng của bàn tay theo hướng tiếp tuyến của nét cong Bézier tại từng frame, có áp dụng bộ lọc làm mịn (smoothing) và giới hạn góc quay (clamping) để tạo cử động tự nhiên.
+- **Hand Occlusion:** Cơ chế xếp lớp hiển thị (compositing order) bảo đảm mu bàn tay và ngón tay luôn che khuất nét vẽ nằm phía dưới chúng, ngăn chặn triệt để lỗi "nét vẽ nổi đè lên trên bàn tay".
+- **Pen-up Lift Motion:** Cử động nhấc bàn tay và dịch chuyển nhẹ (kèm hiệu ứng scale nhỏ 1.03x hoặc mờ bóng) trong 0.2s–0.4s khi chuyển giữa các nét vẽ không liên tục.
 - **Dead Air:** Khoảng thời gian hoàn toàn im lặng trong video (không có voice, không có SFX vẽ, không có BGM). Ngưỡng tối đa cho phép là ≤ 0.5s.
 - **Pacing Orchestration:** Động cơ điều phối nhịp độ tự động, co giãn tốc độ vẽ hoặc chèn âm thanh nền để xóa bỏ Dead Air.
 - **Color Fill Reveal:** Kỹ thuật đổ màu phẳng (flat color) lên các vùng kín của hình vẽ hoàn chỉnh trong ~1.5 giây trước khi chuyển sang CTA.
@@ -192,14 +197,27 @@ Hệ thống SHALL tự động gắn hiệu ứng âm thanh tiếng bút vẽ k
 
 ---
 
-### 4.5 Video Composition & Deterministic Rendering
-**Mô tả:** Kết xuất đồ họa chuyển động thành video MP4 hoàn chỉnh (thực hiện UJ-1).
+### 4.5 Video Composition & Hand-Drawn Rendering Engine
+**Mô tả:** Kết xuất đồ họa chuyển động thành video MP4 hoàn chỉnh với hiệu ứng vẽ tay chân thực (thực hiện UJ-1).
 
-#### FR-13: Drawing Animation & Pen Tip Tracking
-Hệ thống SHALL tạo diễn hoạt vẽ nét trong đó đầu ngòi bút ảo (Pen Tip) bám sát tuyệt đối tọa độ thực tế của đường path.
+#### FR-13: Drawing Animation & 2D Hand Controller
+Hệ thống SHALL tích hợp bộ điều khiển bàn tay 2D (2D Hand Controller) điều khiển ảnh bàn tay cầm phấn/bút bám sát tuyệt đối tiến trình xuất hiện của đường nét vẽ.
 - **Consequences (testable):**
-  - Độ lệch giữa tọa độ đầu bút ảo và điểm đầu của nét vẽ đang xuất hiện ≤ 5 pixels trên từng frame.
-  - Khi nhấc bút chuyển nét (pen-up transition), hiển thị cử động nâng bút tự nhiên trong 0.2s–0.4s; không có hiện tượng dịch chuyển tức thời (teleport > 10px giữa 2 frame liên tiếp).
+  - **Tọa độ điểm neo (Chalk Pivot Tracking):** Độ lệch giữa điểm neo đầu viên phấn/ngòi bút trên ảnh 2D Hand và tọa độ nét vẽ hiện hành $\le 5$ pixels trên từng frame.
+  - **Góc xoay tiếp tuyến (Tangent Rotation):** Góc xoay của bàn tay được tính toán theo vector tiếp tuyến của path ($\theta = \arctan2(dy, dx)$), được làm mịn qua bộ lọc giảm giật (damping/smoothing) và giới hạn trong dải góc tự nhiên (clamping $\pm 35^\circ$ so với góc nghiêng cơ sở), ngăn chặn hoàn toàn việc bàn tay bị quay vòng $360^\circ$ phi thực tế.
+  - **Cử động chuyển nét (Pen-up Lift Motion):** Khi di chuyển giữa hai nét vẽ không liên tục, bàn tay thực hiện cử động nâng nhẹ (scale +3% hoặc dịch chuyển $+10\text{px}$ theo phương thẳng đứng và giảm độ đậm bóng đổ) trong $0.2\text{s} - 0.4\text{s}$; tuyệt đối không có hiện tượng dịch chuyển tức thời (teleport > 10px giữa 2 frame liên tiếp).
+
+#### FR-13b: Hand Occlusion & Compositing Layering
+Hệ thống SHALL bảo đảm cấu trúc xếp lớp đồ họa (visual layering) tuân thủ chặt chẽ nguyên lý che khuất vật lý:
+- **Consequences (testable):**
+  - Thứ tự lớp hiển thị bắt buộc: $\text{Background Texture} < \text{Nét đã vẽ xong} < \text{Nét đang vẽ} < \text{2D Hand Asset}$.
+  - Nét vẽ xuất hiện từ vị trí đầu viên phấn và lập tức bị mu bàn tay/ngón tay che khuất nếu nét đó đi vào vùng không gian bên dưới ảnh bàn tay. Tuyệt đối không để nét vẽ hiển thị đè lên trên bàn tay.
+
+#### FR-13c: Visual Medium & Texture Styling
+Hệ thống SHALL hỗ trợ tối thiểu 2 phong cách chất liệu thị giác có thể cấu hình:
+- **Consequences (testable):**
+  - **Phong cách Bảng đen/Bảng xanh (Chalkboard Style):** Nền bảng có vân nhám, nét vẽ mô phỏng phấn trắng (rough stroke edge với độ mờ/noise nhẹ), bụi phấn mờ (chalk dust) rơi tại các điểm đổi hướng nét vẽ, kèm âm thanh phấn cọ vào bảng.
+  - **Phong cách Giấy vẽ (Paper Sketch Style):** Nền giấy mỹ thuật có hạt sần (grain), nét bút chì/bút dạ mượt mà, kèm âm thanh ngòi bút sột soạt.
 
 #### FR-14: Color Fill Reveal
 Hệ thống SHALL hỗ trợ tính năng tùy chọn: sau khi nét vẽ hoàn tất, thực hiện đổ màu phẳng (flat SVG fill) lên các mảng kín của hình vẽ trong 1.0s – 2.0s trước khi hiển thị CTA.
@@ -250,7 +268,7 @@ Mỗi video xuất xưởng SHALL đi kèm một file metadata JSON chứa: ID, 
 Để bảo đảm thời gian hoàn thành MVP trong 1–2 tuần, hệ thống dứt khoát **KHÔNG** làm các phần việc sau:
 - ❌ **Không làm 3D Animation hoặc Diễn hoạt nhân vật phức tạp:** Chỉ tập trung vào diễn hoạt vẽ tay 2D dạng nét phác thảo (line-art sketch).
 - ❌ **Không dùng Generative AI Video (Sora, Runway, Kling):** Không sử dụng các mô hình video AI tạo chuyển động ngẫu nhiên, không thể kiểm soát ngòi bút.
-- ❌ **Không làm bàn tay người 3D siêu thực:** Chỉ sử dụng hình ảnh ngòi bút/bút chì cách điệu 2D đơn giản, ưu tiên độ mượt và chính xác tọa độ hơn là bàn tay thực tế.
+- ❌ **Không làm bàn tay người 3D siêu thực (3D Mesh / IK Rig) trong MVP:** Tránh làm phức tạp hóa pipeline bằng việc dựng mô hình 3D trong Blender/Three.js ở giai đoạn đầu. MVP sử dụng kiến trúc **2D Hand Asset (ảnh PNG tách nền + biến đổi tọa độ/tiếp tuyến)** để đạt độ chân thực 7/10 mà vẫn giữ tốc độ render tức thì và chi phí 0đ. Mô hình 3D Hand được quy hoạch vào Phase 6 (Future Roadmap khi cần chất lượng photorealistic tuyệt đối).
 - ❌ **Không xây dựng trình biên tập video đầy đủ (Full Video Editor GUI):** Không xây giao diện dạng Premiere hay CapCut. Mọi tùy biến thực hiện qua kịch bản dữ liệu và file cấu hình.
 - ❌ **Không tự động đăng tải đa nền tảng qua API không chính thức:** Tránh rủi ro bị khóa tài khoản mạng xã hội. MVP dừng lại ở việc xuất video hoàn chỉnh vào thư mục để người vận hành kiểm tra và đăng tải.
 - ❌ **Không xây dựng hệ thống quản lý người dùng / Multi-tenant Cloud SaaS:** Chỉ phục vụ chạy cục bộ trên máy của operator.
@@ -264,14 +282,17 @@ Mỗi video xuất xưởng SHALL đi kèm một file metadata JSON chứa: ID, 
 - Bộ biên dịch và kiểm định Drawing DSL (DSL Compiler + Validator).
 - Công cụ Semi-auto Ingestion bóc tách nét từ file SVG có sẵn.
 - Tích hợp TTS tiếng Việt chạy offline hoàn toàn (viPiper / Piper).
-- Thuật toán bám ngòi bút chuẩn xác (độ lệch ≤ 5px, không teleport).
+- **Bộ điều khiển 2D Hand Controller:** Điều khiển ảnh bàn tay cầm phấn/bút bám sát tọa độ nét vẽ (độ lệch $\le 5\text{px}$), xoay theo góc tiếp tuyến có giới hạn góc (clamping), nhấc tay tự nhiên khi đổi nét (không teleport).
+- **Cơ chế xếp lớp Hand Occlusion:** Đảm bảo bàn tay che nét vẽ bên dưới, không bị lỗi đè lớp ngược.
+- **Thư viện 2D Hand Asset khởi tạo:** Tối thiểu 2 mẫu bàn tay cầm phấn/bút chuẩn (góc nhìn từ trên xuống cho người thuận tay phải).
 - Động cơ điều phối nhịp điệu (Pacing Engine) chống Dead Air (> 0.5s).
 - Tính năng Color Fill Reveal phẳng trước khi kết thúc video.
-- Engine biến thiên video trong batch (nền giấy, màu mực, độ nghiêng, BGM).
-- Xuất video chuẩn MP4 1080×1920 30fps bằng FFmpeg.
+- Engine biến thiên video trong batch (nền bảng xanh/giấy vẽ, màu nét, độ nghiêng, BGM).
+- Xuất video chuẩn MP4 1080×1920 30fps bằng FFmpeg / WebCodecs.
 - Chạy batch 50 video hoàn toàn tự động trên máy cục bộ.
 
 ### 6.2 Out of Scope for MVP
+- Bàn tay 3D đa khớp (3D Hand Model với Inverse Kinematics) — quy hoạch cho Phase 6.
 - Giọng đọc đa ngôn ngữ (tiếng Anh, tiếng Tây Ban Nha) — dời sang v2.
 - Giao diện kéo thả Component trực quan nâng cao — dời sang v1.5.
 - Tự động lấy dữ liệu phân tích view/click từ TikTok/YouTube qua webhook — dời sang v2.
@@ -285,7 +306,7 @@ Mỗi chỉ số thành công đo lường trực tiếp năng lực vận hành
 
 ### 7.1 Primary Metrics
 - **SM-1 (Render Success Rate):** Tỷ lệ render video thành công không lỗi đạt **≥ 95%** trên mọi batch chạy từ 50 video trở lên. *(Xác thực FR-17, FR-19)*
-- **SM-2 (Pen Tip Alignment):** 100% video xuất xưởng có độ lệch ngòi bút **≤ 5px** và không có frame teleport. *(Xác thực FR-13)*
+- **SM-2 (Hand & Chalk Pivot Alignment):** 100% video xuất xưởng có điểm neo đầu phấn của 2D Hand bám sát nét vẽ với độ lệch **≤ 5px**, góc xoay mượt mà không có frame giật lật đột ngột (> 45°/frame), và không có frame teleport. *(Xác thực FR-13, FR-13b)*
 - **SM-3 (Dead Air Elimination):** 100% video không có khoảng lặng hoàn toàn vượt quá **0.5 giây**. *(Xác thực FR-11)*
 - **SM-4 (Production Speed):** Thời gian sản xuất trung bình cho 1 video (từ concept đến MP4) **≤ 45 giây** trên máy trạm cá nhân thông thường. *(Xác thực FR-16)*
 - **SM-5 (Zero Marginal API Cost):** Chi phí API bên ngoài cho mỗi video bằng **0.00 USD** khi chạy local. *(Xác thực FR-10, NFR-3)*
@@ -328,8 +349,9 @@ Mỗi chỉ số thành công đo lường trực tiếp năng lực vận hành
 ## 9. Open Questions
 
 1. **Chất lượng giọng viPiper trên thiết bị di động:** Giọng đọc offline của viPiper đã đủ truyền cảm để người xem TikTok nghe tự nhiên như giọng người thật chưa, hay cần bổ sung thêm bộ lọc ngữ điệu/EQ âm thanh?
-2. **Ngưỡng nhạy cảm trùng lặp của TikTok:** Liệu 4 yếu tố biến thiên hiện tại (màu giấy, góc nghiêng, màu mực, nhạc nền) đã đủ để thuật toán kiểm duyệt của TikTok coi 50 video cùng hook là nội dung độc bản hoàn toàn chưa?
+2. **Ngưỡng nhạy cảm trùng lặp của TikTok:** Liệu 4 yếu tố biến thiên hiện tại (màu giấy/bảng, góc nghiêng, màu nét, nhạc nền) đã đủ để thuật toán kiểm duyệt của TikTok coi 50 video cùng hook là nội dung độc bản hoàn toàn chưa?
 3. **Độ phức tạp tối đa của nét vẽ:** Một bức vẽ có tối đa bao nhiêu nét (stroke count) thì bắt đầu làm người xem mất kiên nhẫn trong khung thời gian 25–30 giây?
+4. **Thuật toán làm mịn góc xoay tiếp tuyến (Tangent Smoothing):** Cần hệ số suy giảm (damping factor) bao nhiêu để bàn tay vừa nghiêng theo đường cong mềm mại của nét vẽ, vừa không bị lắc giật (jitter) khi gặp các góc gấp khúc sắc nhọn hoặc khi vẽ các chi tiết nhỏ như mắt, mũi?
 
 ---
 
@@ -342,6 +364,7 @@ Mỗi chỉ số thành công đo lường trực tiếp năng lực vận hành
 | **A-03** | `[ASSUMPTION]` Framework Motion Canvas / headless canvas có thể render mượt mà 30fps MP4 ở độ phân giải 1080×1920 trong thời gian ≤ 45s trên máy tính cá nhân. | Trung bình | Benchmark hiệu năng render tại Release R0. |
 | **A-04** | `[ASSUMPTION]` Kỹ thuật Color Fill Reveal đổ màu phẳng (flat color) trong 1.5s làm tăng tỷ lệ xem hết và tương tác mà không khiến người xem cảm thấy video bị cắt cụt. | Thấp | So sánh số liệu giữ chân giữa 10 video có màu và 10 video chỉ vẽ nét trắng đen. |
 | **A-05** | `[ASSUMPTION]` Solo operator có thể dễ dàng quản lý việc đăng 20–30 video/ngày bằng công cụ lên lịch thủ công mà chưa cần đến auto-upload API. | Thấp | Kiểm chứng thực tế sau khi hoàn thành mẻ sản xuất đầu tiên. |
+| **A-06** | `[ASSUMPTION]` 2D Hand Asset (ảnh PNG tách nền điều khiển theo góc tiếp tuyến) mang lại cảm giác vẽ tay chân thực vượt trội so với ngòi bút đơn lẻ (đạt ~7/10 điểm chân thực) và hoàn toàn đủ sức giữ chân người xem TikTok mà không cần tốn chi phí dựng mô hình 3D trong giai đoạn MVP. | Thấp | Render thử nghiệm 2 video A/B test (1 video chỉ có ngòi bút, 1 video có bàn tay 2D) để so sánh chỉ số hoàn thành video. |
 
 ---
 
@@ -365,7 +388,17 @@ Concept (ID, Hook, Subject, Language, Style, Score, Status)
 
 VideoAsset (ProjectID, ConceptRef, Seed, Version, GenerationTime)
  ├── AudioTrack: VoiceoverAudio + SFXClips + BackgroundMusic
- ├── DiversificationConfig: PaperTexture + CanvasTilt + InkColor + BGMSong
+ ├── HandControllerConfig:
+ │    ├── HandAssetRef: FilePath (hand_chalk_right.png)
+ │    ├── ChalkPivot: Point(x, y)
+ │    ├── MaxAngleClamp: Float (±35.0 deg)
+ │    └── LiftElevateOffset: Float (10.0 px)
+ ├── StyleConfig:
+ │    ├── MediumType: enum (chalkboard | paper_sketch)
+ │    ├── BoardTexture: FilePath
+ │    ├── StrokeNoiseProfile: GaussianBlur / DashJitter
+ │    └── DustEffectEnabled: Boolean
+ ├── DiversificationConfig: CanvasTilt + InkColor + BGMSong
  ├── ValidationReport: Boolean (All Gates Passed)
  └── OutputFile: FilePath (.mp4)
 ```
