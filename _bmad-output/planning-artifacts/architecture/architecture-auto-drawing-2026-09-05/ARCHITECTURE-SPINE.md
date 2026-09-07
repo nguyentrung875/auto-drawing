@@ -77,7 +77,7 @@ graph LR
 
 - **Binds:** FR-17, FR-18, NFR-3
 - **Prevents:** Memory overflow khi batch 100+ concepts; uncontrolled parallelism crash hệ thống
-- **Rule:** Batch orchestrator dùng worker pool size = `Math.max(1, os.cpus().length - 1)`. Mỗi worker chạy 1 pipeline instance tại một thời điểm. Queue manager (in-process, FIFO) phân phối concepts. Tổng RAM usage phải ≤ 4GB (NFR-3) — nếu vượt, worker bị throttle.
+- **Rule:** Batch orchestrator dùng worker pool size = `WORKER_POOL_MAX = Math.min(os.cpus().length - 1, 3)` — giới hạn cứng ở 3 workers cho đến khi benchmark R0 xác nhận RAM footprint thực tế của Motion Canvas headless (xem ADR-01). Mỗi worker chạy 1 pipeline instance tại một thời điểm. Queue manager (in-process, FIFO) phân phối concepts. Tổng RAM usage phải ≤ 4GB (NFR-3) — nếu vượt, worker bị throttle. Nếu benchmark R0 cho thấy RAM > 3.5GB ở 3 workers, giảm xuống 2.
 
 ### AD-8 — Error boundary: Result type + fail-forward trong batch
 
@@ -101,7 +101,37 @@ graph LR
 
 - **Binds:** FR-11, FR-12
 - **Prevents:** Drawing speed cố định gây desync với voice; Dead Air
-- **Rule:** TTS Synthesizer trả `AudioTimeline { segments: { text, startMs, endMs, audioBuffer }[] }`. Drawing Sequencer nhận `AudioTimeline` và co giãn tốc độ vẽ mỗi step để khớp segment tương ứng (speed factor 0.5x–2.0x, per FR-11). Khoảng trống > 500ms giữa segments → Pacing Engine chèn SFX/BGM filler.
+- **Rule:** TTS Synthesizer trả `AudioTimeline { segments: { text, startMs, endMs, audioBuffer }[] }`. Drawing Sequencer nhận `AudioTimeline` và co giãn tốc độ vẽ mỗi step để khớp segment tương ứng — **speed factor tối đa 1.8x** (thay vì 2.0x per FR-11; xem ADR-03). Nếu một segment yêu cầu speed > 1.8x, Planner **phải** rút ngắn TTS text hoặc chèn natural pause filler — không được tăng speed vượt cap. Khoảng trống > 500ms giữa segments → Pacing Engine chèn SFX/BGM filler. Quality Gate ghi `avSyncDeltaMs` (delta ms giữa timestamp đầu câu thoại và timestamp đầu nét tương ứng) vào `ValidationReport` — nếu > 500ms: flag `needs-review`.
+
+### AD-12 — External process timeout contract
+
+- **Binds:** FR-10 (Piper TTS), FR-16 (FFmpeg encoder), NFR-1
+- **Prevents:** Worker pool deadlock khi external binary treo vô thời hạn; toàn bộ batch bị frozen
+- **Rule:** Mọi `child_process.spawn` call phải được wrap với timeout cứng:
+  - **Piper TTS:** `timeout = Math.ceil(text.length / 10 + 2) * 1000` ms
+  - **FFmpeg encoder:** `timeout = frameCount * 200` ms (tối đa 120s)
+  - **Motion Canvas headless:** `timeout = 90_000` ms (90s hard cap)
+  - Khi timeout xảy ra: gọi `process.kill('SIGKILL')`, trả `Result.err({ code: 'PROCESS_TIMEOUT', filter, conceptId })`, worker được giải phóng ngay lập tức. Không bao giờ để Promise unresolved trong worker.
+
+### AD-13 — Temp directory lifecycle
+
+- **Binds:** FR-17 (Batch), NFR-1 (Reliability), NFR-3 (Performance)
+- **Prevents:** Disk exhaustion cascade do leaked PNG frame sequences; cross-concept contamination
+- **Rule:**
+  - Mỗi pipeline instance dùng isolated temp dir: `temp/{conceptId}-{timestamp}/`
+  - Cleanup **bắt buộc** xảy ra trong `finally` block của Pipeline Orchestrator — không phụ thuộc success hay failure path
+  - **Pre-flight check** bắt buộc trước khi Batch Orchestrator khởi động: disk space còn trống ≥ 2GB; nếu không đủ → abort batch sớm với `INSUFFICIENT_DISK_SPACE` error, không để batch chạy rồi fail giữa chừng
+  - Estimated temp usage per concurrent instance: ~500MB (PNG sequence) — document trong onboarding
+
+### AD-14 — Registry atomic write + startup health check
+
+- **Binds:** FR-1, FR-2, FR-3, NFR-1
+- **Prevents:** Corrupt Component JSON sau interrupted write; 1 file hỏng block toàn bộ Registry hoặc gây silent data loss
+- **Rule:**
+  - **Atomic write pattern:** Writer ghi ra `{id}.tmp.json` → validate JSON schema (zod) → `fs.rename(tmp, final)`. Nếu process bị kill giữa chừng: chỉ file `.tmp` bị hỏng, file `.json` chính không bị ảnh hưởng.
+  - **Startup validation:** Registry loader scan tất cả `*.json` files, parse từng cái; file nào fail parse thì log warning kèm filename — nhưng **không abort** nếu số lượng fail < 10% tổng số component.
+  - **Startup gate:** Nếu ≥ 10% component fail parse → abort với `REGISTRY_CORRUPTION_THRESHOLD` error (yêu cầu operator can thiệp).
+  - Expose `registry.healthCheck(): { loaded: number, failed: string[] }` — kết quả được log trong batch pre-flight.
 
 ```mermaid
 graph TD
@@ -263,6 +293,43 @@ erDiagram
 | FR-18 Diversification | `src/diversification/` | AD-9 |
 | FR-19 Quality Gate | `src/quality/` | AD-8 |
 | FR-20 Metadata | `src/filters/encoder/metadata.ts` | AD-1 |
+
+## Elicitation-Derived Decisions
+
+*Các quyết định sau được phát sinh từ phiên `bmad-advanced-elicitation` ngày 2026-09-07 — Architecture Decision Records (ADR) debate và Cascading Failure Simulation.*
+
+### ADR-01 — Rendering engine: Motion Canvas headless cho MVP, fallback node-canvas
+
+- **Context:** Motion Canvas headless dùng Chromium ngầm (~150–250MB/instance); với WORKER_POOL_MAX=3 có thể chiếm 450–750MB chỉ cho Chromium overhead, cộng frame buffer ~500MB/worker → tổng ~2–3GB trong dải chấp nhận được.
+- **Decision:** Giữ Motion Canvas headless cho MVP. `WORKER_POOL_MAX = 3` cứng (AD-7).
+- **Fallback trigger:** Nếu benchmark R0 cho thấy tổng RAM > 3.5GB ở 3 workers → switch sang **node-canvas (Cairo) + FFmpeg direct rendering**. node-canvas render trong-process, không cần Chromium, nhưng cần tự implement compositing layer (Hand Occlusion, stroke animation interpolation).
+- **Trade-off accepted:** Batch 50 videos có thể mất 60–70 phút thay vì 35 phút — chấp nhận cho MVP.
+
+### ADR-02 — Registry ingestion: 3-path với automatic fallback
+
+- **Context:** LLM DSL generation (FR-2) là đường duy nhất thêm Component mới; nếu LLM thất bại 3 lần thì operator bị chặn hoàn toàn.
+- **Decision:** 3-path ingestion song song — tất cả đều là first-class citizens:
+  1. **Path A — LLM DSL:** Retry ≤ 3 lần; ghi error type vào metadata mỗi lần
+  2. **Path B — SVG Ingestion (FR-3):** Fallback tự động khi Path A kiệt retry
+  3. **Path C — Manual CLI JSON Editor:** Operator chỉnh sửa trực tiếp Component JSON qua CLI minimal editor; không cần GUI
+- **Metadata tracking:** Mỗi Component JSON ghi thêm `ingestion_path: "llm" | "svg" | "manual"` và `llm_retry_count: number` để phân tích chất lượng prompt theo thời gian.
+
+### ADR-03 — Audio-visual sync: speed cap 1.8x và Quality Gate metric
+
+- **Context:** FR-11 cho phép speed 0.5x–2.0x; tuy nhiên speed > 1.8x liên tục tạo cảm giác "tua nhanh phi thực tế" phá vỡ ảo giác vẽ tay tự nhiên.
+- **Decision:** Hard cap speed factor tại **1.8x**. Khi segment yêu cầu speed > 1.8x: Planner Filter (FR-5) phải rút ngắn TTS text hoặc inject natural pause — không phải trách nhiệm của Drawing Sequencer.
+- **Quality Gate:** `avSyncDeltaMs` được thêm vào `ValidationReport`. Ngưỡng flag: > 500ms delta → `needs-review`. Không tự động reject — operator quyết định.
+
+### ADR-04 — Content diversification: Script Template Pool cho MVP
+
+- **Context:** FR-18 (Diversification Engine) chỉ đa dạng hóa ở cấp visual/audio. Audio fingerprinting của TikTok có thể detect trùng lặp từ cùng voice script.
+- **Decision:** Thêm **Script Template Pool** vào `config.json`:
+  - Tối thiểu 3 templates per concept-type (ví dụ: `"digit_to_animal"` có 3 cách dẫn dắt khác nhau)
+  - `DiversificationEngine` chọn template theo seeded PRNG (AD-9) — đảm bảo reproducibility
+  - **Quality Gate assertion:** Không có 2 video trong cùng batch sử dụng cùng `script_template_id`
+- **Deferred:** Narrative LLM Variation (sinh script variant bằng LLM) là roadmap v2. `ITtsEngine` và `DiversificationEngine` interface phải cho phép plug-in Narrative Variation mà không sửa Pipeline.
+
+---
 
 ## Deferred
 

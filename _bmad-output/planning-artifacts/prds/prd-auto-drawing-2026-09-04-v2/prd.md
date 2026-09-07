@@ -290,6 +290,7 @@ Mỗi video xuất xưởng SHALL đi kèm một file metadata JSON chứa: ID, 
 - Engine biến thiên video trong batch (nền bảng xanh/giấy vẽ, màu nét, độ nghiêng, BGM).
 - Xuất video chuẩn MP4 1080×1920 30fps bằng FFmpeg / WebCodecs.
 - Chạy batch 50 video hoàn toàn tự động trên máy cục bộ.
+- **Exploration Mode — Export Comparison Set:** Single-video mode hỗ trợ lệnh `--variants N` để xuất N biến thể (mặc định 3) của cùng một concept với các tham số ngẫu nhiên khác nhau (màu, góc, BGM, script template). Phục vụ A/B test thủ công trước khi chạy batch toàn phần. *(Xác thực A-H11 — Content Hypothesis trước khi đầu tư batch)*
 
 ### 6.2 Out of Scope for MVP
 - Bàn tay 3D đa khớp (3D Hand Model với Inverse Kinematics) — quy hoạch cho Phase 6.
@@ -305,16 +306,16 @@ Mỗi video xuất xưởng SHALL đi kèm một file metadata JSON chứa: ID, 
 Mỗi chỉ số thành công đo lường trực tiếp năng lực vận hành và chất lượng sản phẩm:
 
 ### 7.1 Primary Metrics
+- **SM-0 [P0] (Short-form Content Effectiveness):** Video đăng tải đạt tỷ lệ giữ chân 3 giây đầu **≥ 60%** và tỷ lệ xem hết (completion rate) **≥ 25%** trên kênh thử nghiệm. *Đây là thước đo kinh doanh duy nhất — mọi SM kỹ thuật bên dưới chỉ có giá trị nếu SM-0 đạt ngưỡng. Đo bằng Exploration Mode trước khi chạy batch toàn phần.*
 - **SM-1 (Render Success Rate):** Tỷ lệ render video thành công không lỗi đạt **≥ 95%** trên mọi batch chạy từ 50 video trở lên. *(Xác thực FR-17, FR-19)*
 - **SM-2 (Hand & Chalk Pivot Alignment):** 100% video xuất xưởng có điểm neo đầu phấn của 2D Hand bám sát nét vẽ với độ lệch **≤ 5px**, góc xoay mượt mà không có frame giật lật đột ngột (> 45°/frame), và không có frame teleport. *(Xác thực FR-13, FR-13b)*
 - **SM-3 (Dead Air Elimination):** 100% video không có khoảng lặng hoàn toàn vượt quá **0.5 giây**. *(Xác thực FR-11)*
 - **SM-4 (Production Speed):** Thời gian sản xuất trung bình cho 1 video (từ concept đến MP4) **≤ 45 giây** trên máy trạm cá nhân thông thường. *(Xác thực FR-16)*
-- **SM-5 (Zero Marginal API Cost):** Chi phí API bên ngoài cho mỗi video bằng **0.00 USD** khi chạy local. *(Xác thực FR-10, NFR-3)*
+- **SM-5 (Cost per Video Ceiling):** Chi phí biên mỗi video **≤ $0.01 USD** (chế độ local-first mặc định: $0.00; cho phép tối đa $0.01 nếu dùng TTS fallback chất lượng cao). *(Xác thực FR-10, NFR-3)*
 
 ### 7.2 Secondary Metrics
 - **SM-6 (Registry Ingestion Time):** Operator có thể nạp và duyệt một Component mới từ SVG vào Registry trong thời gian **≤ 30 giây**. *(Xác thực FR-3)*
 - **SM-7 (Batch Review Throughput):** Operator có thể rà soát và phê duyệt mẻ 50 video trong thời gian **≤ 15 phút**. *(Xác thực UJ-2)*
-- **SM-8 (Short-form Completion Rate Hypothesis):** Video đăng tải đạt tỷ lệ giữ chân 3 giây đầu ≥ 60% và tỷ lệ xem hết (completion rate) ≥ 25% trên kênh thử nghiệm. *(Giả định nội dung)*
 
 ### 7.3 Counter-metrics (Chỉ số kiềm chế)
 - **SM-C1 (Spam Rejection Rate):** Tỷ lệ tài khoản bị nền tảng TikTok/Shorts cảnh báo hoặc bóp tương tác (shadowban) do trùng lặp nội dung phải bằng **0%**. *(Kiềm chế FR-17 — không được spam số lượng mà bỏ qua biến thiên Diversification)*
@@ -332,9 +333,9 @@ Mỗi chỉ số thành công đo lường trực tiếp năng lực vận hành
 - Đảm bảo tính tất định 100%: Cùng một bộ tham số concept + cùng một giá trị Seed bắt buộc phải tạo ra video có cấu trúc thời gian, geometry và nội dung giống hệt nhau.
 
 ### NFR-3: Cost & Performance
-- **100% Local-first:** Không phát sinh cước phí API ngoài (Zero Cloud API Dependency) trong chế độ tiêu chuẩn.
-- Thời gian render không vượt quá **45 giây / video** 1080×1920 30fps trên CPU 8 nhân thông thường.
-- Chiếm dụng bộ nhớ RAM tối đa không quá **4GB** trong suốt quá trình chạy batch.
+- **Chi phí biên mỗi video ≤ $0.01 USD:** Chế độ mặc định là Local-first ($0.00 — viPiper + Motion Canvas + FFmpeg offline). Nếu viPiper không đạt chất lượng giọng đọc, cho phép swap sang TTS online (Edge TTS miễn phí hoặc ElevenLabs ≤$0.003/video) mà không vi phạm NFR này. *(Thay thế ràng buộc cứng "Zero Cloud API Dependency" — xem ADR-03 và A-01)*
+- Thời gian render không vượt quá **45 giây / video** 1080×1920 30fps trên CPU 8 nhân thông thường. Worker pool mặc định `WORKER_POOL_MAX = min(CPU-1, 3)` để đảm bảo NFR RAM.
+- Chiếm dụng bộ nhớ RAM tối đa không quá **4GB** trong suốt quá trình chạy batch. *(Phải benchmark tại R0 — nếu Motion Canvas headless vượt ngưỡng, fallback sang node-canvas per ADR-01)*
 
 ### NFR-4: Observability
 - Mỗi lần render đều tự động ghi vết (logging) chi tiết: thời gian thực thi từng công đoạn (Planning, TTS, Drawing, Compose, Encode), dung lượng file, danh sách Component tham chiếu và giá trị Seed tương ứng.
