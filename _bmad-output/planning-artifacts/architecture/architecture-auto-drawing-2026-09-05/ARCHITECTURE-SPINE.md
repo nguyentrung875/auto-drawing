@@ -57,9 +57,9 @@ graph LR
 
 ### AD-4 — Registry: JSON-on-disk, single writer
 
-- **Binds:** FR-1, FR-2, FR-3
+- **Binds:** FR-1, FR-2, FR-3, FR-3b
 - **Prevents:** DB dependency phá vỡ local-first; concurrent write corruption
-- **Rule:** Registry là thư mục `registry/` chứa JSON files (1 file = 1 Component). CLI/Ingestion tool là writer duy nhất (FS lock trên write). Pipeline workers chỉ read — load toàn bộ vào memory at startup (≤ 500ms per FR-1). Component schema: `{ id, type, subject, geometry, boundingBox, strokeOrder, style, createdAt }`.
+- **Rule:** Registry là thư mục `registry/` chứa JSON files (1 file = 1 Component). CLI/Ingestion tool là writer duy nhất (FS lock trên write). Pipeline workers chỉ read — load toàn bộ vào memory at startup (≤ 500ms per FR-1). Component schema: `{ id, type, subject, geometry, boundingBox, strokeOrder, style, hook_ref, ingestion_path, llm_retry_count, source_image?, createdAt }`.
 
 ### AD-5 — Rendering: Motion Canvas headless → frame sequence → FFmpeg mux
 
@@ -178,6 +178,8 @@ graph TD
 | seedrandom | latest | Seeded PRNG |
 | sharp | latest | Image processing (hand asset compositing fallback) |
 | zod | latest | Runtime schema validation (DSL, config) |
+| openai | latest | `IVisionParser` default impl — GPT-4o Vision (one-time ingestion cost only) |
+| @google/generative-ai | latest | `IVisionParser` alternative impl — Gemini Vision (swap via config) |
 
 ## Structural Seed
 
@@ -276,6 +278,7 @@ erDiagram
 | FR-1 Registry Store | `src/registry/`, `registry/` | AD-4 |
 | FR-2 DSL Generation | `src/registry/dsl-validator.ts` | AD-4, zod schema |
 | FR-3 SVG Ingestion | `src/registry/svg-ingestion.ts` | AD-4 |
+| FR-3b Image Ingestion `[SPIKE-GATED]` | `src/registry/vision-ingestion.ts`, `src/registry/vision-mapper.ts` | ADR-02, IVisionParser adapter |
 | FR-4 Concept Creation | `src/filters/planner/` | AD-1 |
 | FR-5 Scoring | `src/filters/planner/scorer.ts` | AD-1 |
 | FR-6 Seed Determinism | `src/shared/prng.ts`, `PipelineContext` | AD-9 |
@@ -305,14 +308,17 @@ erDiagram
 - **Fallback trigger:** Nếu benchmark R0 cho thấy tổng RAM > 3.5GB ở 3 workers → switch sang **node-canvas (Cairo) + FFmpeg direct rendering**. node-canvas render trong-process, không cần Chromium, nhưng cần tự implement compositing layer (Hand Occlusion, stroke animation interpolation).
 - **Trade-off accepted:** Batch 50 videos có thể mất 60–70 phút thay vì 35 phút — chấp nhận cho MVP.
 
-### ADR-02 — Registry ingestion: 3-path với automatic fallback
+### ADR-02 — Registry ingestion: 3-path với automatic fallback + Path D image spike-gated
 
-- **Context:** LLM DSL generation (FR-2) là đường duy nhất thêm Component mới; nếu LLM thất bại 3 lần thì operator bị chặn hoàn toàn.
-- **Decision:** 3-path ingestion song song — tất cả đều là first-class citizens:
+- **Context:** LLM DSL generation (FR-2) là đường duy nhất thêm Component mới; nếu LLM thất bại 3 lần thì operator bị chặn hoàn toàn. Party mode session 2026-09-07 đề xuất Path D từ insight Pinterest how-to-draw images.
+- **Decision:** 4-path ingestion — tất cả đều là first-class citizens:
   1. **Path A — LLM DSL:** Retry ≤ 3 lần; ghi error type vào metadata mỗi lần
   2. **Path B — SVG Ingestion (FR-3):** Fallback tự động khi Path A kiệt retry
   3. **Path C — Manual CLI JSON Editor:** Operator chỉnh sửa trực tiếp Component JSON qua CLI minimal editor; không cần GUI
-- **Metadata tracking:** Mỗi Component JSON ghi thêm `ingestion_path: "llm" | "svg" | "manual"` và `llm_retry_count: number` để phân tích chất lượng prompt theo thời gian.
+  4. **Path D — Image Ingestion `[SPIKE-GATED]` (FR-3b):** Operator cung cấp ảnh how-to-draw local → `IVisionParser` → Vision-to-DSL Mapper → DSL Validator → Preview → Registry. Chỉ activate nếu spike `spike/vision-ingestion/` đạt ≥ 70% accuracy.
+- **IVisionParser interface:** `{ parse(imagePath: string): Promise<VisionParseResult> }`. Default: OpenAI GPT-4o Vision. Fallback: Gemini 1.5 Pro Vision. Swap via `config.json` field `vision_parser_provider`. Cost: one-time per Subject (≤$0.005), không phát sinh khi render video.
+- **Metadata tracking:** Mỗi Component JSON ghi thêm `ingestion_path: "llm" | "svg" | "manual" | "vision-image"`, `llm_retry_count: number`, `source_image?: FilePath`.
+- **Subject-only support:** Component có thể có `hook_ref: null` (chưa được assign Hook). Planner Filter check null → bỏ qua auto-pairing, đưa vào bucket "available subjects" chờ operator assign.
 
 ### ADR-03 — Audio-visual sync: speed cap 1.8x và Quality Gate metric
 

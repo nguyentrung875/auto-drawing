@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>Vision Ingestion — Drawing Step Renderer</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, sans-serif; background: #0f172a; color: #e2e8f0; display: flex; height: 100vh; overflow: hidden; }
+
+  /* Sidebar */
+  #sidebar { width: 340px; min-width: 340px; background: #1e293b; border-right: 1px solid #334155; display: flex; flex-direction: column; }
+  #sidebar-header { padding: 1.25rem 1.5rem; border-bottom: 1px solid #334155; }
+  #sidebar-header h2 { font-size: 1rem; color: #38bdf8; }
+  #sidebar-header p { font-size: 0.75rem; color: #64748b; margin-top: 0.25rem; }
+
+  #load-area { padding: 1rem 1.5rem; border-bottom: 1px solid #334155; }
+  #file-input { display: none; }
+  #load-btn { width: 100%; padding: 0.6rem; background: #0ea5e9; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 0.9rem; font-weight: 600; transition: background 0.2s; }
+  #load-btn:hover { background: #38bdf8; }
+  #model-select { width: 100%; margin-top: 0.5rem; padding: 0.5rem; background: #0f172a; color: #e2e8f0; border: 1px solid #334155; border-radius: 6px; font-size: 0.85rem; }
+
+  #meta { padding: 1rem 1.5rem; border-bottom: 1px solid #334155; font-size: 0.8rem; }
+  .meta-row { display: flex; justify-content: space-between; margin-bottom: 0.3rem; color: #94a3b8; }
+  .meta-row span:last-child { color: #e2e8f0; font-weight: 500; }
+
+  #steps-list { flex: 1; overflow-y: auto; padding: 0.75rem; }
+  .step-btn { width: 100%; text-align: left; padding: 0.7rem 1rem; margin-bottom: 0.4rem; background: #0f172a; border: 1px solid #334155; border-radius: 8px; color: #94a3b8; cursor: pointer; font-size: 0.82rem; transition: all 0.15s; }
+  .step-btn:hover { border-color: #0ea5e9; color: #e2e8f0; }
+  .step-btn.active { background: #0ea5e920; border-color: #0ea5e9; color: #38bdf8; }
+  .step-btn .step-num { font-weight: 700; color: #38bdf8; margin-right: 0.5rem; }
+  .step-btn .voice { display: block; font-size: 0.75rem; color: #64748b; margin-top: 0.2rem; font-style: italic; }
+
+  #controls { padding: 1rem 1.5rem; border-top: 1px solid #334155; display: flex; gap: 0.5rem; align-items: center; }
+  .ctrl-btn { flex: 1; padding: 0.5rem; background: #334155; border: none; border-radius: 6px; color: #e2e8f0; cursor: pointer; font-size: 0.85rem; transition: background 0.15s; }
+  .ctrl-btn:hover { background: #475569; }
+  #play-btn { background: #0ea5e9; }
+  #play-btn:hover { background: #38bdf8; }
+
+  /* Main canvas area */
+  #main { flex: 1; display: flex; flex-direction: column; }
+  #canvas-wrapper { flex: 1; display: flex; align-items: center; justify-content: center; background: #020617; position: relative; }
+  #drawing-canvas { border-radius: 4px; box-shadow: 0 0 40px #0ea5e940; }
+  #step-label { position: absolute; bottom: 1.5rem; left: 50%; transform: translateX(-50%); background: #1e293bcc; border: 1px solid #334155; border-radius: 20px; padding: 0.4rem 1.2rem; font-size: 0.85rem; color: #94a3b8; backdrop-filter: blur(8px); }
+
+  #info-bar { background: #1e293b; border-top: 1px solid #334155; padding: 0.75rem 1.5rem; display: flex; gap: 2rem; font-size: 0.8rem; color: #64748b; }
+  .info-item span { color: #e2e8f0; font-weight: 500; }
+
+  /* Empty state */
+  #empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: #334155; gap: 1rem; }
+  #empty-state svg { opacity: 0.3; }
+  #empty-state p { font-size: 0.9rem; }
+</style>
+</head>
+<body>
+
+<div id="sidebar">
+  <div id="sidebar-header">
+    <h2>🎨 Vision Ingestion Renderer</h2>
+    <p>Load JSON từ parse_image.py để xem Drawing Steps</p>
+  </div>
+
+  <div id="load-area">
+    <button id="load-btn" onclick="document.getElementById('file-input').click()">📂 Load Result JSON</button>
+    <input type="file" id="file-input" accept=".json" onchange="loadJSON(event)">
+    <select id="model-select" onchange="switchModel(this.value)">
+      <option value="">— Chọn model —</option>
+    </select>
+  </div>
+
+  <div id="meta" style="display:none">
+    <div class="meta-row"><span>Subject</span><span id="m-subject">—</span></div>
+    <div class="meta-row"><span>Hook</span><span id="m-hook">—</span></div>
+    <div class="meta-row"><span>Steps</span><span id="m-steps">—</span></div>
+    <div class="meta-row"><span>Confidence</span><span id="m-confidence">—</span></div>
+    <div class="meta-row"><span>Model</span><span id="m-model">—</span></div>
+    <div class="meta-row"><span>Time</span><span id="m-time">—</span></div>
+  </div>
+
+  <div id="steps-list"></div>
+
+  <div id="controls">
+    <button class="ctrl-btn" onclick="prevStep()">◀ Prev</button>
+    <button class="ctrl-btn" id="play-btn" onclick="togglePlay()">▶ Play</button>
+    <button class="ctrl-btn" onclick="nextStep()">Next ▶</button>
+    <button class="ctrl-btn" onclick="resetCanvas()">↺</button>
+  </div>
+</div>
+
+<div id="main">
+  <div id="canvas-wrapper">
+    <div id="empty-state">
+      <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/>
+        <path d="M8 12h8M12 8v8"/>
+      </svg>
+      <p>Load một file .result.json để bắt đầu</p>
+    </div>
+    <canvas id="drawing-canvas" style="display:none"></canvas>
+    <div id="step-label" style="display:none">Step 0 / 0</div>
+  </div>
+  <div id="info-bar">
+    <div>Step: <span id="i-step">—</span></div>
+    <div>Strokes: <span id="i-strokes">—</span></div>
+    <div>Description: <span id="i-desc">—</span></div>
+    <div>Voice: <span id="i-voice">—</span></div>
+  </div>
+</div>
+
+<script>
+// ── State ────────────────────────────────────────────────────────────────────
+let currentData = null;
+let currentModel = null;
+let currentStep = 0;
+let playing = false;
+let playTimer = null;
+const CANVAS_W = 540;
+const CANVAS_H = 960;
+const PALETTE = ["#38bdf8","#34d399","#f472b6","#fb923c","#a78bfa","#fbbf24","#e2e8f0"];
+
+// ── Load JSON ─────────────────────────────────────────────────────────────────
+function loadJSON(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      currentData = JSON.parse(e.target.result);
+      populateModelSelect();
+    } catch(err) {
+      alert("Invalid JSON: " + err.message);
+    }
+  };
+  reader.readAsText(file);
+}
+
+function populateModelSelect() {
+  const sel = document.getElementById("model-select");
+  sel.innerHTML = '<option value="">— Chọn model —</option>';
+  const models = ["openai","gemini"];
+  let firstValid = null;
+  models.forEach(m => {
+    const r = currentData[m];
+    if (r && !r.error && r.is_step_tutorial) {
+      const opt = document.createElement("option");
+      opt.value = m;
+      opt.text = `${m} (${r.step_count} steps, ${Math.round((r.confidence||0)*100)}% conf)`;
+      sel.appendChild(opt);
+      if (!firstValid) firstValid = m;
+    }
+  });
+  if (firstValid) { sel.value = firstValid; switchModel(firstValid); }
+}
+
+function switchModel(model) {
+  if (!model || !currentData) return;
+  const r = currentData[model];
+  if (!r || r.error) { alert("Model result unavailable: " + (r?.error || "no data")); return; }
+  currentModel = model;
+  currentStep = 0;
+  stopPlay();
+
+  // Meta
+  document.getElementById("meta").style.display = "block";
+  document.getElementById("m-subject").textContent = r.subject_name || "—";
+  document.getElementById("m-hook").textContent = r.hook_shape || "none";
+  document.getElementById("m-steps").textContent = r.step_count || 0;
+  document.getElementById("m-confidence").textContent = r.confidence ? Math.round(r.confidence*100)+"%" : "—";
+  document.getElementById("m-model").textContent = r._meta?.model || model;
+  document.getElementById("m-time").textContent = r._meta?.elapsed_s ? r._meta.elapsed_s+"s" : "—";
+
+  // Steps list
+  const list = document.getElementById("steps-list");
+  list.innerHTML = "";
+  (r.steps || []).forEach((step, i) => {
+    const btn = document.createElement("button");
+    btn.className = "step-btn" + (i === 0 ? " active" : "");
+    btn.innerHTML = `<span class="step-num">Step ${step.step_number}</span>${step.description}<span class="voice">${step.voice_cue || ""}</span>`;
+    btn.onclick = () => goToStep(i);
+    list.appendChild(btn);
+  });
+
+  // Setup canvas
+  const canvas = document.getElementById("drawing-canvas");
+  canvas.width = CANVAS_W;
+  canvas.height = CANVAS_H;
+  canvas.style.display = "block";
+  canvas.style.maxHeight = "calc(100vh - 60px)";
+  canvas.style.maxWidth = "100%";
+  document.getElementById("empty-state").style.display = "none";
+  document.getElementById("step-label").style.display = "block";
+
+  renderUpToStep(0);
+}
+
+// ── Rendering ─────────────────────────────────────────────────────────────────
+function renderUpToStep(stepIdx) {
+  const canvas = document.getElementById("drawing-canvas");
+  const ctx = canvas.getContext("2d");
+  const r = currentData[currentModel];
+  const steps = r.steps || [];
+
+  // Background
+  ctx.fillStyle = "#1a1a2e";
+  ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+
+  // Grid
+  ctx.strokeStyle = "#ffffff08";
+  ctx.lineWidth = 1;
+  for (let x = 0; x < CANVAS_W; x += 60) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,CANVAS_H); ctx.stroke(); }
+  for (let y = 0; y < CANVAS_H; y += 60) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(CANVAS_W,y); ctx.stroke(); }
+
+  // Draw each step up to stepIdx
+  let strokeIndex = 0;
+  for (let i = 0; i <= stepIdx && i < steps.length; i++) {
+    const step = steps[i];
+    const isCurrentStep = (i === stepIdx);
+    (step.new_strokes || []).forEach(stroke => {
+      const color = PALETTE[strokeIndex % PALETTE.length];
+      ctx.strokeStyle = isCurrentStep ? color : color + "99";
+      ctx.lineWidth = isCurrentStep ? 3 : 2;
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      drawStroke(ctx, stroke, CANVAS_W, CANVAS_H);
+      strokeIndex++;
+    });
+  }
+
+  // Update UI
+  const step = steps[stepIdx];
+  document.getElementById("step-label").textContent = `Step ${stepIdx+1} / ${steps.length}`;
+  document.getElementById("i-step").textContent = `${stepIdx+1} / ${steps.length}`;
+  document.getElementById("i-strokes").textContent = (step?.new_strokes || []).length;
+  document.getElementById("i-desc").textContent = step?.description || "—";
+  document.getElementById("i-voice").textContent = step?.voice_cue || "—";
+
+  // Highlight active step in sidebar
+  document.querySelectorAll(".step-btn").forEach((b,i) => b.classList.toggle("active", i===stepIdx));
+}
+
+function drawStroke(ctx, stroke, W, H) {
+  ctx.beginPath();
+  const t = stroke.type;
+
+  if (t === "circle" && stroke.relative_r != null) {
+    const cx = (stroke.relative_cx ?? 0.5) * W;
+    const cy = (stroke.relative_cy ?? 0.5) * H;
+    const r = stroke.relative_r * Math.min(W, H);
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.stroke();
+
+  } else if (t === "arc" && stroke.relative_rx != null) {
+    const cx = (stroke.relative_cx ?? 0.5) * W;
+    const cy = (stroke.relative_cy ?? 0.5) * H;
+    const rx = stroke.relative_rx * W;
+    const ry = stroke.relative_ry * H;
+    ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+    ctx.stroke();
+
+  } else if (t === "rect") {
+    const x = (stroke.relative_x ?? 0.2) * W;
+    const y = (stroke.relative_y ?? 0.2) * H;
+    const w = (stroke.relative_w ?? 0.4) * W;
+    const h = (stroke.relative_h ?? 0.4) * H;
+    ctx.strokeRect(x, y, w, h);
+
+  } else if ((t === "line" || t === "polyline" || t === "bezier") && stroke.relative_points?.length >= 2) {
+    const pts = stroke.relative_points.map(([px, py]) => [px * W, py * H]);
+    ctx.moveTo(pts[0][0], pts[0][1]);
+    if (t === "bezier" && pts.length >= 3) {
+      // Cubic or quadratic bezier
+      if (pts.length === 3) {
+        ctx.quadraticCurveTo(pts[1][0], pts[1][1], pts[2][0], pts[2][1]);
+      } else {
+        ctx.bezierCurveTo(pts[1][0], pts[1][1], pts[2][0], pts[2][1], pts[3][0], pts[3][1]);
+      }
+    } else {
+      pts.slice(1).forEach(([px, py]) => ctx.lineTo(px, py));
+    }
+    ctx.stroke();
+
+  } else {
+    // Fallback: draw a placeholder circle at center
+    const cx = (stroke.relative_cx ?? 0.5) * W;
+    const cy = (stroke.relative_cy ?? 0.5) * H;
+    ctx.setLineDash([5, 5]);
+    ctx.arc(cx, cy, 20, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+}
+
+// ── Navigation ────────────────────────────────────────────────────────────────
+function goToStep(idx) {
+  if (!currentData || !currentModel) return;
+  const steps = currentData[currentModel]?.steps || [];
+  if (idx < 0 || idx >= steps.length) return;
+  currentStep = idx;
+  renderUpToStep(idx);
+}
+
+function prevStep() { goToStep(currentStep - 1); stopPlay(); }
+function nextStep() {
+  const steps = currentData?.[currentModel]?.steps || [];
+  if (currentStep + 1 >= steps.length) { stopPlay(); return; }
+  goToStep(currentStep + 1);
+}
+function resetCanvas() { stopPlay(); goToStep(0); }
+
+function togglePlay() {
+  if (playing) { stopPlay(); return; }
+  playing = true;
+  document.getElementById("play-btn").textContent = "⏸ Pause";
+  function tick() {
+    nextStep();
+    const steps = currentData?.[currentModel]?.steps || [];
+    if (currentStep < steps.length - 1) {
+      playTimer = setTimeout(tick, 1500);
+    } else {
+      stopPlay();
+    }
+  }
+  playTimer = setTimeout(tick, 1000);
+}
+
+function stopPlay() {
+  playing = false;
+  clearTimeout(playTimer);
+  document.getElementById("play-btn").textContent = "▶ Play";
+}
+</script>
+</body>
+</html>

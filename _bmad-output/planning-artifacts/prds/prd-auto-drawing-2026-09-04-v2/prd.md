@@ -66,12 +66,12 @@ Hệ thống giải quyết bài toán nút thắt nhân lực của nhà sáng 
 #### UJ-3: Huy nạp thêm Component mới vào Registry mà không cần vẽ tay
 - **Protagonist:** Huy muốn bổ sung con vật mới ("Thỏ tai dài") vào thư viện.
 - **Entry state:** Huy không biết dùng phần mềm đồ họa vector chuyên nghiệp.
-- **Path:**
-  1. Huy nhập mô tả: `"Thỏ tai dài biến hình từ số 3"`. LLM sử dụng Drawing DSL để sinh cấu trúc các primitive: 2 đường cong elip dài cho tai thỏ, 2 chấm tròn cho mắt.
-  2. Hệ thống biên dịch DSL thành geometry và bật cửa sổ xem trước (Preview) trong 10 giây.
-  3. Hoặc Huy kéo thả một file SVG con thỏ có sẵn tải trên mạng vào công cụ Semi-auto Ingestion. Tool tự bóc tách các path SVG theo thứ tự từ ngoài vào trong.
-- **Climax:** Huy bấm "Duyệt", component mới lập tức được lưu vào Registry với đầy đủ metadata stroke order.
-- **Resolution:** Component mới có thể được tái sử dụng ngay lập tức cho các video tiếp theo.
+- **Path — 3 lựa chọn song song (operator chọn cách phù hợp nhất):**
+  - **Path A (LLM DSL):** Huy nhập mô tả `"Thỏ tai dài biến hình từ số 3"`. LLM sinh Drawing DSL, hệ thống biên dịch và hiển thị Preview trong 10 giây. Retry tối đa 3 lần nếu DSL vi phạm schema.
+  - **Path B (SVG Ingestion):** Huy kéo thả một file SVG con thỏ tải trên mạng. Tool tự bóc tách các `<path>` theo thứ tự xuất hiện trong file.
+  - **Path D (Image Ingestion — gated by spike):** Huy lưu ảnh hướng dẫn vẽ từ Pinterest xuống local, chạy lệnh `draw ingest-image ./rabbit-tutorial.jpg`. Vision LLM phân tích ảnh step-by-step (~3 giây), hiện Preview animate 6 bước trên canvas. Huy xác nhận tỷ lệ ổn và tùy chọn assign hook: `--hook 3`.
+- **Climax (mọi path):** Huy bấm "Duyệt", component được lưu vào Registry với metadata `ingestion_path`, `hook_ref`, và ảnh gốc (nếu Path D) để tham chiếu sau.
+- **Resolution:** Component có thể tái sử dụng ngay lập tức cho các video tiếp theo. Subject chưa có hook được đặt vào bucket "available subjects" chờ operator assign.
 
 ---
 
@@ -126,11 +126,23 @@ Hệ thống SHALL cho phép LLM sinh Component mới thông qua Drawing DSL có
   - LLM được retry tối đa 3 lần nếu vi phạm schema trước khi đánh dấu lỗi cho operator.
   - DSL Compiler dịch mã DSL hợp lệ thành tọa độ SVG path tuyệt đối trong thời gian ≤ 100ms.
 
-#### FR-3: Semi-Auto SVG Ingestion
+#### FR-3: Semi-Auto SVG Ingestion (Path B)
 Hệ thống SHALL cung cấp công cụ nạp file SVG có sẵn, tự động phân rã các `<path>` thành các Drawing Step theo thứ tự xuất hiện trong file.
 - **Consequences (testable):**
   - Tự động chuẩn hóa tỷ lệ (normalize scale) về kích thước chuẩn của canvas.
   - Hiển thị cửa sổ xem trước (Preview) diễn hoạt nét vẽ cho operator duyệt trong vòng ≤ 10 giây.
+
+#### FR-3b: Image-to-DSL Ingestion (Path D) `[SPIKE-GATED]`
+Hệ thống SHALL cung cấp công cụ nạp ảnh hướng dẫn vẽ (how-to-draw tutorial image) từ file local, sử dụng Vision LLM để extract Drawing Steps tự động.
+- **Activation condition:** Chỉ đưa vào MVP nếu spike `spike/vision-ingestion/` đạt accuracy ≥ 70% trên bộ 10 ảnh test. Nếu thấp hơn: duy trì Path A + Path B + Path C là đủ.
+- **Consequences (testable):**
+  - Lệnh `draw ingest-image <file>` nhận ảnh JPG/PNG/WebP local, gọi `IVisionParser`, trả về JSON Drawing Steps trong ≤ 10 giây.
+  - Nếu `confidence < 0.7` hoặc `is_step_tutorial: false`: từ chối với thông báo rõ ràng, không tự động commit vào Registry.
+  - Hiển thị Preview animate từng bước trên canvas để operator xác nhận trước khi lưu (giống FR-3).
+  - Hỗ trợ flag `--hook <value>` để operator assign hook cho Subject-only import (hook_ref: null → bucket "available subjects").
+  - Component được lưu kèm metadata: `ingestion_path: "vision-image"`, `source_image: <filename>`, `llm_confidence: <float>`.
+  - Chi phí Vision LLM call: **one-time per Subject** (≤$0.005), không phát sinh lại khi render video.
+- **Out of Scope:** Crawl ảnh trực tiếp từ URL Pinterest — operator phải download về local trước.
 
 ---
 
@@ -291,6 +303,7 @@ Mỗi video xuất xưởng SHALL đi kèm một file metadata JSON chứa: ID, 
 - Xuất video chuẩn MP4 1080×1920 30fps bằng FFmpeg / WebCodecs.
 - Chạy batch 50 video hoàn toàn tự động trên máy cục bộ.
 - **Exploration Mode — Export Comparison Set:** Single-video mode hỗ trợ lệnh `--variants N` để xuất N biến thể (mặc định 3) của cùng một concept với các tham số ngẫu nhiên khác nhau (màu, góc, BGM, script template). Phục vụ A/B test thủ công trước khi chạy batch toàn phần. *(Xác thực A-H11 — Content Hypothesis trước khi đầu tư batch)*
+- **Image Ingestion (Path D) `[SPIKE-GATED]`:** Công cụ `draw ingest-image <file>` nạp ảnh how-to-draw local qua Vision LLM → Drawing Steps → Registry. Chỉ đưa vào MVP nếu spike đạt ≥ 70% accuracy. *(Xác thực FR-3b)*
 
 ### 6.2 Out of Scope for MVP
 - Bàn tay 3D đa khớp (3D Hand Model với Inverse Kinematics) — quy hoạch cho Phase 6.
@@ -366,6 +379,7 @@ Mỗi chỉ số thành công đo lường trực tiếp năng lực vận hành
 | **A-04** | `[ASSUMPTION]` Kỹ thuật Color Fill Reveal đổ màu phẳng (flat color) trong 1.5s làm tăng tỷ lệ xem hết và tương tác mà không khiến người xem cảm thấy video bị cắt cụt. | Thấp | So sánh số liệu giữ chân giữa 10 video có màu và 10 video chỉ vẽ nét trắng đen. |
 | **A-05** | `[ASSUMPTION]` Solo operator có thể dễ dàng quản lý việc đăng 20–30 video/ngày bằng công cụ lên lịch thủ công mà chưa cần đến auto-upload API. | Thấp | Kiểm chứng thực tế sau khi hoàn thành mẻ sản xuất đầu tiên. |
 | **A-06** | `[ASSUMPTION]` 2D Hand Asset (ảnh PNG tách nền điều khiển theo góc tiếp tuyến) mang lại cảm giác vẽ tay chân thực vượt trội so với ngòi bút đơn lẻ (đạt ~7/10 điểm chân thực) và hoàn toàn đủ sức giữ chân người xem TikTok mà không cần tốn chi phí dựng mô hình 3D trong giai đoạn MVP. | Thấp | Render thử nghiệm 2 video A/B test (1 video chỉ có ngòi bút, 1 video có bàn tay 2D) để so sánh chỉ số hoàn thành video. |
+| **A-H13** | `[ASSUMPTION]` Vision LLM (GPT-4o hoặc Gemini Vision) có thể extract Drawing Steps từ ảnh how-to-draw step-by-step với accuracy ≥ 70% (đúng thứ tự, đúng shape type) trên ảnh tutorial điển hình tìm được trên Pinterest. | **Cao** | Chạy spike `spike/vision-ingestion/` với 10 ảnh test, 2 models song song. Nếu < 70%: abandon Path D, duy trì Path A+B+C. Nếu ≥ 70%: integrate IVisionParser vào registry ingestion. |
 
 ---
 
