@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import statistics
 import sys
 from datetime import datetime
@@ -323,6 +324,62 @@ def render_html(agg: dict, rec: dict, models: list[str], results: list[dict]) ->
 </body></html>"""
 
 
+# ─── Model discovery ─────────────────────────────────────────────────────────
+
+def list_models() -> int:
+    """Liet ke cac model Gemini ma key hien tai dung duoc."""
+    import os
+
+    key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
+    if not key:
+        print("❌ Chua dat GEMINI_API_KEY")
+        return 1
+    try:
+        from google import genai
+    except ImportError:
+        print("❌ Chua cai SDK. Chay: pip install google-genai pillow")
+        return 1
+
+    print("📡 Dang lay danh sach model...\n")
+    try:
+        client = genai.Client(api_key=key)
+        names = []
+        for m in client.models.list():
+            actions = getattr(m, "supported_actions", None) or []
+            if actions and "generateContent" not in actions:
+                continue
+            names.append(m.name.replace("models/", ""))
+    except Exception as e:  # noqa: BLE001
+        print(f"❌ That bai: {str(e)[:250]}")
+        return 1
+
+    if not names:
+        print("⚠️  Khong co model nao ho tro generateContent")
+        return 1
+
+    # Uu tien model vision moi cho spike nay
+    def rank(n: str) -> tuple:
+        bad = any(x in n for x in ("embedding", "aqa", "imagen", "veo", "tts", "learnlm"))
+        return (bad, "flash" not in n, n)
+
+    print(f"✅ {len(names)} model kha dung:\n")
+    for n in sorted(names, key=rank):
+        star = " ⭐" if ("flash" in n and not any(
+            x in n for x in ("embedding", "aqa", "imagen", "veo", "tts", "lite", "image"))) else ""
+        print(f"   {n}{star}")
+
+    recommended = next(
+        (n for n in sorted(names, key=rank)
+         if "flash" in n and not any(x in n for x in ("embedding", "aqa", "imagen", "veo", "tts", "lite", "image"))),
+        None,
+    )
+    if recommended:
+        print(f"\n💡 Khuyen nghi cho spike nay: {recommended}")
+        print(f"   PowerShell : $env:GEMINI_VISION_MODEL = \"{recommended}\"")
+        print(f"   cmd.exe    : set GEMINI_VISION_MODEL={recommended}")
+    return 0
+
+
 # ─── Key check ───────────────────────────────────────────────────────────────
 
 def check_key() -> int:
@@ -375,8 +432,14 @@ def check_key() -> int:
         elif "quota" in low or "429" in low:
             print("\n   → Het quota hoac bi rate limit. Doi vai phut roi thu lai")
         elif "not found" in low or "404" in low:
-            print(f"\n   → Model '{GEMINI_MODEL}' khong ton tai voi key nay.")
-            print("     Thu: set GEMINI_VISION_MODEL=gemini-2.0-flash")
+            print(f"\n   → Model '{GEMINI_MODEL}' khong dung duoc voi key nay.")
+            # Google thuong goi y ten model moi ngay trong thong bao loi
+            m = re.search(r"use\s+models/([\w.\-]+)", msg)
+            if m:
+                print(f"     Google goi y dung: {m.group(1)}")
+                print(f"     PowerShell : $env:GEMINI_VISION_MODEL = \"{m.group(1)}\"")
+                print(f"     cmd.exe    : set GEMINI_VISION_MODEL={m.group(1)}")
+            print("\n     Xem tat ca model kha dung: python compare.py --list-models")
         else:
             print("\n   → Kiem tra ket noi mang / firewall / proxy")
         return 1
@@ -393,8 +456,12 @@ def main():
     p.add_argument("--dry-run", action="store_true", help="Kiem tra setup, khong goi API")
     p.add_argument("--check-key", action="store_true",
                    help="Goi 1 request nho de kiem tra API key co dung khong (~$0.001)")
+    p.add_argument("--list-models", action="store_true",
+                   help="Liet ke cac model Gemini ma key hien tai dung duoc")
     args = p.parse_args()
 
+    if args.list_models:
+        sys.exit(list_models())
     if args.check_key:
         sys.exit(check_key())
 

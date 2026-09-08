@@ -71,7 +71,7 @@ export GEMINI_API_KEY="AQ.Ab8..."
 - Biến môi trường chỉ sống trong **cửa sổ terminal hiện tại**. Đóng đi mở lại là phải `set`/`export` lần nữa.
 - Gọi thẳng `.venv\Scripts\python` (hoặc `.venv/bin/python`) thì **không cần** `activate`.
 - Nếu muốn dùng OpenAI: `pip install openai` và đặt thêm `OPENAI_API_KEY=sk-...`
-- Đổi model qua `GEMINI_VISION_MODEL` (mặc định `gemini-2.5-flash`) hoặc `OPENAI_VISION_MODEL` (mặc định `gpt-4o`).
+- Đổi model qua `GEMINI_VISION_MODEL` (mặc định `gemini-3.6-flash`) hoặc `OPENAI_VISION_MODEL` (mặc định `gpt-4o`).
 
 > **Về định dạng key Gemini `AQ.`**
 >
@@ -135,6 +135,20 @@ python compare.py --check-key
 ```
 Xác nhận key hoạt động trước khi chạy 22 lượt gọi. Nếu hỏng, nó nói rõ hỏng chỗ nào
 (key sai / thiếu quyền / hết quota / sai tên model / lỗi mạng) thay vì để bạn đoán.
+
+### 1c. Xem model nào dùng được
+```bash
+python compare.py --list-models
+```
+Tên model Gemini thay đổi khá nhanh và model cũ bị gỡ khỏi tài khoản mới. Nếu
+`--check-key` báo **404**, chạy lệnh này để lấy danh sách thật rồi đặt lại:
+
+```powershell
+$env:GEMINI_VISION_MODEL = "gemini-3.6-flash"    # PowerShell
+```
+```bat
+set GEMINI_VISION_MODEL=gemini-3.6-flash          REM cmd.exe
+```
 
 ### 2. Test nhanh 1 ảnh
 ```bash

@@ -32,7 +32,7 @@ from datetime import datetime
 from prompts import MODES, get_prompt
 
 OPENAI_MODEL = os.environ.get("OPENAI_VISION_MODEL", "gpt-4o")
-GEMINI_MODEL = os.environ.get("GEMINI_VISION_MODEL", "gemini-2.5-flash")
+GEMINI_MODEL = os.environ.get("GEMINI_VISION_MODEL", "gemini-3.6-flash")
 
 MIME_MAP = {
     "jpg": "image/jpeg",
