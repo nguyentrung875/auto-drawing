@@ -17,12 +17,25 @@ Khác với bản trước, spike này chạy **2 chế độ song song** để 
 
 ## Setup
 
+### Windows — cách nhanh nhất: chạy 1 file
+
+```bat
+run_windows.bat AQ.Ab8...
+```
+
+Script tự làm hết: tìm `py` hoặc `python`, tạo venv, cài thư viện, self-test rubric,
+kiểm tra key, chạy so sánh, rồi mở báo cáo. Dừng ngay nếu có bước nào lỗi.
+
+Nếu muốn tự gõ từng lệnh thì xem bên dưới.
+
+---
+
 Chạy **từng dòng một**, theo đúng thứ tự (không gộp thành 1 dòng).
 
 ### Windows — PowerShell
 
 ```powershell
-python -m venv .venv
+py -m venv .venv
 .venv\Scripts\pip install google-genai pillow
 $env:GEMINI_API_KEY = "AQ.Ab8..."
 .venv\Scripts\python compare.py --model gemini
@@ -31,7 +44,7 @@ $env:GEMINI_API_KEY = "AQ.Ab8..."
 ### Windows — Command Prompt (cmd.exe)
 
 ```bat
-python -m venv .venv
+py -m venv .venv
 .venv\Scripts\pip install google-genai pillow
 set GEMINI_API_KEY=AQ.Ab8...
 .venv\Scripts\python compare.py --model gemini
@@ -50,6 +63,11 @@ export GEMINI_API_KEY="AQ.Ab8..."
 
 ### Ghi chú
 
+- **`py` chỉ dùng cho lệnh đầu tiên** (`py -m venv .venv`). Sau khi venv đã tạo,
+  gọi thẳng `.venv\Scripts\python` — bên trong venv nó luôn tên là `python.exe`,
+  không có `py.exe`. Nếu máy bạn không có `python` trên PATH thì cũng không sao.
+- Nếu cả `py` lẫn `python` đều báo "not found": cài Python từ python.org và nhớ
+  tick **"Add Python to PATH"**, hoặc chạy `py --version` để kiểm tra.
 - Biến môi trường chỉ sống trong **cửa sổ terminal hiện tại**. Đóng đi mở lại là phải `set`/`export` lần nữa.
 - Gọi thẳng `.venv\Scripts\python` (hoặc `.venv/bin/python`) thì **không cần** `activate`.
 - Nếu muốn dùng OpenAI: `pip install openai` và đặt thêm `OPENAI_API_KEY=sk-...`
@@ -191,6 +209,7 @@ Ngoài ra `voice_cue` được kiểm tra bằng ký tự có dấu + stopword t
 | `scoring.py` | Rubric riêng cho từng chế độ + đo sức khoẻ toạ độ |
 | `compare.py` | **Runner chính** — chạy A/B, tổng hợp, sinh 3 báo cáo, suy ra verdict |
 | `test_scoring.py` | Self-test offline + sinh báo cáo demo |
+| `run_windows.bat` | Runner 1-click cho Windows (tự setup + chạy + mở báo cáo) |
 | `render.html` | Xem animation từng bước (geometry mode) |
 | `eval.py` | *Deprecated* — chuyển hướng sang `compare.py` |
 
