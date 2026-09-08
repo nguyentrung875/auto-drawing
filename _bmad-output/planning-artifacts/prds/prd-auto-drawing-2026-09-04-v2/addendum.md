@@ -102,3 +102,65 @@ Không sinh bàn tay mới cho từng video. Hệ thống duy trì một thư vi
 - Grip C: Cầm phấn ngón tay hơi co (cho nét vẽ chi tiết nhỏ).
 Tất cả các hình vẽ (Bear, Bunny, Flower...) đều dùng chung Hand Library này qua bộ điều hợp tọa độ (Path Adapter).
 
+
+---
+
+## 5. ADR-04: Tách Image-to-Concept khỏi Image-to-Geometry {#adr-04-tach-image-to-concept-khoi-image-to-geometry}
+
+**Ngày:** 2026-09-08 · **Trạng thái:** Accepted · **Liên quan:** FR-3b, FR-3c, A-H13, A-H14, A-H15
+
+### Bối cảnh
+
+Path D ban đầu (FR-3b phiên bản gốc) đặt mục tiêu: nạp ảnh how-to-draw từ Pinterest → Vision LLM → Drawing Steps **kèm tọa độ** → Registry. Giả định A-H13 đặt ngưỡng ≥ 70% accuracy, đánh dấu rủi ro **Cao**.
+
+Spike `spike/vision-ingestion/` chạy 2026-09-08 với `gemini-3.6-flash` trên bộ 11 ảnh (6 tutorial thật + 5 negative case), so sánh song song hai chế độ:
+
+- **`concept`** — chỉ trích xuất ngữ nghĩa (subject, hook, thứ tự bước, voice_cue), ngưỡng 90%
+- **`geometry`** — trích xuất thêm tọa độ tương đối từng nét, ngưỡng 70%
+
+### Phát hiện quyết định: Panel Leak
+
+Ảnh how-to-draw là **lưới nhiều panel**. Vision LLM trả về tọa độ theo vị trí trong *lưới panel*, không phải trong *canvas vẽ*. Tọa độ vẫn nằm trong `[0,1]` — nên chỉ số `coord_validity` báo 100% và **gây hiểu nhầm nghiêm trọng** — nhưng mỗi bước thuộc một hệ quy chiếu khác nhau.
+
+| Ảnh | Bằng chứng | panel_leak_score |
+|---|---|---:|
+| `rabbit_7steps` | Đầu `x=0.15`, tai `x=0.85` — cách 70% bề ngang | 77.4% |
+| `rabbit_8steps` | Khớp **chính xác** lưới 3×3: `x: 0.13→0.42→0.77 \| 0.10→0.47→0.80` | 89.7% |
+| `bird_number78` | Mắt `(0.24,0.41)` nằm ngoài đầu `(0.83,0.15)` | 96.7% |
+
+Quan sát ở **3/3 ảnh, không ngoại lệ** → hạn chế hệ thống, không phải nhiễu thống kê.
+
+### So sánh định lượng
+
+| | Concept | Geometry |
+|---|---|---|
+| Ảnh đúng (tutorial thật) | **6/6** | **0/3** (sau khi tính panel leak) |
+| Output token / ảnh | 602 | 1255 (**2.08×**) |
+| Thời gian TB | 14.0s | 19.8s (max 84s) |
+| JSON hỏng | 0 | 1 (bị cắt ở 979 tokens) |
+| Lỗi API 503 | 2/11 | 4/11 |
+
+*Lưu ý phương pháp:* báo cáo tự động ban đầu so sánh 9 ảnh (concept) với 7 ảnh (geometry) khác nhau do lỗi API ngẫu nhiên → sai lệch. Tính lại trên 5 ảnh cả hai đều chạy được: 80.0% vs 78.9% — ngang nhau. Chênh lệch thật chỉ lộ ra sau khi áp dụng `panel_leak_score`.
+
+### Quyết định
+
+**Tách FR-3b thành hai yêu cầu độc lập:**
+
+1. **FR-3b — Image-to-Concept Ingestion → vào MVP.** Vision LLM chỉ đọc ngữ nghĩa. Schema output cấm mọi trường tọa độ. Kế hoạch vẽ chuyển sang FR-2 để LLM sinh Drawing DSL.
+2. **FR-3c — Image-to-Geometry Ingestion → hoãn v2.** Cần bổ sung bước panel segmentation (cắt panel + căn chỉnh hệ tọa độ) trước khi tái xem xét.
+
+**Bắt buộc Operator Confirmation Gate.** 2/5 negative case bị nhận nhầm với confidence 0.95–0.98 → không thể lọc tự động bằng ngưỡng.
+
+### Hệ quả
+
+- ✅ Giữ nguyên tính tất định (NFR-2): mọi tọa độ vẫn đi qua DSL Compiler, không phụ thuộc ước lượng của Vision LLM.
+- ✅ Chi phí ingestion giảm ~2× so với thiết kế gốc.
+- ✅ Giảm rủi ro bản quyền: tham chiếu ý tưởng thay vì sao chép hình học (A-H15).
+- ⚠️ Vẫn cần người duyệt 100% Concept Plan — không đạt được tự động hóa hoàn toàn như kỳ vọng ban đầu.
+- ⚠️ Chất lượng hình học cuối cùng phụ thuộc hoàn toàn vào FR-2 (Path A), không được "hỗ trợ" bởi tham chiếu ảnh như thiết kế gốc.
+
+### Phương án đã cân nhắc và loại bỏ
+
+1. **Giữ nguyên FR-3b gốc (geometry đầy đủ):** loại — panel leak khiến kết quả không dùng được, tốn 2× chi phí.
+2. **Panel segmentation ngay trong MVP:** loại — khối lượng công việc chưa ước lượng, làm chậm mục tiêu MVP 1–2 tuần.
+3. **Bỏ hoàn toàn Path D, chỉ dùng Path A + B:** loại — concept mode đạt 100% và giải quyết đúng nút thắt "AI tự sinh ý tưởng nghèo nàn" của solo operator.

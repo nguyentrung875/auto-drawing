@@ -1,0 +1,14 @@
+{"subject_name":"cat","canvas":{"width":1000,"height":1000},"_note":"ve tay dung ty le — moc so sanh","shapes":[
+ {"id":"hook_2","step":1,"part_name":"hook_number_20","type":"polyline","points":[[300,640],[300,590],[360,570],[410,600],[400,660],[300,730],[420,730]]},
+ {"id":"hook_0","step":1,"part_name":"hook_number_20","type":"ellipse","cx":560,"cy":650,"rx":105,"ry":135},
+ {"id":"head","step":2,"part_name":"head_outline","type":"circle","cx":500,"cy":420,"r":155},
+ {"id":"ear_l","step":3,"part_name":"ears","type":"polyline","points":[[398,318],[372,205],[482,278]]},
+ {"id":"ear_r","step":3,"part_name":"ears","type":"polyline","points":[[602,318],[628,205],[518,278]]},
+ {"id":"eye_l","step":4,"part_name":"face_details","type":"circle","cx":452,"cy":405,"r":17},
+ {"id":"eye_r","step":4,"part_name":"face_details","type":"circle","cx":548,"cy":405,"r":17},
+ {"id":"nose","step":4,"part_name":"face_details","type":"polyline","points":[[484,452],[516,452],[500,472],[484,452]]},
+ {"id":"wh_l1","step":4,"part_name":"face_details","type":"line","x1":455,"y1":470,"x2":355,"y2":455},
+ {"id":"wh_l2","step":4,"part_name":"face_details","type":"line","x1":455,"y1":480,"x2":358,"y2":495},
+ {"id":"wh_r1","step":4,"part_name":"face_details","type":"line","x1":545,"y1":470,"x2":645,"y2":455},
+ {"id":"wh_r2","step":4,"part_name":"face_details","type":"line","x1":545,"y1":480,"x2":642,"y2":495}
+]}

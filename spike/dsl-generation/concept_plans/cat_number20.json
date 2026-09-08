@@ -1,0 +1,20 @@
+{
+  "_source": "spike/vision-ingestion run 2026-09-08, easy_cat_number20.png, concept mode, score 100%",
+  "subject_name": "cat",
+  "subject_name_vi": "con meo",
+  "hook_shape": "number 20",
+  "suggested_hooks": ["number 20", "letter O"],
+  "complexity": "easy",
+  "is_step_tutorial": true,
+  "confidence": 0.98,
+  "steps": [
+    {"step_number": 1, "part_name": "hook_number_20", "description": "Write the number 20; the 2 forms the cat's back and tail, the 0 forms the body",
+     "primitive_hint": "polyline", "stroke_count": 2, "voice_cue": "Viet so 20 lam khung nhe"},
+    {"step_number": 2, "part_name": "head_outline", "description": "Draw a rounded head on top of the 0, overlapping slightly",
+     "primitive_hint": "circle", "stroke_count": 1, "voice_cue": "Ve dau meo tron o tren"},
+    {"step_number": 3, "part_name": "ears", "description": "Add two triangular ears on top of the head, pointing up and slightly outward",
+     "primitive_hint": "polyline", "stroke_count": 2, "voice_cue": "Them hai tai nhon"},
+    {"step_number": 4, "part_name": "face_details", "description": "Add two dot eyes, a small triangle nose, and three whiskers on each side",
+     "primitive_hint": "circle", "stroke_count": 8, "voice_cue": "Them tai, mat, mui va rau meo"}
+  ]
+}

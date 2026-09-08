@@ -124,13 +124,27 @@ function loadJSON(event) {
   const reader = new FileReader();
   reader.onload = e => {
     try {
-      currentData = JSON.parse(e.target.result);
+      currentData = normalize(JSON.parse(e.target.result));
       populateModelSelect();
     } catch(err) {
       alert("Invalid JSON: " + err.message);
     }
   };
   reader.readAsText(file);
+}
+
+// Chấp nhận cả 2 layout:
+//   cũ:  { openai: {...}, gemini: {...} }
+//   mới: { modes: { geometry: { openai: {...} }, concept: {...} } }
+// Renderer này chỉ vẽ được GEOMETRY mode (concept mode không có toạ độ).
+function normalize(data) {
+  if (!data || !data.modes) return data;
+  const geo = data.modes.geometry;
+  if (geo) return geo;
+  alert("File này chỉ có concept mode (không có toạ độ) nên không render được hình.\n" +
+        "Concept mode chỉ chứa kế hoạch vẽ dạng ngữ nghĩa — xem compare_report.html để đối chiếu.\n" +
+        "Muốn render hình, chạy: python parse_image.py <img> --mode geometry");
+  return {};
 }
 
 function populateModelSelect() {

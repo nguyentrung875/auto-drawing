@@ -1,8 +1,13 @@
 ---
 title: Drawing Transformation Video Factory
 created: 2026-09-04
-updated: 2026-09-05
+updated: 2026-09-08
 status: draft
+changelog:
+  - 2026-09-08: Tách FR-3b (Image-to-Concept, vào MVP) khỏi FR-3c (Image-to-Geometry,
+    hoãn v2) sau khi spike vision-ingestion phát hiện Panel Leak. Đóng A-H13,
+    thêm A-H14 (false positive với confidence cao) và A-H15 (bản quyền ảnh tham chiếu).
+    Xem ADR-04 trong addendum.md.
 ---
 
 # PRD: Drawing Transformation Video Factory
@@ -69,8 +74,9 @@ Hệ thống giải quyết bài toán nút thắt nhân lực của nhà sáng 
 - **Path — 3 lựa chọn song song (operator chọn cách phù hợp nhất):**
   - **Path A (LLM DSL):** Huy nhập mô tả `"Thỏ tai dài biến hình từ số 3"`. LLM sinh Drawing DSL, hệ thống biên dịch và hiển thị Preview trong 10 giây. Retry tối đa 3 lần nếu DSL vi phạm schema.
   - **Path B (SVG Ingestion):** Huy kéo thả một file SVG con thỏ tải trên mạng. Tool tự bóc tách các `<path>` theo thứ tự xuất hiện trong file.
-  - **Path D (Image Ingestion — gated by spike):** Huy lưu ảnh hướng dẫn vẽ từ Pinterest xuống local, chạy lệnh `draw ingest-image ./rabbit-tutorial.jpg`. Vision LLM phân tích ảnh step-by-step (~3 giây), hiện Preview animate 6 bước trên canvas. Huy xác nhận tỷ lệ ổn và tùy chọn assign hook: `--hook 3`.
+  - **Path D (Image-to-Concept Ingestion):** Huy lưu ảnh hướng dẫn vẽ từ Pinterest xuống local, chạy lệnh `draw ingest-image ./rabbit-tutorial.jpg`. Vision LLM đọc ảnh và trả về **kế hoạch vẽ dạng ngữ nghĩa** (~14 giây): subject "rabbit", hook "number 3", 6 bước kèm tên bộ phận và lời thoại tiếng Việt — *không sinh tọa độ*. Huy đọc lướt danh sách bước, thấy hợp lý thì bấm duyệt; kế hoạch được chuyển sang Path A để LLM sinh Drawing DSL và render Preview. Tùy chọn assign hook: `--hook 3`.
 - **Climax (mọi path):** Huy bấm "Duyệt", component được lưu vào Registry với metadata `ingestion_path`, `hook_ref`, và ảnh gốc (nếu Path D) để tham chiếu sau.
+- **Edge case (Path D):** Nếu ảnh không phải tutorial từng bước (ví dụ: hình hoàn thiện đơn lẻ, bảng biến thể mắt/miệng, sơ đồ giải phẫu), hệ thống từ chối kèm lý do cụ thể. Tuy nhiên Vision LLM **có thể nhận nhầm với confidence rất cao** (đo được 0.95–0.98 khi sai), nên bước operator duyệt là bắt buộc và không thể thay bằng ngưỡng confidence tự động — xem [A-H14](#10-assumptions-index).
 - **Resolution:** Component có thể tái sử dụng ngay lập tức cho các video tiếp theo. Subject chưa có hook được đặt vào bucket "available subjects" chờ operator assign.
 
 ---
@@ -87,6 +93,8 @@ Mọi tài liệu, mã nguồn và giao diện người dùng downstream bắt b
 - **Component:** Phần tử đồ họa tái sử dụng được lưu trong Registry (ví dụ: `bear_left_ear`, `bear_eyes`).
 - **Primitive:** Phần tử hình học cơ bản nhất không thể phân tách nhỏ hơn: `arc`, `circle`, `line`, `bezier_2`, `bezier_3`, `polyline`, `rect`. LLM bắt buộc phải sử dụng các primitive này khi sinh DSL.
 - **Drawing DSL:** Ngôn ngữ mô tả nét vẽ dạng JSON schema nghiêm ngặt. LLM chỉ được phép sinh DSL, tuyệt đối không được sinh mã SVG thô.
+- **Concept Plan:** Kế hoạch vẽ dạng **ngữ nghĩa thuần túy** do Vision LLM trích xuất từ ảnh tutorial (FR-3b): gồm subject, hook, thứ tự các bước, tên bộ phận, `primitive_hint` và `voice_cue`. **Tuyệt đối không chứa tọa độ.** Là đầu vào cho FR-2 (Drawing DSL Generation), không phải đầu ra cuối cùng.
+- **Panel Leak:** Lỗi trong đó Vision LLM trả về tọa độ theo vị trí trong **lưới panel của ảnh tutorial** thay vì theo **canvas vẽ**. Tọa độ vẫn hợp lệ trong `[0,1]` nhưng các bước thuộc những hệ quy chiếu khác nhau, ghép lại thì hình vỡ nát. Là lý do kỹ thuật khiến FR-3c bị hoãn sang v2.
 - **DSL Compiler:** Thành phần biên dịch Drawing DSL thành tọa độ SVG path tuyệt đối trên canvas. Đảm bảo tính tất định (Deterministic).
 - **DSL Validator:** Thành phần kiểm tra tính hợp lệ của DSL trước khi biên dịch (kiểm tra schema, giới hạn tọa độ, tính liên tục).
 - **Registry:** Kho lưu trữ tập trung các Component đã qua kiểm định chất lượng.
@@ -132,17 +140,37 @@ Hệ thống SHALL cung cấp công cụ nạp file SVG có sẵn, tự động 
   - Tự động chuẩn hóa tỷ lệ (normalize scale) về kích thước chuẩn của canvas.
   - Hiển thị cửa sổ xem trước (Preview) diễn hoạt nét vẽ cho operator duyệt trong vòng ≤ 10 giây.
 
-#### FR-3b: Image-to-DSL Ingestion (Path D) `[SPIKE-GATED]`
-Hệ thống SHALL cung cấp công cụ nạp ảnh hướng dẫn vẽ (how-to-draw tutorial image) từ file local, sử dụng Vision LLM để extract Drawing Steps tự động.
-- **Activation condition:** Chỉ đưa vào MVP nếu spike `spike/vision-ingestion/` đạt accuracy ≥ 70% trên bộ 10 ảnh test. Nếu thấp hơn: duy trì Path A + Path B + Path C là đủ.
+#### FR-3b: Image-to-Concept Ingestion (Path D) `[SPIKE-VALIDATED ✅]`
+Hệ thống SHALL cung cấp công cụ nạp ảnh hướng dẫn vẽ (how-to-draw tutorial image) từ file local, sử dụng Vision LLM để trích xuất **kế hoạch vẽ dạng ngữ nghĩa (Concept Plan)** — KHÔNG trích xuất tọa độ hình học.
+
+> **Nguyên tắc cốt lõi:** Vision LLM chỉ đọc *Ý TƯỞNG* (vẽ con gì, bắt đầu từ hook nào, thứ tự các bước, lời thoại). Toàn bộ *HÌNH HỌC* do FR-2 (Drawing DSL Generation) đảm nhiệm. Xem [ADR-04](addendum.md#5-adr-04-tách-image-to-concept-khỏi-image-to-geometry) trong Addendum để biết lý do.
+
+- **Spike result:** Spike `spike/vision-ingestion/` đã chạy 2026-09-08 với gemini-3.6-flash trên bộ 11 ảnh. Concept mode đạt **100% trên 4/4 ảnh tutorial chạy được**, đọc đúng cả 3 dạng hook (số 20 → mèo, số 1 → hươu, chữ G → hươu). Chi tiết: [`spike/vision-ingestion/FINDINGS.md`](../../../../spike/vision-ingestion/FINDINGS.md).
 - **Consequences (testable):**
-  - Lệnh `draw ingest-image <file>` nhận ảnh JPG/PNG/WebP local, gọi `IVisionParser`, trả về JSON Drawing Steps trong ≤ 10 giây.
-  - Nếu `confidence < 0.7` hoặc `is_step_tutorial: false`: từ chối với thông báo rõ ràng, không tự động commit vào Registry.
-  - Hiển thị Preview animate từng bước trên canvas để operator xác nhận trước khi lưu (giống FR-3).
+  - Lệnh `draw ingest-image <file>` nhận ảnh JPG/PNG/WebP local, gọi `IVisionParser`, trả về **Concept Plan JSON** trong ≤ 20 giây (đo thực tế: trung bình 14.0s).
+  - Concept Plan schema BẮT BUỘC không chứa bất kỳ trường tọa độ nào (`relative_cx`, `relative_points`, v.v.). Validator SHALL từ chối output chứa tọa độ.
+  - Mỗi Drawing Step trong Concept Plan gồm: `part_name` (snake_case, duy nhất), `description`, `primitive_hint`, `stroke_count`, `voice_cue` (tiếng Việt, ≤ 10 từ).
+  - Nếu `is_step_tutorial: false`: từ chối với `reject_reason` rõ ràng, không commit vào Registry.
+  - **Operator Confirmation Gate (BẮT BUỘC):** Hiển thị Concept Plan dạng danh sách bước + voice_cue để operator duyệt. **TUYỆT ĐỐI KHÔNG auto-commit dù `confidence` cao** — xem [A-H14](#10-assumptions-index).
+  - Sau khi operator duyệt, Concept Plan được chuyển sang FR-2 để LLM sinh Drawing DSL → tọa độ tuyệt đối → DSL Validator.
   - Hỗ trợ flag `--hook <value>` để operator assign hook cho Subject-only import (hook_ref: null → bucket "available subjects").
-  - Component được lưu kèm metadata: `ingestion_path: "vision-image"`, `source_image: <filename>`, `llm_confidence: <float>`.
-  - Chi phí Vision LLM call: **one-time per Subject** (≤$0.005), không phát sinh lại khi render video.
-- **Out of Scope:** Crawl ảnh trực tiếp từ URL Pinterest — operator phải download về local trước.
+  - Component được lưu kèm metadata: `ingestion_path: "vision-concept"`, `source_image: <filename>`, `llm_confidence: <float>`, `source_attribution: <url hoặc tên tác giả nếu biết>`.
+  - Chi phí Vision LLM call: **one-time per Subject** (đo thực tế ~602 output tokens/ảnh), không phát sinh lại khi render video.
+- **Out of Scope:**
+  - Crawl ảnh trực tiếp từ URL Pinterest — operator phải download về local trước.
+  - Trích xuất tọa độ hình học từ ảnh — chuyển sang FR-3c (v2).
+
+#### FR-3c: Image-to-Geometry Ingestion `[DEFERRED → v2]`
+Trích xuất tọa độ hình học trực tiếp từ ảnh tutorial. **Đã loại khỏi MVP** sau khi spike chứng minh không khả thi.
+
+- **Lý do loại bỏ — Panel Leak:** Ảnh how-to-draw là **lưới nhiều panel**. Vision LLM trả về tọa độ theo vị trí trong *lưới panel*, không phải trong *canvas vẽ*. Tọa độ vẫn hợp lệ trong `[0,1]` (nên chỉ số `coord_validity` = 100% gây hiểu nhầm) nhưng mỗi bước thuộc một hệ quy chiếu khác nhau — ghép lại thì hình vỡ nát.
+- **Bằng chứng (3/3 ảnh, không có ngoại lệ):**
+  - `rabbit_7steps`: đầu ở `x=0.15`, tai ở `x=0.85` — cách nhau 70% bề ngang khung hình.
+  - `rabbit_8steps`: tọa độ khớp **chính xác** lưới panel 3×3 của ảnh gốc (`x: 0.13→0.42→0.77 | 0.10→0.47→0.80`).
+  - `bird_number78`: mắt `(0.24, 0.41)` nằm ngoài đầu `(0.83, 0.15)`.
+  - Sau khi áp dụng chỉ số `panel_leak_score`, cả 3/3 ảnh từng "pass" đều rớt xuống 60–69% (dưới ngưỡng 70%).
+- **Chi phí phụ trội không đáng:** geometry mode tốn **2.08×** output token, chậm hơn 41% (có ảnh 84s), tỷ lệ JSON hỏng cao hơn.
+- **Điều kiện tái xem xét ở v2:** cần bổ sung bước **panel segmentation** (cắt từng panel riêng + căn chỉnh hệ tọa độ) trước khi gọi Vision LLM. Đây là khối lượng công việc chưa được ước lượng trong MVP.
 
 ---
 
@@ -303,9 +331,10 @@ Mỗi video xuất xưởng SHALL đi kèm một file metadata JSON chứa: ID, 
 - Xuất video chuẩn MP4 1080×1920 30fps bằng FFmpeg / WebCodecs.
 - Chạy batch 50 video hoàn toàn tự động trên máy cục bộ.
 - **Exploration Mode — Export Comparison Set:** Single-video mode hỗ trợ lệnh `--variants N` để xuất N biến thể (mặc định 3) của cùng một concept với các tham số ngẫu nhiên khác nhau (màu, góc, BGM, script template). Phục vụ A/B test thủ công trước khi chạy batch toàn phần. *(Xác thực A-H11 — Content Hypothesis trước khi đầu tư batch)*
-- **Image Ingestion (Path D) `[SPIKE-GATED]`:** Công cụ `draw ingest-image <file>` nạp ảnh how-to-draw local qua Vision LLM → Drawing Steps → Registry. Chỉ đưa vào MVP nếu spike đạt ≥ 70% accuracy. *(Xác thực FR-3b)*
+- **Image-to-Concept Ingestion (Path D) `[SPIKE-VALIDATED ✅]`:** Công cụ `draw ingest-image <file>` nạp ảnh how-to-draw local qua Vision LLM → **Concept Plan** (subject, hook, thứ tự bước, voice_cue — không tọa độ) → operator duyệt → FR-2 sinh DSL → Registry. Spike đạt 100% trên 4/4 ảnh tutorial. *(Xác thực FR-3b)*
 
 ### 6.2 Out of Scope for MVP
+- **Image-to-Geometry Ingestion (FR-3c) — dời sang v2.** Trích xuất tọa độ hình học trực tiếp từ ảnh tutorial không khả thi do hiện tượng **Panel Leak** (Vision LLM đọc tọa độ theo lưới panel thay vì theo canvas vẽ; quan sát ở 3/3 ảnh test). Cần bổ sung bước panel segmentation trước khi tái xem xét. *(Xem FR-3c và A-H13)*
 - Bàn tay 3D đa khớp (3D Hand Model với Inverse Kinematics) — quy hoạch cho Phase 6.
 - Giọng đọc đa ngôn ngữ (tiếng Anh, tiếng Tây Ban Nha) — dời sang v2.
 - Giao diện kéo thả Component trực quan nâng cao — dời sang v1.5.
@@ -328,11 +357,14 @@ Mỗi chỉ số thành công đo lường trực tiếp năng lực vận hành
 
 ### 7.2 Secondary Metrics
 - **SM-6 (Registry Ingestion Time):** Operator có thể nạp và duyệt một Component mới từ SVG vào Registry trong thời gian **≤ 30 giây**. *(Xác thực FR-3)*
+- **SM-6b (Image-to-Concept Ingestion Time):** Từ lệnh `draw ingest-image` đến khi Concept Plan hiện ra chờ duyệt **≤ 20 giây** (đo thực tế ở spike: TB 14.0s). *(Xác thực FR-3b)*
+- **SM-6c (Concept Plan Accuracy):** Tỷ lệ Concept Plan được operator duyệt ngay không cần sửa **≥ 80%** trên ảnh tutorial hợp lệ. *(Xác thực FR-3b, A-H14)*
 - **SM-7 (Batch Review Throughput):** Operator có thể rà soát và phê duyệt mẻ 50 video trong thời gian **≤ 15 phút**. *(Xác thực UJ-2)*
 
 ### 7.3 Counter-metrics (Chỉ số kiềm chế)
 - **SM-C1 (Spam Rejection Rate):** Tỷ lệ tài khoản bị nền tảng TikTok/Shorts cảnh báo hoặc bóp tương tác (shadowban) do trùng lặp nội dung phải bằng **0%**. *(Kiềm chế FR-17 — không được spam số lượng mà bỏ qua biến thiên Diversification)*
 - **SM-C2 (Operator Reject Rate):** Tỷ lệ video bị operator từ chối xuất bản ở khâu preview do hình vẽ xấu hoặc giọng đọc gượng gạo phải **≤ 10%**. *(Kiềm chế việc hạ thấp tiêu chuẩn validation)*
+- **SM-C3 (Concept Plan Review Burden):** Tỷ lệ Concept Plan bị operator từ chối ở khâu duyệt Path D phải **≤ 30%**. Vượt ngưỡng này nghĩa là chi phí review thủ công đã vượt lợi ích tự động hóa → cân nhắc bỏ Path D. *(Kiềm chế FR-3b — không được đẩy gánh nặng lọc rác sang operator)*
 
 ---
 
@@ -366,6 +398,8 @@ Mỗi chỉ số thành công đo lường trực tiếp năng lực vận hành
 2. **Ngưỡng nhạy cảm trùng lặp của TikTok:** Liệu 4 yếu tố biến thiên hiện tại (màu giấy/bảng, góc nghiêng, màu nét, nhạc nền) đã đủ để thuật toán kiểm duyệt của TikTok coi 50 video cùng hook là nội dung độc bản hoàn toàn chưa?
 3. **Độ phức tạp tối đa của nét vẽ:** Một bức vẽ có tối đa bao nhiêu nét (stroke count) thì bắt đầu làm người xem mất kiên nhẫn trong khung thời gian 25–30 giây?
 4. **Thuật toán làm mịn góc xoay tiếp tuyến (Tangent Smoothing):** Cần hệ số suy giảm (damping factor) bao nhiêu để bàn tay vừa nghiêng theo đường cong mềm mại của nét vẽ, vừa không bị lắc giật (jitter) khi gặp các góc gấp khúc sắc nhọn hoặc khi vẽ các chi tiết nhỏ như mắt, mũi?
+5. **Chất lượng hình học từ Concept Plan:** Concept Plan (FR-3b) chỉ mô tả ngữ nghĩa, nên chất lượng hình vẽ cuối cùng phụ thuộc hoàn toàn vào FR-2. Liệu một `description` như *"long ear on the left"* có đủ để LLM sinh DSL ra tỷ lệ đẹp không, hay cần bổ sung gợi ý vị trí tương đối dạng thô (ví dụ `anchor: "top-left of head"`) mà vẫn không rơi vào bẫy panel leak?
+6. **Ngưỡng từ bỏ Path D:** Nếu SM-C3 (tỷ lệ operator reject Concept Plan) vượt 30%, có nên bỏ hẳn Path D và chuyển sang **Curated Concept Seed List** (operator tự liệt kê 50–100 cặp Hook→Subject một lần) không? Cách này rẻ hơn, không rủi ro bản quyền, nhưng mất khả năng mở rộng thư viện liên tục.
 
 ---
 
@@ -379,7 +413,9 @@ Mỗi chỉ số thành công đo lường trực tiếp năng lực vận hành
 | **A-04** | `[ASSUMPTION]` Kỹ thuật Color Fill Reveal đổ màu phẳng (flat color) trong 1.5s làm tăng tỷ lệ xem hết và tương tác mà không khiến người xem cảm thấy video bị cắt cụt. | Thấp | So sánh số liệu giữ chân giữa 10 video có màu và 10 video chỉ vẽ nét trắng đen. |
 | **A-05** | `[ASSUMPTION]` Solo operator có thể dễ dàng quản lý việc đăng 20–30 video/ngày bằng công cụ lên lịch thủ công mà chưa cần đến auto-upload API. | Thấp | Kiểm chứng thực tế sau khi hoàn thành mẻ sản xuất đầu tiên. |
 | **A-06** | `[ASSUMPTION]` 2D Hand Asset (ảnh PNG tách nền điều khiển theo góc tiếp tuyến) mang lại cảm giác vẽ tay chân thực vượt trội so với ngòi bút đơn lẻ (đạt ~7/10 điểm chân thực) và hoàn toàn đủ sức giữ chân người xem TikTok mà không cần tốn chi phí dựng mô hình 3D trong giai đoạn MVP. | Thấp | Render thử nghiệm 2 video A/B test (1 video chỉ có ngòi bút, 1 video có bàn tay 2D) để so sánh chỉ số hoàn thành video. |
-| **A-H13** | `[ASSUMPTION]` Vision LLM (GPT-4o hoặc Gemini Vision) có thể extract Drawing Steps từ ảnh how-to-draw step-by-step với accuracy ≥ 70% (đúng thứ tự, đúng shape type) trên ảnh tutorial điển hình tìm được trên Pinterest. | **Cao** | Chạy spike `spike/vision-ingestion/` với 10 ảnh test, 2 models song song. Nếu < 70%: abandon Path D, duy trì Path A+B+C. Nếu ≥ 70%: integrate IVisionParser vào registry ingestion. |
+| **A-H13** | ~~`[ASSUMPTION]` Vision LLM extract Drawing Steps *kèm tọa độ* từ ảnh how-to-draw với accuracy ≥ 70%.~~ → **ĐÃ GIẢI QUYẾT 2026-09-08.** Giả định gốc **BÁC BỎ** cho phần tọa độ (panel leak, 3/3 ảnh) nhưng **XÁC NHẬN** cho phần ngữ nghĩa: Vision LLM đọc đúng subject + hook + thứ tự bước với accuracy **100% trên 4/4 ảnh tutorial**. Hệ quả: tách FR-3b (concept, vào MVP) khỏi FR-3c (geometry, v2). | ~~Cao~~ → **Đã đóng** | ✅ Spike đã chạy: gemini-3.6-flash, 11 ảnh (6 tutorial + 5 negative). Kết quả đầy đủ tại [`spike/vision-ingestion/FINDINGS.md`](../../../../spike/vision-ingestion/FINDINGS.md). |
+| **A-H14** | `[ASSUMPTION]` Vision LLM có thể **tự phân biệt** ảnh tutorial thật với ảnh không phải tutorial (hình hoàn thiện đơn lẻ, bảng biến thể, panel lẻ, sơ đồ giải phẫu) đủ tin cậy để tự động lọc. → **ĐÃ BÁC BỎ.** Đo thực tế: **2/5 negative case bị nhận nhầm**, và model tự tin **0.95–0.98 ngay khi sai** — không thể lọc bằng ngưỡng confidence. | **Trung bình** | Bắt buộc **Operator Confirmation Gate** trong FR-3b: 100% Concept Plan phải được người duyệt trước khi vào Registry. Theo dõi tỷ lệ operator reject; nếu > 30% thì cân nhắc bỏ Path D vì chi phí review vượt lợi ích. |
+| **A-H15** | `[ASSUMPTION]` Việc dùng ảnh tutorial có bản quyền (Pinterest, sách dạy vẽ) làm **nguồn tham chiếu ý tưởng** — chứ không sao chép hình học — là chấp nhận được về mặt pháp lý khi sản xuất video thương mại quy mô 50–100/ngày. | **Trung bình** | Concept Plan chỉ chứa mô tả ngữ nghĩa ("thêm hai tai dài"), hình học do FR-2 sinh độc lập → sản phẩm cuối không phải bản sao. Lưu `source_attribution` trong metadata. Nếu mở rộng thương mại lớn: tham vấn pháp lý hoặc chuyển sang seed list tự vẽ. *(Đây là lý do **độc lập với accuracy** để ưu tiên concept mode.)* |
 
 ---
 
@@ -399,7 +435,29 @@ Concept (ID, Hook, Subject, Language, Style, Score, Status)
                                            ├── Type: enum (glyph | animal_part | primitive)
                                            ├── Geometry: SVGPath / PrimitiveParams
                                            ├── BoundingBox: Rect(x, y, w, h)
-                                           └── StrokeOrderMetadata: Array<StrokeID>
+                                           ├── StrokeOrderMetadata: Array<StrokeID>
+                                           └── IngestionMetadata:
+                                                ├── ingestion_path: enum (llm-dsl | svg | vision-concept)
+                                                ├── source_image: FilePath | null
+                                                ├── llm_confidence: Float | null
+                                                ├── source_attribution: string | null
+                                                └── operator_approved: Boolean  (BẮT BUỘC true)
+
+ConceptPlan (đầu ra FR-3b — KHÔNG chứa tọa độ, là đầu vào cho FR-2)
+ ├── subject_name: string
+ ├── subject_name_vi: string
+ ├── hook_shape: string | null
+ ├── suggested_hooks: Array<string>
+ ├── complexity: enum (easy | medium | hard)
+ ├── is_step_tutorial: Boolean
+ ├── reject_reason: string | null
+ └── steps: Array<ConceptStep>
+      ├── step_number: int
+      ├── part_name: string (snake_case, duy nhất)
+      ├── description: string
+      ├── primitive_hint: enum (arc|circle|line|bezier|polyline|rect)
+      ├── stroke_count: int
+      └── voice_cue: string (tiếng Việt, ≤ 10 từ)
 
 VideoAsset (ProjectID, ConceptRef, Seed, Version, GenerationTime)
  ├── AudioTrack: VoiceoverAudio + SFXClips + BackgroundMusic
