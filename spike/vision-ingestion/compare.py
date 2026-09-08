@@ -472,8 +472,15 @@ def check_key() -> int:
             print("\n   → Key sai hoac da bi xoa. Tao key moi tai aistudio.google.com/api-keys")
         elif "permission" in low or "403" in low:
             print("\n   → Key dung nhung thieu quyen / Gemini API chua bat cho project nay")
+        elif "exceeded your current quota" in low or "billing details" in low:
+            print("\n   → HET QUOTA NGAY (khong phai rate limit tuc thoi).")
+            print("     Retry vo ich. Lua chon:")
+            print("     1. Doi reset (free tier reset theo ngay, gio Thai Binh Duong)")
+            print("     2. Bat billing: https://aistudio.google.com/apikey")
+            print("     3. Model nhe hon: set GEMINI_VISION_MODEL=gemini-flash-lite-latest")
+            print("     Xem quota: https://ai.dev/rate-limit")
         elif "quota" in low or "429" in low:
-            print("\n   → Het quota hoac bi rate limit. Doi vai phut roi thu lai")
+            print("\n   → Rate limit tuc thoi. Doi vai phut roi thu lai (--retry 3)")
         elif "not found" in low or "404" in low:
             print(f"\n   → Model '{GEMINI_MODEL}' khong dung duoc voi key nay.")
             # Google thuong goi y ten model moi ngay trong thong bao loi
@@ -498,6 +505,8 @@ def main():
     p.add_argument("--modes", default="both", choices=["both", "concept", "geometry"])
     p.add_argument("--retry", type=int, default=2, metavar="N",
                    help="So lan thu lai khi gap loi tam thoi 503/429 (mac dinh 2)")
+    p.add_argument("--skip-existing", action="store_true",
+                   help="Bo qua anh da co ket qua trong compare_results/ (chay tiep sau khi het quota)")
     p.add_argument("--dry-run", action="store_true", help="Kiem tra setup, khong goi API")
     p.add_argument("--check-key", action="store_true",
                    help="Goi 1 request nho de kiem tra API key co dung khong (~$0.001)")
@@ -548,8 +557,33 @@ def main():
     all_results = []
 
     for i, img in enumerate(files, 1):
+        cached = out_dir / f"{img.stem}.json"
+        if args.skip_existing and cached.exists():
+            try:
+                prev = json.loads(cached.read_text(encoding="utf-8"))
+                has_err = any(
+                    "error" in r
+                    for md in prev.get("modes", {}).values()
+                    for r in md.values() if isinstance(r, dict)
+                )
+                if not has_err:
+                    print(f"\n[{i}/{len(files)}] {img.name}  ⏭️  bo qua (da co ket qua)")
+                    all_results.append(prev)
+                    continue
+            except (json.JSONDecodeError, OSError):
+                pass
+
         print(f"\n[{i}/{len(files)}] {img.name}")
         res = parse_one(img, models, modes, retry=args.retry)
+
+        # Het quota -> dung ngay, khong dot them luot goi vo ich
+        from parse_image import _is_quota_exhausted
+        quota_hit = any(
+            _is_quota_exhausted(r["error"])
+            for md in res.get("modes", {}).values()
+            for r in md.values()
+            if isinstance(r, dict) and "error" in r
+        )
 
         truth_path = img.with_suffix(".truth.json")
         gt = json.loads(truth_path.read_text(encoding="utf-8")) if truth_path.exists() else None
@@ -567,6 +601,19 @@ def main():
             json.dumps(res, ensure_ascii=False, indent=2), encoding="utf-8"
         )
         all_results.append(res)
+
+        if quota_hit:
+            print("\n" + "!" * 62)
+            print("⛔ HET QUOTA GEMINI — dung lai de khong lang phi them luot goi.")
+            print("!" * 62)
+            print(f"\n   Da xu ly {i}/{len(files)} anh. Ket qua duoc luu lai binh thuong.")
+            print("\n   Lua chon:")
+            print("   1. Doi quota reset (free tier reset theo ngay, gio Thai Binh Duong)")
+            print("   2. Bat billing tai https://aistudio.google.com/apikey")
+            print("   3. Doi model nhe hon: set GEMINI_VISION_MODEL=gemini-flash-lite-latest")
+            print("   4. Chay tiep tu anh dang do: them --skip-existing")
+            print("\n   Xem quota hien tai: https://ai.dev/rate-limit\n")
+            break
 
         print("  ── scores ──")
         for mode in modes:

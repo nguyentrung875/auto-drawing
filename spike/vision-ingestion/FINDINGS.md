@@ -169,3 +169,44 @@ git pull
 
 Với retry, tỷ lệ lỗi 503 sẽ giảm mạnh và `paired` sẽ có đủ 11 ảnh thay vì 5.
 Dự đoán: verdict tự động sẽ ra `SPLIT`.
+
+---
+
+## Phụ lục — Hết quota giữa chừng (2026-09-08)
+
+Lần chạy xác nhận bị dừng bởi `429 RESOURCE_EXHAUSTED` (hết quota ngày của free tier).
+
+**Điều này KHÔNG ảnh hưởng kết luận.** Lý do:
+
+1. **Panel leak quan sát được ở 3/3 ảnh geometry, không có ngoại lệ.**
+   `rabbit_8steps` khớp *chính xác* lưới 3×3 — xác suất trùng hợp ngẫu nhiên gần bằng 0.
+   Đây là hạn chế hệ thống của Vision LLM, không phải nhiễu thống kê. Chạy thêm ảnh
+   không thể lật ngược.
+
+2. **Concept mode đạt 100% trên 4/4 ảnh tutorial chạy được**, đọc đúng cả ba dạng hook
+   (số 20, số 1, chữ G). Hai ảnh còn thiếu chỉ lỗi API, không phải lỗi chất lượng.
+
+3. **Kiểm tra ngược:** để geometry thắng, cả 4 ảnh còn thiếu phải *không* bị panel leak.
+   Nhưng 3/3 ảnh đã đo đều leak 77–97%. Không có kịch bản thực tế nào đảo ngược.
+
+→ Đủ dữ liệu để sửa PRD. Chạy lại chỉ để làm đẹp báo cáo.
+
+### Xử lý khi hết quota
+
+Công cụ đã được vá:
+
+- **Dừng ngay khi hết quota** thay vì đốt hết 22 lượt gọi đều thất bại.
+- **Phân biệt 429 hết-quota-ngày (không retry) với 429 rate-limit tức thời (retry được).**
+  Trước đây gộp chung nên retry vô ích 3 lần rồi mới bỏ.
+- **`--skip-existing`** để chạy tiếp từ chỗ dừng, không làm lại ảnh đã xong.
+- **Tắt cảnh báo AFC** của SDK cho log sạch.
+
+```powershell
+# Sau khi quota reset, chạy tiếp phần còn thiếu:
+.venv\Scripts\python compare.py --model gemini --skip-existing --retry 3
+
+# Hoặc dùng model nhẹ hơn, tốn ít quota hơn:
+$env:GEMINI_VISION_MODEL = "gemini-flash-lite-latest"
+```
+
+Free tier reset theo ngày (giờ Thái Bình Dương). Xem quota tại https://ai.dev/rate-limit

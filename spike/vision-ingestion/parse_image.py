@@ -22,6 +22,7 @@ Setup:
 
 import argparse
 import base64
+import logging
 import json
 import os
 import sys
@@ -30,6 +31,10 @@ from pathlib import Path
 from datetime import datetime
 
 from prompts import MODES, get_prompt
+
+# Tat canh bao AFC cua SDK — chi la noise, khong anh huong ket qua
+logging.getLogger("google_genai.models").setLevel(logging.ERROR)
+logging.getLogger("google_genai").setLevel(logging.ERROR)
 
 OPENAI_MODEL = os.environ.get("OPENAI_VISION_MODEL", "gpt-4o")
 GEMINI_MODEL = os.environ.get("GEMINI_VISION_MODEL", "gemini-3.6-flash")
@@ -179,8 +184,20 @@ def parse_with_gemini(image_path: Path, mode: str) -> dict:
 RETRYABLE = ("503", "unavailable", "high demand", "429", "rate limit",
              "resource_exhausted", "500", "internal", "deadline")
 
+# 429 vi HET QUOTA NGAY thi retry vo ich — phai doi reset hoac nang plan.
+# Khac voi 429 vi rate limit tuc thoi (qua nhieu request/phut) thi retry duoc.
+QUOTA_EXHAUSTED = ("exceeded your current quota", "check your plan and billing",
+                   "quota_exceeded", "daily limit", "billing details")
+
+
+def _is_quota_exhausted(err: str) -> bool:
+    low = err.lower()
+    return any(x in low for x in QUOTA_EXHAUSTED)
+
 
 def _is_retryable(err: str) -> bool:
+    if _is_quota_exhausted(err):
+        return False
     low = err.lower()
     return any(x in low for x in RETRYABLE)
 
