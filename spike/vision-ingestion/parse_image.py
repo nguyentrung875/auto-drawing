@@ -32,7 +32,7 @@ from datetime import datetime
 from prompts import MODES, get_prompt
 
 OPENAI_MODEL = os.environ.get("OPENAI_VISION_MODEL", "gpt-4o")
-GEMINI_MODEL = os.environ.get("GEMINI_VISION_MODEL", "gemini-1.5-pro")
+GEMINI_MODEL = os.environ.get("GEMINI_VISION_MODEL", "gemini-2.5-flash")
 
 MIME_MAP = {
     "jpg": "image/jpeg",
@@ -123,43 +123,54 @@ def parse_with_openai(image_path: Path, mode: str) -> dict:
 # ─── Gemini ──────────────────────────────────────────────────────────────────
 
 def parse_with_gemini(image_path: Path, mode: str) -> dict:
+    """Dung SDK moi `google-genai`. SDK cu `google-generativeai` da EOL."""
     try:
-        import google.generativeai as genai
+        from google import genai
+        from google.genai import types
     except ImportError:
-        return {"error": "google-generativeai not installed. Run: pip install google-generativeai"}
+        return {"error": "google-genai not installed. Run: pip install google-genai"}
 
-    api_key = os.environ.get("GEMINI_API_KEY")
+    api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
     if not api_key:
-        return {"error": "GEMINI_API_KEY not set"}
+        return {"error": "GEMINI_API_KEY / GOOGLE_API_KEY not set"}
 
-    try:
-        from PIL import Image as PILImage
-        img = PILImage.open(image_path)
-    except ImportError:
-        return {"error": "pillow not installed. Run: pip install pillow"}
+    mime_type = MIME_MAP.get(image_path.suffix.lower().lstrip("."), "image/jpeg")
+    image_bytes = image_path.read_bytes()
 
-    genai.configure(api_key=api_key)
-    model = genai.GenerativeModel(GEMINI_MODEL)
+    client = genai.Client(api_key=api_key)
 
     t0 = time.time()
     try:
-        response = model.generate_content(
-            [get_prompt(mode), img],
-            generation_config=genai.types.GenerationConfig(
+        response = client.models.generate_content(
+            model=GEMINI_MODEL,
+            contents=[
+                types.Part.from_bytes(data=image_bytes, mime_type=mime_type),
+                get_prompt(mode),
+            ],
+            config=types.GenerateContentConfig(
                 temperature=0.1,
                 max_output_tokens=MODES[mode]["max_tokens"],
+                response_mime_type="application/json",
             ),
         )
     except Exception as e:  # noqa: BLE001
         return {"error": f"Gemini API call failed: {e}"}
 
     elapsed = round(time.time() - t0, 2)
-    result = _to_json(response.text)
-    result["_meta"] = {
-        "model": GEMINI_MODEL,
-        "mode": mode,
-        "elapsed_s": elapsed,
-    }
+
+    text = getattr(response, "text", None)
+    if not text:
+        return {"error": f"Gemini returned no text (finish_reason may be MAX_TOKENS/SAFETY): {response}"}
+
+    result = _to_json(text)
+    meta = {"model": GEMINI_MODEL, "mode": mode, "elapsed_s": elapsed}
+    usage = getattr(response, "usage_metadata", None)
+    if usage:
+        meta["usage"] = {
+            "prompt_tokens": getattr(usage, "prompt_token_count", None),
+            "completion_tokens": getattr(usage, "candidates_token_count", None),
+        }
+    result["_meta"] = meta
     return result
 
 

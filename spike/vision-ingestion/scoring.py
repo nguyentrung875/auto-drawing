@@ -56,12 +56,9 @@ def _is_vietnamese(text: str) -> bool:
 def score_concept(r: dict, ground_truth: dict | None = None) -> dict:
     if "error" in r:
         return {"score_pct": 0.0, "status": "error", "notes": [r["error"]]}
-    if not r.get("is_step_tutorial"):
-        return {
-            "score_pct": 0.0,
-            "status": "rejected",
-            "notes": [r.get("reject_reason") or "not detected as tutorial"],
-        }
+    gate = _rejection_gate(r, ground_truth)
+    if gate is not None:
+        return gate
 
     pts, max_pts, notes = 0.0, 0.0, []
     steps = r.get("steps") or []
@@ -176,8 +173,9 @@ def score_concept(r: dict, ground_truth: dict | None = None) -> dict:
 def score_geometry(r: dict, ground_truth: dict | None = None) -> dict:
     if "error" in r:
         return {"score_pct": 0.0, "status": "error", "notes": [r["error"]]}
-    if not r.get("is_step_tutorial"):
-        return {"score_pct": 0.0, "status": "rejected", "notes": ["not detected as tutorial"]}
+    gate = _rejection_gate(r, ground_truth)
+    if gate is not None:
+        return gate
 
     pts, max_pts, notes = 0.0, 0.0, []
     steps = r.get("steps") or []
@@ -268,6 +266,49 @@ def score_geometry(r: dict, ground_truth: dict | None = None) -> dict:
 
 
 # ─── Shared helpers ──────────────────────────────────────────────────────────
+
+def _rejection_gate(r: dict, gt: dict | None) -> dict | None:
+    """Xu ly truong hop model tra ve is_step_tutorial=false.
+
+    Quan trong: bo anh test co ca NEGATIVE case (anh hoan thien, so do giai phau).
+    Voi nhung anh do, tu choi dung LA THANH CONG -> cham 100, status "true_negative".
+    Tu choi nham mot tutorial that -> "false_negative" (0 diem).
+    Khong co ground truth -> giu nguyen "rejected" trung tinh, khong tinh vao avg.
+    """
+    said_tutorial = bool(r.get("is_step_tutorial"))
+    gt_tutorial = gt.get("is_step_tutorial") if gt and "is_step_tutorial" in gt else None
+
+    # Model NHAN dien la tutorial, nhung ground truth noi khong phai -> false positive
+    if said_tutorial and gt_tutorial is False:
+        return {
+            "score_pct": 0.0,
+            "status": "false_positive",
+            "notes": ["ground truth: khong phai step tutorial, nhung model van parse"],
+            "step_count": r.get("step_count", 0),
+            "subject": r.get("subject_name"),
+            "confidence": r.get("confidence", 0),
+            "elapsed_s": r.get("_meta", {}).get("elapsed_s"),
+        }
+
+    if said_tutorial:
+        return None  # di tiep vao rubric binh thuong
+
+    # Model TU CHOI
+    base = {
+        "notes": [r.get("reject_reason") or "not detected as tutorial"],
+        "step_count": 0,
+        "subject": r.get("subject_name"),
+        "confidence": r.get("confidence", 0),
+        "elapsed_s": r.get("_meta", {}).get("elapsed_s"),
+    }
+    if gt_tutorial is False:
+        return {**base, "score_pct": 100.0, "status": "true_negative",
+                "notes": ["✅ tu choi dung (negative case)"] + base["notes"]}
+    if gt_tutorial is True:
+        return {**base, "score_pct": 0.0, "status": "false_negative",
+                "notes": ["❌ tu choi nham mot tutorial that"] + base["notes"]}
+    return {**base, "score_pct": 0.0, "status": "rejected"}
+
 
 def _coord_health(strokes: list[dict]) -> dict:
     """Do suc khoe toa do — chi ap dung cho geometry mode."""

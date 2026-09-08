@@ -6,3 +6,5 @@ compare_report.html
 compare_report.md
 compare_report.demo.*
 *.result.json
+.venv/
+__pycache__/
