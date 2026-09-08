@@ -248,6 +248,17 @@ def score_geometry(r: dict, ground_truth: dict | None = None) -> dict:
     if coord["coord_degenerate"]:
         notes.append(f"{coord['coord_degenerate']:.0f}% strokes degenerate")
 
+    # Panel leak — tru diem nang vi day la loi lam geometry KHONG DUNG DUOC
+    leak = _panel_leak(steps)
+    if leak["panel_leak_score"] is not None and leak["panel_leak_score"] >= 70:
+        penalty = 40 if leak["panel_leak_score"] >= 85 else 25
+        pts = max(0.0, pts - penalty)
+        notes.append(
+            f"⚠️ PANEL LEAK {leak['panel_leak_score']:.0f}% "
+            f"(toa do troi theo luoi panel, spread={leak['step_drift']}) -{penalty}d"
+        )
+    coord.update(leak)
+
     out = {
         "score_pct": _pct(pts, max_pts),
         "pts": round(pts, 1),
@@ -308,6 +319,65 @@ def _rejection_gate(r: dict, gt: dict | None) -> dict | None:
         return {**base, "score_pct": 0.0, "status": "false_negative",
                 "notes": ["❌ tu choi nham mot tutorial that"] + base["notes"]}
     return {**base, "score_pct": 0.0, "status": "rejected"}
+
+
+def _panel_leak(steps: list[dict]) -> dict:
+    """Phat hien 'panel leak' — loi NGHIEM TRONG nhat cua geometry mode.
+
+    Anh how-to-draw thuong la LUOI NHIEU PANEL. Vision LLM co xu huong tra ve
+    toa do theo vi tri trong luoi panel, chu khong phai trong mot canvas ve
+    duy nhat. Ket qua: toa do van nam trong [0,1] (nen coord_validity=100%)
+    nhung cac buoc thuoc CAC HE QUY CHIEU KHAC NHAU, ghep lai thi hinh vo nat.
+
+    Cach phat hien: tinh tam cua tung buoc. Neu tam cac buoc troi dat theo thu
+    tu buoc (tuong quan manh giua so buoc va toa do), do la dau hieu model dang
+    doc theo panel chu khong phai theo hinh ve.
+    """
+    centers = []
+    for i, step in enumerate(steps):
+        pts = []
+        for s in step.get("new_strokes") or []:
+            for k_x, k_y in (("relative_cx", "relative_cy"), ("relative_x", "relative_y")):
+                x, y = s.get(k_x), s.get(k_y)
+                if isinstance(x, (int, float)) and isinstance(y, (int, float)):
+                    pts.append((float(x), float(y)))
+            for pt in s.get("relative_points") or []:
+                if isinstance(pt, (list, tuple)) and len(pt) >= 2:
+                    try:
+                        pts.append((float(pt[0]), float(pt[1])))
+                    except (TypeError, ValueError):
+                        pass
+        if pts:
+            centers.append((i, sum(p[0] for p in pts) / len(pts),
+                            sum(p[1] for p in pts) / len(pts)))
+
+    if len(centers) < 3:
+        return {"panel_leak_score": None, "step_drift": None}
+
+    idx = [c[0] for c in centers]
+    n = len(idx)
+    mean_i = sum(idx) / n
+
+    def corr(vals: list[float]) -> float:
+        mean_v = sum(vals) / n
+        num = sum((idx[k] - mean_i) * (vals[k] - mean_v) for k in range(n))
+        di = sum((idx[k] - mean_i) ** 2 for k in range(n)) ** 0.5
+        dv = sum((vals[k] - mean_v) ** 2 for k in range(n)) ** 0.5
+        return abs(num / (di * dv)) if di and dv else 0.0
+
+    # Tuong quan giua SO BUOC va toa do. Voi mot hinh ve that, cac buoc deu
+    # nam quanh cung mot cho -> tuong quan thap. Voi luoi panel -> tuong quan cao.
+    drift = max(corr([c[1] for c in centers]), corr([c[2] for c in centers]))
+
+    # Do phan tan cua tam cac buoc: hinh ve that thi cac bo phan cum lai gan nhau
+    xs = [c[1] for c in centers]
+    ys = [c[2] for c in centers]
+    spread = max(max(xs) - min(xs), max(ys) - min(ys))
+
+    return {
+        "panel_leak_score": round(drift * 100, 1),
+        "step_drift": round(spread, 3),
+    }
 
 
 def _coord_health(strokes: list[dict]) -> dict:

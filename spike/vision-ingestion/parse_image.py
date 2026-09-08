@@ -176,7 +176,17 @@ def parse_with_gemini(image_path: Path, mode: str) -> dict:
 
 # ─── Orchestration ───────────────────────────────────────────────────────────
 
-def parse_one(image_path: Path, models: list[str], modes: list[str], verbose: bool = True) -> dict:
+RETRYABLE = ("503", "unavailable", "high demand", "429", "rate limit",
+             "resource_exhausted", "500", "internal", "deadline")
+
+
+def _is_retryable(err: str) -> bool:
+    low = err.lower()
+    return any(x in low for x in RETRYABLE)
+
+
+def parse_one(image_path: Path, models: list[str], modes: list[str],
+              verbose: bool = True, retry: int = 0) -> dict:
     """Chay tat ca to hop (model x mode) tren 1 anh.
 
     Ket qua co dang:
@@ -199,6 +209,18 @@ def parse_one(image_path: Path, models: list[str], modes: list[str], verbose: bo
             if verbose:
                 print(f"  📡 {model_name}...", flush=True)
             r = fn(image_path, mode)
+
+            # Retry khi gap loi tam thoi (503 high demand, 429 rate limit...)
+            attempt = 0
+            while attempt < retry and "error" in r and _is_retryable(r["error"]):
+                attempt += 1
+                wait = 5 * (2 ** (attempt - 1))  # 5s, 10s, 20s
+                if verbose:
+                    print(f"     ⏳ loi tam thoi, doi {wait}s roi thu lai "
+                          f"({attempt}/{retry})...", flush=True)
+                time.sleep(wait)
+                r = fn(image_path, mode)
+
             results["modes"][mode][model_name] = r
             if verbose:
                 if "error" in r:

@@ -84,9 +84,52 @@ def aggregate(all_results: list[dict], models: list[str]) -> dict:
     return agg
 
 
-def build_recommendation(agg: dict, models: list[str]) -> dict:
-    """Suy ra khuyen nghi PRD tu so lieu."""
+def paired_compare(all_results: list[dict], models: list[str]) -> dict:
+    """So sanh CHI tren nhung anh ma CA HAI mode deu chay thanh cong.
+
+    Quan trong: neu concept chay duoc 9 anh con geometry chi 7 anh (do loi API
+    ngau nhien), thi so sanh avg cua 2 tap khac nhau la SAI PHUONG PHAP —
+    diem chenh lech co the chi phan anh anh nao tinh co that bai.
+    """
+    out = {}
+    for model in models:
+        pairs = []
+        for r in all_results:
+            c = r.get("scores", {}).get("concept", {}).get(model)
+            g = r.get("scores", {}).get("geometry", {}).get(model)
+            if not c or not g:
+                continue
+            if c.get("status") == "error" or g.get("status") == "error":
+                continue
+            pairs.append((Path(r["image"]).name, c.get("score_pct", 0), g.get("score_pct", 0)))
+        if not pairs:
+            out[model] = None
+            continue
+        ca = statistics.mean(p[1] for p in pairs)
+        ga = statistics.mean(p[2] for p in pairs)
+        out[model] = {
+            "n": len(pairs),
+            "concept_avg": round(ca, 1),
+            "geometry_avg": round(ga, 1),
+            "delta": round(ca - ga, 1),
+            "pairs": pairs,
+        }
+    return out
+
+
+def build_recommendation(agg: dict, models: list[str], paired: dict | None = None) -> dict:
+    """Suy ra khuyen nghi PRD tu so lieu.
+
+    Uu tien dung so lieu PAIRED (chi cac anh ca hai mode deu chay duoc) vi
+    so sanh hai tap anh khac nhau la sai phuong phap.
+    """
     def best(mode: str):
+        # Neu co du lieu paired thi dung no
+        if paired:
+            cands = [(m, paired[m][f"{mode}_avg"]) for m in models
+                     if paired.get(m) and paired[m]["n"] >= 3]
+            if cands:
+                return max(cands, key=lambda x: x[1])
         cands = [(m, agg[mode][m]["avg_score"]) for m in models if agg[mode][m]["n"] > 0]
         return max(cands, key=lambda x: x[1]) if cands else (None, 0.0)
 
@@ -453,6 +496,8 @@ def main():
     p.add_argument("--images-dir", default="images")
     p.add_argument("--limit", type=int, help="Chi chay N anh dau tien (tiet kiem cost)")
     p.add_argument("--modes", default="both", choices=["both", "concept", "geometry"])
+    p.add_argument("--retry", type=int, default=2, metavar="N",
+                   help="So lan thu lai khi gap loi tam thoi 503/429 (mac dinh 2)")
     p.add_argument("--dry-run", action="store_true", help="Kiem tra setup, khong goi API")
     p.add_argument("--check-key", action="store_true",
                    help="Goi 1 request nho de kiem tra API key co dung khong (~$0.001)")
@@ -504,7 +549,7 @@ def main():
 
     for i, img in enumerate(files, 1):
         print(f"\n[{i}/{len(files)}] {img.name}")
-        res = parse_one(img, models, modes)
+        res = parse_one(img, models, modes, retry=args.retry)
 
         truth_path = img.with_suffix(".truth.json")
         gt = json.loads(truth_path.read_text(encoding="utf-8")) if truth_path.exists() else None
@@ -531,7 +576,8 @@ def main():
                     print(f"     {mode:9s} {model:7s} {s['score_pct']:5.1f}%  [{s['status']}]")
 
     agg = aggregate(all_results, models)
-    rec = build_recommendation(agg, models)
+    paired = paired_compare(all_results, models)
+    rec = build_recommendation(agg, models, paired)
 
     report = {
         "generated": datetime.now().isoformat(),
@@ -539,12 +585,22 @@ def main():
         "models": models,
         "modes": modes,
         "aggregate": agg,
+        "paired": paired,
         "recommendation": rec,
         "results": all_results,
     }
     Path("compare_report.json").write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
     Path("compare_report.md").write_text(render_markdown(agg, rec, models, all_results), encoding="utf-8")
     Path("compare_report.html").write_text(render_html(agg, rec, models, all_results), encoding="utf-8")
+
+    # Canh bao neu ty le loi API cao lam sai lech ket qua
+    for mode in modes:
+        for model in models:
+            a = agg[mode][model]
+            if a["errors"] and a["errors"] / max(1, len(all_results)) >= 0.2:
+                print(f"\n⚠️  {mode}/{model}: {a['errors']}/{len(all_results)} anh LOI API "
+                      f"({a['errors']/len(all_results)*100:.0f}%) — ket qua co the sai lech.")
+                print("    Chay lai voi --retry 2 de giam nhieu.")
 
     print("\n" + "=" * 62)
     print("📊 KET QUA TONG HOP\n")
