@@ -18,16 +18,30 @@ Khác với bản trước, spike này chạy **2 chế độ song song** để 
 ## Setup
 
 ```bash
-pip install openai google-generativeai pillow
+pip install google-genai pillow      # Gemini
+pip install openai                   # chỉ cần nếu dùng --model openai
 
 # Chỉ cần 1 trong 2 key
+export GEMINI_API_KEY=AQ.Ab8...      # hoặc GOOGLE_API_KEY
 export OPENAI_API_KEY=sk-...
-export GEMINI_API_KEY=AIza...
 
 # Tuỳ chọn: đổi model
+export GEMINI_VISION_MODEL=gemini-2.5-flash
 export OPENAI_VISION_MODEL=gpt-4o
-export GEMINI_VISION_MODEL=gemini-1.5-pro
 ```
+
+> **Về định dạng key Gemini `AQ.`**
+>
+> Google đã chuyển từ Standard key (`AIza...`) sang Auth key (`AQ.Ab...`).
+> AI Studio hiện **chỉ cấp key dạng `AQ.`** — nếu bạn nhận được key bắt đầu bằng
+> `AQ.` thì đó là **đúng**, không phải lỗi. Key `AIza` cũ sẽ ngừng hoạt động.
+>
+> Cạm bẫy hay gặp: key `AQ.` bị từ chối trên **OpenAI-compatible endpoint**
+> (`/v1beta/openai` với `Authorization: Bearer`), nhưng chạy bình thường trên
+> **native endpoint**. Spike này dùng SDK `google-genai` đi đường native nên
+> không dính vấn đề đó.
+>
+> Lưu ý: SDK cũ `google-generativeai` đã EOL — đừng cài, dùng `google-genai`.
 
 ## Ảnh test — đã có sẵn trong repo
 
