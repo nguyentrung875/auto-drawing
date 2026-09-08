@@ -1,4 +1,7 @@
-images/
+# Bo test images ĐƯỢC commit (xem images/SOURCES.md) de ai clone ve cung chay
+# duoc ngay va so sanh ket qua tren cung mot bo du lieu.
+# Chi bo qua cac file OUTPUT sinh ra khi chay.
+
 compare_results/
 eval_results/
 compare_report.json
@@ -6,5 +9,6 @@ compare_report.html
 compare_report.md
 compare_report.demo.*
 *.result.json
+
 .venv/
 __pycache__/

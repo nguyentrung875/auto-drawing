@@ -29,22 +29,33 @@ export OPENAI_VISION_MODEL=gpt-4o
 export GEMINI_VISION_MODEL=gemini-1.5-pro
 ```
 
-## Chuẩn bị ảnh test
+## Ảnh test — đã có sẵn trong repo
 
-Đặt **10 ảnh how-to-draw** vào `images/`:
+**Không cần chuẩn bị gì.** Bộ 11 ảnh + ground truth đã được commit trong `images/`,
+nên clone về là chạy được ngay và mọi người so sánh trên cùng một bộ dữ liệu.
 
-| Loại | Số lượng | Mô tả | Mục đích |
-|---|:---:|---|---|
-| Easy | 3–4 | Nền trắng, nét đen đậm, có đánh số bước | Baseline |
-| Medium | 3–4 | Có màu, nhiều chi tiết, nền phức tạp | Stress test |
-| Hard | 2–3 | Chất lượng thấp, screenshot mờ | Tìm giới hạn |
+| Nhóm | Số lượng | Nội dung |
+|---|:---:|---|
+| Easy | 3 | Lưới panel rõ ràng, hook là số/chữ (số 20 → mèo, số 1 → hươu, chữ G → hươu) |
+| Medium | 4 | Nhiều bước, layout lộn xộn, có ảnh bị cắt giữa chừng |
+| Hard | 2 | Panel lẻ, ảnh có background |
+| **Negative** | **2** | **Bẫy: hình hoàn thiện & sơ đồ giải phẫu — model phải TỪ CHỐI** |
 
-Gợi ý tìm trên Pinterest: `how to draw rabbit step by step easy` · `draw from number 3 bunny tutorial` · `easy animal drawing steps for kids`
+Tổng cộng **6 ảnh là tutorial thật** và **5 ảnh model phải từ chối**
+(`is_step_tutorial: false`). Chủ ý chọn vậy: nếu chỉ toàn ảnh đẹp thì cả hai chế độ
+đều pass và thí nghiệm chẳng nói lên điều gì.
 
-**Ground truth (khuyến khích)** — tạo `images/<name>.truth.json` cạnh mỗi ảnh:
+Chi tiết nguồn gốc, lý do từng ảnh, và lưu ý bản quyền: xem [`images/SOURCES.md`](images/SOURCES.md).
+
+**Muốn dùng ảnh của bạn?** Thả vào `images/` kèm file `<tên>.truth.json`:
 ```json
-{ "step_count": 6, "subject_name": "rabbit", "hook_shape": "number 3" }
+{
+  "step_count": 6, "subject_name": "rabbit", "hook_shape": "number 3",
+  "is_step_tutorial": true, "difficulty": "easy", "note": "mô tả ngắn"
+}
 ```
+Trường `is_step_tutorial` **bắt buộc** — rubric dựa vào nó để phân biệt
+`true_negative` (từ chối đúng, 100đ) với `false_negative` (từ chối nhầm, 0đ).
 
 ---
 
@@ -68,9 +79,9 @@ python parse_image.py images/rabbit.jpg --mode both-modes --model gemini
 
 ### 3. Chạy so sánh đầy đủ ← **cái chính**
 ```bash
-python compare.py --model both              # 10 ảnh × 2 model × 2 mode = 40 calls (~$0.16)
-python compare.py --model gemini            # rẻ hơn: 20 calls
-python compare.py --limit 3                 # thử 3 ảnh trước
+python compare.py --model gemini            # 11 ảnh × 2 mode = 22 calls (~$0.09)  ← khuyến nghị
+python compare.py --model both              # thêm GPT-4o: 44 calls (~$0.18)
+python compare.py --limit 3                 # thử 3 ảnh trước cho chắc
 python compare.py --modes concept           # chỉ chạy concept
 ```
 
