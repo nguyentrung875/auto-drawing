@@ -1,0 +1,13 @@
+{"subject_name":"giraffe","canvas":{"width":1000,"height":1000},"_note":"ve tay dung ty le — moc so sanh","shapes":[
+ {"id":"neck","step":1,"part_name":"hook_number_1","type":"polyline","points":[[470,300],[520,255],[520,620]]},
+ {"id":"neck_b","step":1,"part_name":"hook_number_1","type":"line","x1":575,"y1":300,"x2":575,"y2":620},
+ {"id":"head","step":2,"part_name":"head","type":"rect","x":455,"y":175,"w":150,"h":105,"rx":38},
+ {"id":"body","step":3,"part_name":"body","type":"ellipse","cx":545,"cy":690,"rx":175,"ry":110},
+ {"id":"leg1","step":4,"part_name":"legs_and_spots","type":"line","x1":430,"y1":775,"x2":430,"y2":900},
+ {"id":"leg2","step":4,"part_name":"legs_and_spots","type":"line","x1":495,"y1":790,"x2":495,"y2":900},
+ {"id":"leg3","step":4,"part_name":"legs_and_spots","type":"line","x1":600,"y1":790,"x2":600,"y2":900},
+ {"id":"leg4","step":4,"part_name":"legs_and_spots","type":"line","x1":665,"y1":775,"x2":665,"y2":900},
+ {"id":"sp1","step":4,"part_name":"legs_and_spots","type":"ellipse","cx":505,"cy":650,"rx":30,"ry":24},
+ {"id":"sp2","step":4,"part_name":"legs_and_spots","type":"ellipse","cx":595,"cy":700,"rx":28,"ry":22},
+ {"id":"sp3","step":4,"part_name":"legs_and_spots","type":"ellipse","cx":540,"cy":420,"rx":22,"ry":18}
+]}
