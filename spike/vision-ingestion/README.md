@@ -17,18 +17,43 @@ Khác với bản trước, spike này chạy **2 chế độ song song** để 
 
 ## Setup
 
-```bash
-pip install google-genai pillow      # Gemini
-pip install openai                   # chỉ cần nếu dùng --model openai
+Chạy **từng dòng một**, theo đúng thứ tự (không gộp thành 1 dòng).
 
-# Chỉ cần 1 trong 2 key
-export GEMINI_API_KEY=AQ.Ab8...      # hoặc GOOGLE_API_KEY
-export OPENAI_API_KEY=sk-...
+### Windows — PowerShell
 
-# Tuỳ chọn: đổi model
-export GEMINI_VISION_MODEL=gemini-2.5-flash
-export OPENAI_VISION_MODEL=gpt-4o
+```powershell
+python -m venv .venv
+.venv\Scripts\pip install google-genai pillow
+$env:GEMINI_API_KEY = "AQ.Ab8..."
+.venv\Scripts\python compare.py --model gemini
 ```
+
+### Windows — Command Prompt (cmd.exe)
+
+```bat
+python -m venv .venv
+.venv\Scripts\pip install google-genai pillow
+set GEMINI_API_KEY=AQ.Ab8...
+.venv\Scripts\python compare.py --model gemini
+```
+
+> Trong cmd.exe **đừng** đặt dấu nháy quanh key — `set K="abc"` sẽ lưu cả dấu nháy vào giá trị.
+
+### macOS / Linux
+
+```bash
+python3 -m venv .venv
+.venv/bin/pip install google-genai pillow
+export GEMINI_API_KEY="AQ.Ab8..."
+.venv/bin/python compare.py --model gemini
+```
+
+### Ghi chú
+
+- Biến môi trường chỉ sống trong **cửa sổ terminal hiện tại**. Đóng đi mở lại là phải `set`/`export` lần nữa.
+- Gọi thẳng `.venv\Scripts\python` (hoặc `.venv/bin/python`) thì **không cần** `activate`.
+- Nếu muốn dùng OpenAI: `pip install openai` và đặt thêm `OPENAI_API_KEY=sk-...`
+- Đổi model qua `GEMINI_VISION_MODEL` (mặc định `gemini-2.5-flash`) hoặc `OPENAI_VISION_MODEL` (mặc định `gpt-4o`).
 
 > **Về định dạng key Gemini `AQ.`**
 >
@@ -85,6 +110,13 @@ Chạy 16 assertion offline chứng minh rubric phân biệt đúng kết quả 
 ```bash
 python compare.py --dry-run
 ```
+
+### 1b. Kiểm tra API key — **1 lượt gọi, ~$0.001**
+```bash
+python compare.py --check-key
+```
+Xác nhận key hoạt động trước khi chạy 22 lượt gọi. Nếu hỏng, nó nói rõ hỏng chỗ nào
+(key sai / thiếu quyền / hết quota / sai tên model / lỗi mạng) thay vì để bạn đoán.
 
 ### 2. Test nhanh 1 ảnh
 ```bash

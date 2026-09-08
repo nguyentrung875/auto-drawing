@@ -323,6 +323,65 @@ def render_html(agg: dict, rec: dict, models: list[str], results: list[dict]) ->
 </body></html>"""
 
 
+# ─── Key check ───────────────────────────────────────────────────────────────
+
+def check_key() -> int:
+    """Goi 1 request text nho de xac nhan key hoat dong. Tra ve exit code."""
+    import os
+
+    key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
+    if not key:
+        print("❌ Chua dat GEMINI_API_KEY (hoac GOOGLE_API_KEY)")
+        print("   PowerShell : $env:GEMINI_API_KEY = \"AQ.Ab8...\"")
+        print("   cmd.exe    : set GEMINI_API_KEY=AQ.Ab8...")
+        print("   bash       : export GEMINI_API_KEY=\"AQ.Ab8...\"")
+        return 1
+
+    masked = f"{key[:6]}...{key[-4:]}" if len(key) > 12 else "(qua ngan?)"
+    print(f"🔑 Key: {masked}  (do dai {len(key)})")
+
+    if key.startswith(("'", '"')) or key.endswith(("'", '"')):
+        print("⚠️  Key co dau nhay o dau/cuoi — trong cmd.exe dung 'set K=abc' KHONG co dau nhay")
+
+    if key.startswith("AQ."):
+        print("   Dinh dang: Auth key (AQ.) — dinh dang MOI, dung")
+    elif key.startswith("AIza"):
+        print("   Dinh dang: Standard key (AIza) — dinh dang cu, Google dang khai tu")
+    else:
+        print("   ⚠️  Dinh dang la: khong phai AQ. hay AIza")
+
+    try:
+        from google import genai
+    except ImportError:
+        print("❌ Chua cai SDK. Chay: pip install google-genai pillow")
+        return 1
+
+    from parse_image import GEMINI_MODEL
+    print(f"📡 Goi thu model {GEMINI_MODEL}...")
+    try:
+        client = genai.Client(api_key=key)
+        resp = client.models.generate_content(model=GEMINI_MODEL, contents="Reply with exactly: OK")
+        print(f"✅ Key hoat dong. Model tra loi: {(resp.text or '').strip()[:40]}")
+        print("\n   Chay tiep: python compare.py --model gemini")
+        return 0
+    except Exception as e:  # noqa: BLE001
+        msg = str(e)
+        print(f"❌ That bai: {msg[:300]}")
+        low = msg.lower()
+        if "api key not valid" in low or "invalid" in low or "401" in low:
+            print("\n   → Key sai hoac da bi xoa. Tao key moi tai aistudio.google.com/api-keys")
+        elif "permission" in low or "403" in low:
+            print("\n   → Key dung nhung thieu quyen / Gemini API chua bat cho project nay")
+        elif "quota" in low or "429" in low:
+            print("\n   → Het quota hoac bi rate limit. Doi vai phut roi thu lai")
+        elif "not found" in low or "404" in low:
+            print(f"\n   → Model '{GEMINI_MODEL}' khong ton tai voi key nay.")
+            print("     Thu: set GEMINI_VISION_MODEL=gemini-2.0-flash")
+        else:
+            print("\n   → Kiem tra ket noi mang / firewall / proxy")
+        return 1
+
+
 # ─── Main ─────────────────────────────────────────────────────────────────────
 
 def main():
@@ -332,7 +391,12 @@ def main():
     p.add_argument("--limit", type=int, help="Chi chay N anh dau tien (tiet kiem cost)")
     p.add_argument("--modes", default="both", choices=["both", "concept", "geometry"])
     p.add_argument("--dry-run", action="store_true", help="Kiem tra setup, khong goi API")
+    p.add_argument("--check-key", action="store_true",
+                   help="Goi 1 request nho de kiem tra API key co dung khong (~$0.001)")
     args = p.parse_args()
+
+    if args.check_key:
+        sys.exit(check_key())
 
     models = ["openai", "gemini"] if args.model == "both" else [args.model]
     modes = MODE_ORDER if args.modes == "both" else [args.modes]
