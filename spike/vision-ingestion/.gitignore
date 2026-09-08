@@ -1,0 +1,8 @@
+images/
+compare_results/
+eval_results/
+compare_report.json
+compare_report.html
+compare_report.md
+compare_report.demo.*
+*.result.json
