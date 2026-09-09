@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 540 760" width="540" height="760">
+  <rect width="540" height="760" fill="#0f211d"/>
+  <!-- Title -->
+  <text x="270" y="50" font-family="sans-serif" font-size="22" font-weight="bold" fill="#4ade80" text-anchor="middle">9 ➔ Chú heo ủn ỉn</text>
+  <text x="270" y="80" font-family="sans-serif" font-size="13" fill="#94a3b8" text-anchor="middle">Vòng tròn số 9 làm CHIẾC MŨI HEO TO TRÒN, đuôi cong số 9 làm BỤNG MỠ TRÒN VO.</text>
+  
+  <!-- Drawing Body -->
+  <g transform="translate(0, 30)">
+  <!-- Step 1: Số 9 · Vòng trên → MŨI HEO, Đuôi cong → BỤNG MỠ NỌNG CẰM -->
+  <path d="M 220 400 A 50 50 0 1 1 220 300 A 50 50 0 1 1 220 400 M 270 350 C 310 400 330 480 300 560 C 260 640 180 640 150 560" fill="none" stroke="#facc15" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Step 2: Hai lỗ mũi hạt đỗ -->
+  <path d="M 195 350 A 6 10 0 1 1 195 349 M 235 350 A 6 10 0 1 1 235 349" fill="none" stroke="#ffffff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Step 3: Đầu tròn, tai cụp và mắt híp -->
+  <path d="M 170 310 C 150 200 310 180 310 310 M 190 240 C 160 210 170 170 210 200 M 270 200 C 310 170 320 210 290 240 M 210 265 l 0.01 0 M 270 265 l 0.01 0" fill="none" stroke="#ffffff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Step 4: Đuôi xoắn lò xo & bốn chân ngắn -->
+  <path d="M 300 560 C 340 550 350 510 330 500 C 310 490 320 530 350 520 M 170 600 L 170 645 M 210 610 L 210 645 M 250 610 L 250 645 M 280 580 L 280 645" fill="none" stroke="#ffffff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+
+  </g>
+
+  <!-- Footer Info -->
+  <rect x="20" y="690" width="500" height="50" rx="8" fill="#132420" stroke="#24443b"/>
+  <text x="35" y="720" font-family="monospace" font-size="12" fill="#facc15">Vàng: Nét Hook (9)</text>
+  <text x="230" y="720" font-family="monospace" font-size="12" fill="#ffffff">Trắng: Nét thêm vào</text>
+  <text x="440" y="720" font-family="sans-serif" font-size="12" font-weight="bold" fill="#4ade80">PASS GATE</text>
+</svg>

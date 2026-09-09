@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 540 760" width="540" height="760">
+  <rect width="540" height="760" fill="#0f211d"/>
+  <!-- Title -->
+  <text x="270" y="50" font-family="sans-serif" font-size="22" font-weight="bold" fill="#4ade80" text-anchor="middle">9 ➔ Sư tử bờm xù</text>
+  <text x="270" y="80" font-family="sans-serif" font-size="13" fill="#94a3b8" text-anchor="middle">Vòng tròn số 9 làm KHUÔN MẶT TRUNG TÂM, đuôi cong số 9 làm BỜ VAI & LƯNG VẠM VỠ.</text>
+  
+  <!-- Drawing Body -->
+  <g transform="translate(0, 30)">
+  <!-- Step 1: Số 9 · Vòng trên → MẶT SƯ TỬ, Đuôi cong → BỜ VAI & SỐNG LƯNG -->
+  <path d="M 270 390 A 60 60 0 1 1 270 270 A 60 60 0 1 1 270 390 M 330 330 C 340 430 320 520 270 610" fill="none" stroke="#facc15" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Step 2: Bộ bờm xù uy quyền -->
+  <path d="M 210 330 C 150 300 160 210 220 200 C 270 150 350 170 360 230 C 410 280 390 370 350 400 C 370 470 300 490 260 450 C 200 480 160 410 210 330" fill="none" stroke="#ffffff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Step 3: Khuôn mặt dũng mãnh -->
+  <path d="M 255 340 L 285 340 L 270 355 Z M 270 355 Q 260 370 250 365 M 270 355 Q 280 370 290 365 M 245 310 L 255 315 L 245 320 M 295 310 L 285 315 L 295 320" fill="none" stroke="#ffffff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Step 4: Chân trước và ngực vạm vỡ -->
+  <path d="M 220 440 C 210 510 200 570 200 630 L 240 630 M 240 510 L 240 630" fill="none" stroke="#ffffff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Step 5: Đuôi dài túm lông xù -->
+  <path d="M 270 610 C 330 610 360 560 350 510 C 360 490 380 490 375 515 C 370 535 345 530 350 510" fill="none" stroke="#ffffff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+
+  </g>
+
+  <!-- Footer Info -->
+  <rect x="20" y="690" width="500" height="50" rx="8" fill="#132420" stroke="#24443b"/>
+  <text x="35" y="720" font-family="monospace" font-size="12" fill="#facc15">Vàng: Nét Hook (9)</text>
+  <text x="230" y="720" font-family="monospace" font-size="12" fill="#ffffff">Trắng: Nét thêm vào</text>
+  <text x="440" y="720" font-family="sans-serif" font-size="12" font-weight="bold" fill="#4ade80">PASS GATE</text>
+</svg>
