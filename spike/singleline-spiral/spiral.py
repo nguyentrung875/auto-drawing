@@ -26,6 +26,33 @@ R_MAX = 250              # ban kinh ngoai
 WORK = 400               # kich thuoc anh lam viec (vuong)
 
 
+def input_gate(img_path: str) -> dict:
+    """S0: kiem tra ANH INPUT (truoc stretch) — loai som anh khong hop spiral.
+
+    Calibrated tren 9 anh validation (xem VALIDATION-REPORT.md):
+      std < 0.10  -> qua phang/mu (fog: 0.043)
+      dark% < 50% -> nen khong toi / subject khong noi (street 43%, group 19%)
+      edge > 0.06 -> qua roi (street 0.072)
+    Anh tot: std 0.15-0.30, dark% 60-85%, edge 0.012-0.036.
+    """
+    a = Image.open(img_path).convert("L")
+    s = min(a.size)
+    a = a.crop(((a.width - s) // 2, (a.height - s) // 2,
+                (a.width + s) // 2, (a.height + s) // 2)).resize((WORK, WORK), Image.LANCZOS)
+    x = np.asarray(a, dtype=np.float32) / 255.0
+    g = np.hypot(*np.gradient(x))
+    std, dark, edge = float(x.std()), float((x < 0.2).mean()), float(g.mean())
+    fails = []
+    if std < 0.10:
+        fails.append(f"flat(std={std:.3f})")
+    if dark < 0.50:
+        fails.append(f"no-dark-bg({dark * 100:.0f}%)")
+    if edge > 0.06:
+        fails.append(f"cluttered(edge={edge:.3f})")
+    return {"std": round(std, 4), "dark_frac": round(dark, 4), "edge": round(edge, 4),
+            "pass": len(fails) == 0, "reasons": fails}
+
+
 def load_work_image(path: str) -> np.ndarray:
     img = Image.open(path).convert("L")
     # crop vuong giua anh
@@ -139,6 +166,7 @@ def main():
     args = ap.parse_args()
 
     os.makedirs(args.out, exist_ok=True)
+    s0 = input_gate(args.image)
     a = load_work_image(args.image)
     pts = generate(a, args.turns, args.amp, args.pp_turn, args.gamma,
                    args.mode, args.fm_per_turn)
@@ -168,6 +196,7 @@ def main():
     json.dump(tpl, open(f"{args.out}/oneline.json", "w"), ensure_ascii=False)
 
     stats = {
+        "s0_input": s0,
         "points": len(pts),
         "length_px": round(length, 1),
         "d_chars": len(d),

@@ -1,4 +1,11 @@
 {
+  "s0_input": {
+    "std": 0.2486,
+    "dark_frac": 0.6098,
+    "edge": 0.0153,
+    "pass": true,
+    "reasons": []
+  },
   "points": 14000,
   "length_px": 79660.3,
   "d_chars": 195163,

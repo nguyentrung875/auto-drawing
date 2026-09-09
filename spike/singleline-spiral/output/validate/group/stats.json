@@ -1,0 +1,18 @@
+{
+  "s0_input": {
+    "std": 0.2981,
+    "dark_frac": 0.1931,
+    "edge": 0.0504,
+    "pass": false,
+    "reasons": [
+      "no-dark-bg(19%)"
+    ]
+  },
+  "points": 14000,
+  "length_px": 79835.9,
+  "d_chars": 195148,
+  "m_commands": 1,
+  "realtime_s": 319.3,
+  "timelapse_45s": 7.1,
+  "likeness_S2": 0.2289
+}
