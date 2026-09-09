@@ -29,10 +29,12 @@ WORK = 400               # kich thuoc anh lam viec (vuong)
 def input_gate(img_path: str) -> dict:
     """S0: kiem tra ANH INPUT (truoc stretch) — loai som anh khong hop spiral.
 
-    Calibrated tren 9 anh validation (xem VALIDATION-REPORT.md):
+    Calibrated tren 9+3 anh validation (xem VALIDATION-REPORT.md):
       std < 0.10  -> qua phang/mu (fog: 0.043)
       dark% < 50% -> nen khong toi / subject khong noi (street 43%, group 19%)
       edge > 0.06 -> qua roi (street 0.072)
+      color-loss  -> anh ruc mau nhung xam phang: tin nam o hue, gop xam la mat
+                     (isoluminant: hoa do/la xanh cung do xam, S2=0.06)
     Anh tot: std 0.15-0.30, dark% 60-85%, edge 0.012-0.036.
     """
     a = Image.open(img_path).convert("L")
@@ -49,7 +51,18 @@ def input_gate(img_path: str) -> dict:
         fails.append(f"no-dark-bg({dark * 100:.0f}%)")
     if edge > 0.06:
         fails.append(f"cluttered(edge={edge:.3f})")
+    # color-loss: ruc mau nhung xam phang
+    c = Image.open(img_path).convert("RGB")
+    s = min(c.size)
+    c = c.crop(((c.width - s) // 2, (c.height - s) // 2,
+                (c.width + s) // 2, (c.height + s) // 2)).resize((WORK, WORK), Image.LANCZOS)
+    rgb = np.asarray(c, dtype=np.float32) / 255.0
+    rg, yb = rgb[..., 0] - rgb[..., 1], 0.5 * (rgb[..., 0] + rgb[..., 1]) - rgb[..., 2]
+    colorful = float(rg.std() + yb.std())
+    if colorful > 0.12 and std < 0.16:
+        fails.append(f"color-loss(color={colorful:.2f},luma-std={std:.3f})")
     return {"std": round(std, 4), "dark_frac": round(dark, 4), "edge": round(edge, 4),
+            "colorful": round(colorful, 4),
             "pass": len(fails) == 0, "reasons": fails}
 
 

@@ -62,7 +62,7 @@ Hai tầng bổ sung cho nhau, không thay thế nhau.
 
 ```bash
 cd spike/singleline-spiral
-for f in man elder cat profile rose street fog group; do
+for f in man elder cat profile rose street fog group phone isoluminant color_ok color_man; do
   .venv/bin/python spiral.py input/val_$f.png --turns 100 --amp 3.2 --pp-turn 140 \
     --out output/validate/$f
   node gate-singleline.mjs output/validate/$f
@@ -70,3 +70,28 @@ done
 ```
 
 Ảnh: `input/val_*.png` · Render: `output/validate/*/render.png`
+
+## 7. Bổ sung: ảnh màu & ảnh điện thoại (5 ca, 2026-09-09)
+
+**Câu hỏi:** pipeline chỉ nhận trắng đen — ảnh màu chụp điện thoại được không?
+
+**Trả lời: MÀU KHÔNG PHẢI VẤN ĐỀ — pipeline mù màu từ dòng đầu (`convert("L")").
+Yếu tố quyết định là ánh sáng + nền, không phải màu sắc.**
+
+| Ca | S0 | S2 | Mắt | Kết luận |
+|---|---|---|---|---|
+| color_man (màu, side-light mạnh, nền đen) | PASS | 0.246 ⚠xám | **RÕ** | Màu đạt chuẩn → đẹp như B&W. False-negative của ngưỡng cứng, **vùng xám cứu đúng** |
+| color_ok (màu, sáng đều, tàn nhang) | PASS | 0.231 ⚠xám | Yếu | Thua vì sáng đều + texture mịn (bệnh của cat/selfie), không vì màu |
+| phone (selfie ban ngày, nền công viên) | LOẠI (nền sáng 30%) | 0.205 | Yếu/rối | Thua vì phẳng + nền rối. Vignette cứu S0 nhưng S2 vẫn FAIL (0.209) |
+| phone+mask da thủ công | PASS | 0.179 | Tệ hơn | Mask thủ công lỗi (giữ cỏ, cắt tóc) → tiền xử lý nửa vời còn hại hơn |
+| isoluminant (hoa đỏ/lá xanh cùng xám) | LOẠI (**color-loss** 0.42) | 0.060 | Trống | **Giới hạn CỨNG**: tin nằm ở hue, gộp xám là mất. Không cứu được → anti-pattern |
+
+**S0 rule mới:** `colorful > 0.12 và luma-std < 0.16` → `color-loss`. Bắt đúng
+isoluminant, không bắt nhầm ảnh màu tốt (color_man/color_ok PASS).
+
+**Quy tắc chụp/chọn ảnh (từ bằng chứng):** nền tối + ánh sáng xiên tạo khối +
+1 subject lớn ở giữa + tránh texture mịn và subject phân biệt bằng hue.
+Ảnh selfie ban ngày nền công viên thì không — không phải vì màu, mà vì phẳng và rối.
+
+**Chưa thử:** xóa nền bằng model segmentation (rembg không tải được model trong
+sandbox do SSL). Dự đoán cũng không cứu được selfie phẳng vì thiếu gradient gốc.

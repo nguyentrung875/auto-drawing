@@ -1,0 +1,20 @@
+{
+  "s0_input": {
+    "std": 0.1157,
+    "dark_frac": 0.4817,
+    "edge": 0.0222,
+    "colorful": 0.4211,
+    "pass": false,
+    "reasons": [
+      "no-dark-bg(48%)",
+      "color-loss(color=0.42,luma-std=0.116)"
+    ]
+  },
+  "points": 14000,
+  "length_px": 79597.0,
+  "d_chars": 195144,
+  "m_commands": 1,
+  "realtime_s": 318.4,
+  "timelapse_45s": 7.08,
+  "likeness_S2": 0.0602
+}
