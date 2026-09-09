@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 540 760" width="540" height="760">
+  <rect width="540" height="760" fill="#0f211d"/>
+  <!-- Title -->
+  <text x="270" y="50" font-family="sans-serif" font-size="22" font-weight="bold" fill="#4ade80" text-anchor="middle">8 ➔ Gấu Teddy tròn xoe</text>
+  <text x="270" y="80" font-family="sans-serif" font-size="13" fill="#94a3b8" text-anchor="middle">Vòng trên số 8 → ĐẦU gấu. Vòng dưới số 8 → BỤNG BÉO.</text>
+  
+  <!-- Drawing Body -->
+  <g transform="translate(0, 30)">
+  <!-- Step 1: Số 8 · Vòng trên → ĐẦU, Vòng dưới → BỤNG -->
+  <path d="M 270 450 A 70 70 0 1 1 270 310 A 70 70 0 1 1 270 450 M 270 445 A 105 105 0 1 0 270 655 A 105 105 0 1 0 270 445" fill="none" stroke="#facc15" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Step 2: Hai tai tròn -->
+  <path d="M 208 348 A 30 30 0 1 1 208 288 A 30 30 0 1 1 208 348 M 332 348 A 30 30 0 1 1 332 288 A 30 30 0 1 1 332 348" fill="none" stroke="#ffffff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Step 3: Mắt, mũi tròn và miệng xinh -->
+  <path d="M 248 368 l 0.01 0 M 292 368 l 0.01 0 M 255 398 A 15 11 0 1 1 285 398 A 15 11 0 1 1 255 398 M 270 411 Q 261 426 247 419 M 270 411 Q 279 426 293 419" fill="none" stroke="#ffffff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Step 4: Hai tay ôm bụng -->
+  <path d="M 179 500 Q 139 556 173 616 M 361 500 Q 401 556 367 616" fill="none" stroke="#ffffff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Step 5: Hai bàn chân béo -->
+  <path d="M 192 652 A 30 20 0 1 1 252 652 A 30 20 0 1 1 192 652 M 288 652 A 30 20 0 1 1 348 652 A 30 20 0 1 1 288 652" fill="none" stroke="#ffffff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+
+  </g>
+
+  <!-- Footer Info -->
+  <rect x="20" y="690" width="500" height="50" rx="8" fill="#132420" stroke="#24443b"/>
+  <text x="35" y="720" font-family="monospace" font-size="12" fill="#facc15">Vàng: Nét Hook (8)</text>
+  <text x="230" y="720" font-family="monospace" font-size="12" fill="#ffffff">Trắng: Nét thêm vào</text>
+  <text x="440" y="720" font-family="sans-serif" font-size="12" font-weight="bold" fill="#4ade80">PASS GATE</text>
+</svg>

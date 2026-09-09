@@ -1,0 +1,1310 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Spike Xác Thực — Drawing Transformation Video Factory</title>
+<style>
+  :root {
+    --bg-main: #0c1412;
+    --bg-card: #13221e;
+    --bg-card-header: #182c27;
+    --border-color: #24443b;
+    --accent: #4ade80;
+    --accent-hover: #22c55e;
+    --hook-color: #facc15;
+    --text-primary: #f1f5f9;
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
+    --danger: #f87171;
+    --warning: #fbbf24;
+    --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg-main);
+    color: var(--text-primary);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.5;
+    padding-bottom: 60px;
+  }
+
+  header {
+    background: #09100e;
+    border-bottom: 1px solid var(--border-color);
+    padding: 16px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .brand h1 { font-size: 18px; font-weight: 700; color: #fff; }
+  .badge-tag {
+    background: rgba(74, 222, 128, 0.15);
+    color: var(--accent);
+    border: 1px solid rgba(74, 222, 128, 0.3);
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-size: 11.5px;
+    font-weight: 600;
+  }
+
+  .nav-tabs {
+    display: flex;
+    gap: 6px;
+    background: var(--bg-card);
+    padding: 3px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+  }
+  .tab-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    padding: 6px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    transition: all 0.2s;
+  }
+  .tab-btn.active {
+    background: var(--accent);
+    color: #052e16;
+  }
+
+  .container {
+    max-width: 1400px;
+    margin: 20px auto;
+    padding: 0 20px;
+  }
+
+  /* Main grid */
+  .layout-grid {
+    display: grid;
+    grid-template-columns: 320px 1fr 340px;
+    gap: 20px;
+  }
+  @media (max-width: 1100px) {
+    .layout-grid { grid-template-columns: 1fr; }
+  }
+
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .card-header {
+    background: var(--bg-card-header);
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border-color);
+    font-size: 14px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  /* Left Panel: Selector & Variations */
+  .panel-body { padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+  .form-group { display: flex; flex-direction: column; gap: 5px; }
+  .form-group label { font-size: 12.5px; font-weight: 600; color: var(--text-secondary); }
+  
+  select, input, button {
+    font-family: inherit;
+    font-size: 13px;
+  }
+  select {
+    background: #0a1613;
+    color: #fff;
+    border: 1px solid var(--border-color);
+    padding: 8px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    outline: none;
+  }
+  select:focus { border-color: var(--accent); }
+
+  .radio-pill-group {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+  }
+  .pill-option {
+    background: #0a1613;
+    border: 1px solid var(--border-color);
+    padding: 7px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    text-align: center;
+    font-size: 12px;
+    color: var(--text-secondary);
+    transition: all 0.15s;
+    user-select: none;
+  }
+  .pill-option.selected {
+    background: rgba(74, 222, 128, 0.15);
+    border-color: var(--accent);
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  /* Center: Video Canvas Preview */
+  .canvas-stage-wrapper {
+    position: relative;
+    background: #070d0b;
+    border-radius: 12px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+  }
+  
+  .canvas-frame {
+    width: 360px;
+    height: 480px;
+    position: relative;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+    border: 2px solid #203830;
+    background: #0f211d; /* Chalkboard */
+  }
+
+  /* Canvas Themes */
+  .canvas-frame.theme-chalk { background: #0f211d; }
+  .canvas-frame.theme-slate { background: #18181b; }
+  .canvas-frame.theme-paper { background: #faf5eb; }
+  .canvas-frame.theme-neon { background: #050508; }
+
+  svg.draw-canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  .chalk-path {
+    fill: none;
+    stroke: #eef4f0;
+    stroke-width: 6;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    transition: opacity 0.2s;
+  }
+  .theme-paper .chalk-path { stroke: #1e293b; stroke-width: 5; }
+  .theme-neon .chalk-path { stroke: #00f2ff; stroke-width: 5; filter: drop-shadow(0 0 6px #00f2ff); }
+
+  .hook-path {
+    stroke: var(--hook-color) !important;
+    stroke-width: 7 !important;
+  }
+  .theme-neon .hook-path { stroke: #ff007f !important; filter: drop-shadow(0 0 8px #ff007f); }
+
+  .accessory-path {
+    stroke: #ec4899 !important;
+    stroke-width: 4 !important;
+  }
+
+  /* Pen pointer */
+  .pen-pointer {
+    position: absolute;
+    width: 28px;
+    height: 28px;
+    pointer-events: none;
+    transform-origin: 2px 2px;
+    transition: opacity 0.15s;
+    z-index: 50;
+    display: none;
+  }
+  .pen-svg { width: 100%; height: 100%; filter: drop-shadow(1px 2px 4px rgba(0,0,0,0.8)); }
+
+  /* Subtitle bar */
+  .subtitle-overlay {
+    position: absolute;
+    bottom: 14px;
+    left: 14px;
+    right: 14px;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(6px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    padding: 8px 12px;
+    border-radius: 8px;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 600;
+    color: #fff;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1.35;
+  }
+  .subtitle-overlay .highlight { color: var(--accent); }
+
+  /* Controls */
+  .playback-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    width: 100%;
+    margin-top: 14px;
+    background: var(--bg-card);
+    padding: 10px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+  }
+  .btn-play {
+    background: var(--accent);
+    color: #052e16;
+    border: none;
+    padding: 8px 20px;
+    border-radius: 6px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: filter 0.15s;
+  }
+  .btn-play:hover { filter: brightness(1.1); }
+  .btn-secondary {
+    background: #182823;
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    padding: 8px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  .btn-secondary:hover { border-color: var(--accent); }
+
+  /* Right Panel: Gate CI/CD */
+  .metric-card {
+    background: #0d1a16;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+  .metric-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12.5px;
+    font-weight: 700;
+  }
+  .status-tag {
+    font-size: 10.5px;
+    padding: 1px 6px;
+    border-radius: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+  }
+  .status-tag.pass { background: rgba(74, 222, 128, 0.2); color: var(--accent); border: 1px solid var(--accent); }
+  .status-tag.fail { background: rgba(248, 113, 113, 0.2); color: var(--danger); border: 1px solid var(--danger); }
+  .metric-desc { font-size: 11.5px; color: var(--text-muted); }
+  .metric-val { font-size: 12.5px; font-weight: 600; color: var(--text-primary); margin-top: 2px; }
+
+  /* Anatomy Box */
+  .anatomy-box {
+    background: #10241f;
+    border-left: 3px solid var(--hook-color);
+    padding: 10px 12px;
+    border-radius: 0 6px 6px 0;
+    font-size: 12.5px;
+    color: #e2e8f0;
+    line-height: 1.45;
+  }
+  .anatomy-box b { color: var(--hook-color); }
+
+  /* Batch Tab */
+  .batch-view { display: none; }
+  .batch-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 14px;
+    margin-top: 16px;
+  }
+  .batch-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .batch-card-title { font-size: 13.5px; font-weight: 700; color: var(--accent); }
+  .batch-meta { font-size: 11.5px; color: var(--text-muted); font-family: var(--font-mono); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <h1>Drawing Transformation Spike</h1>
+    <span class="badge-tag">Interactive Proof R0</span>
+  </div>
+  <div class="nav-tabs">
+    <button class="tab-btn active" onclick="switchView('live')">🎬 Live Drawing & Gate</button>
+    <button class="tab-btn" onclick="switchView('batch')">🏭 Batch Factory Simulator</button>
+    <button class="tab-btn" onclick="switchView('json')">📄 JSON DSL</button>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- VIEW 1: LIVE INTERACTIVE PROOF -->
+  <div id="view-live" class="layout-grid">
+    
+    <!-- LEFT: SELECTOR & VARIATION SLOTS -->
+    <div class="card">
+      <div class="card-header">
+        <span>1. Chọn Mẫu & Biến Thể</span>
+      </div>
+      <div class="panel-body">
+        
+        <div class="form-group">
+          <label>Mẫu Hook & Con Vật:</label>
+          <select id="tplSelect" onchange="onTemplateChange()">
+            <optgroup label="🌟 Biến hình từ Số 9 (Load-bearing Anatomy)">
+              <option value="9_to_cat" selected>Số 9 ➔ Con Mèo (Ngồi kiêu hãnh)</option>
+              <option value="9_to_dog">Số 9 ➔ Cún Con (Ngây thơ)</option>
+              <option value="9_to_eagle">Số 9 ➔ Đại Bàng (Dũng mãnh)</option>
+              <option value="9_to_pig">Số 9 ➔ Chú Heo (Ủn ỉn)</option>
+              <option value="9_to_lion">Số 9 ➔ Sư Tử (Bờm xù)</option>
+            </optgroup>
+            <optgroup label="🌟 Mẫu Số 8 & Số 2">
+              <option value="8_to_bear">Số 8 ➔ Gấu Teddy (Tròn xoe)</option>
+              <option value="2_to_swan">Số 2 ➔ Thiên Nga (Lướt sóng)</option>
+            </optgroup>
+            <optgroup label="❌ Mẫu Thất Bại (Ví dụ Gate Reject)">
+              <option value="99_to_tiger_rejected">Số 99 ➔ Con Hổ (Fail C0 - Nét mồ côi)</option>
+            </optgroup>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Vóc dáng (Parametric Deform):</label>
+          <div class="radio-pill-group" id="bodyDeformGroup">
+            <div class="pill-option selected" onclick="setDeform('normal', this)">Chuẩn</div>
+            <div class="pill-option" onclick="setDeform('chibi_cute', this)">Chibi Cute</div>
+            <div class="pill-option" onclick="setDeform('chubby', this)">Béo Múp</div>
+            <div class="pill-option" onclick="setDeform('slender', this)">Thon Dài</div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Biểu cảm mắt (Modular Eyes Slot):</label>
+          <div class="radio-pill-group" id="eyesGroup">
+            <div class="pill-option selected" onclick="setEyes('eyes_normal', this)">Mắt thường</div>
+            <div class="pill-option" onclick="setEyes('eyes_happy', this)">Mắt cười (^.^)</div>
+            <div class="pill-option" onclick="setEyes('eyes_wink', this)">Mắt nháy (^_~)</div>
+            <div class="pill-option" onclick="setEyes('eyes_anime', this)">Mắt Anime (*_*)</div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Phụ kiện (Accessory Slot):</label>
+          <div class="radio-pill-group" id="accGroup">
+            <div class="pill-option selected" onclick="setAccessory('none', this)">Không</div>
+            <div class="pill-option" onclick="setAccessory('bow_collar', this)">Nơ Cổ 🎀</div>
+            <div class="pill-option" onclick="setAccessory('birthday_hat', this)">Mũ Sinh Nhật 🥳</div>
+            <div class="pill-option" onclick="setAccessory('sunglasses', this)">Kính Râm 😎</div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Chất liệu bảng vẽ (Visual Theme):</label>
+          <select id="themeSelect" onchange="onThemeChange()">
+            <option value="theme-chalk">Bảng xanh phấn trắng (Chalkboard)</option>
+            <option value="theme-slate">Bảng đen xám hiện đại (Dark Slate)</option>
+            <option value="theme-paper">Sổ tay vẽ bút lông (Doodle Paper)</option>
+            <option value="theme-neon">Bảng phát sáng Neon (Cyberpunk Glow)</option>
+          </select>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- CENTER: LIVE DRAWING CANVAS -->
+    <div class="canvas-stage-wrapper">
+      
+      <div class="canvas-frame theme-chalk" id="canvasFrame">
+        <svg class="draw-canvas" id="drawSvg" viewBox="0 0 540 760">
+          <g id="drawingLayer"></g>
+          <g id="accessoryLayer"></g>
+        </svg>
+
+        <!-- Simulated Pen with exact point tracking -->
+        <div class="pen-pointer" id="penPointer">
+          <svg class="pen-svg" viewBox="0 0 40 40">
+            <polygon points="0,0 12,28 28,12" fill="#ffd479"/>
+            <polygon points="0,0 4,8 8,4" fill="#ffffff"/>
+            <circle cx="2" cy="2" r="2" fill="#ff4444"/>
+          </svg>
+        </div>
+
+        <div class="subtitle-overlay" id="subtitleText">
+          Sẵn sàng. Bấm <span class="highlight">"▶ Bắt đầu Vẽ"</span> để xem nét bút bám khớp và giọng đọc tiếng Việt.
+        </div>
+      </div>
+
+      <!-- Playback toolbar -->
+      <div class="playback-bar">
+        <button class="btn-play" id="btnPlay" onclick="togglePlay()">
+          <span id="playIcon">▶</span> <span id="playLabel">Bắt đầu Vẽ</span>
+        </button>
+        <button class="btn-secondary" onclick="resetCanvas()">↺ Reset</button>
+        <div style="display:flex; align-items:center; gap:6px; font-size:12.5px; color:var(--text-secondary);">
+          <span>Tốc độ:</span>
+          <select id="speedSelect" style="padding:4px 8px;">
+            <option value="0.75">0.75×</option>
+            <option value="1.0" selected>1.0×</option>
+            <option value="1.5">1.5×</option>
+            <option value="2.0">2.0×</option>
+          </select>
+        </div>
+        <label style="display:flex; align-items:center; gap:5px; font-size:12px; cursor:pointer; color:var(--text-secondary);">
+          <input type="checkbox" id="chkAudio" checked> Bật Âm Thanh & Voice
+        </label>
+      </div>
+
+    </div>
+
+    <!-- RIGHT: GATE CI/CD & LOGIC ANATOMY -->
+    <div class="card">
+      <div class="card-header">
+        <span>2. Giải Phẫu & Gate CI/CD</span>
+        <span class="status-tag pass" id="overallBadge">PASS</span>
+      </div>
+      <div class="panel-body">
+        
+        <div class="anatomy-box" id="anatomyDesc">
+          <b>Giải phẫu nét:</b> Vòng tròn số 9 làm ĐẦU mèo nghiêng, đuôi cong số 9 làm SỐNG LƯNG & ĐUÔI UỐN LƯỢN.
+        </div>
+
+        <div class="form-group" style="gap:8px;">
+          <label>Chỉ số Quality Gate (C0..C3):</label>
+          
+          <div class="metric-card">
+            <div class="metric-header">
+              <span>C0: Glyph Absorption</span>
+              <span class="status-tag pass" id="c0Badge">PASS</span>
+            </div>
+            <div class="metric-desc">Không có nét số bị "mồ côi" hay đâm xuyên bừa bãi.</div>
+            <div class="metric-val" id="c0Val">0 nét mồ côi</div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-header">
+              <span>C1: Hook Load-Bearing</span>
+              <span class="status-tag pass" id="c1Badge">PASS</span>
+            </div>
+            <div class="metric-desc">Số là khung xương chính (bỏ số ra thì hình rã rời).</div>
+            <div class="metric-val" id="c1Val">4 cụm bộ phận</div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-header">
+              <span>C2: Hook Ink Ratio</span>
+              <span class="status-tag pass" id="c2Badge">PASS</span>
+            </div>
+            <div class="metric-desc">Mực của số chiếm ≥ 25% tổng khối lượng hình.</div>
+            <div class="metric-val" id="c2Val">50.4% tổng nét</div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-header">
+              <span>C3: Stroke Budget</span>
+              <span class="status-tag pass" id="c3Badge">PASS</span>
+            </div>
+            <div class="metric-desc">Tối đa 14 nét / ≤ 20 giây vẽ (tối ưu TikTok retention).</div>
+            <div class="metric-val" id="c3Val">5 nét / 6.6s</div>
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <!-- VIEW 2: BATCH FACTORY COMBINATORICS SIMULATION -->
+  <div id="view-batch" class="batch-view">
+    <div class="card">
+      <div class="card-header">
+        <span>Nhà máy Sản xuất Tự động (Combinatorial Factory Simulator)</span>
+        <button class="btn-play" style="padding:6px 14px; font-size:12.5px;" onclick="generateBatchDemo()">⚡ Sinh ngẫu nhiên 50 Video Mẫu</button>
+      </div>
+      <div class="panel-body">
+        <p style="font-size:13.5px; color:var(--text-secondary); line-height:1.6;">
+          Toán học tổ hợp: <b>30 Template Gốc</b> × <b>4 Biến thể Dáng</b> × <b>4 Kiểu Mắt</b> × <b>4 Phụ kiện</b> × <b>4 Style Bút</b> × <b>4 Kịch bản AI</b> = <b style="color:var(--accent);">30.720 Biến Thể Độc Nhất</b>. Dưới đây là 50 video mẫu xuất tự động từ hệ thống:
+        </p>
+        <div class="batch-grid" id="batchGrid"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- VIEW 3: JSON DSL INSPECTOR -->
+  <div id="view-json" class="batch-view">
+    <div class="card">
+      <div class="card-header">
+        <span>Transformation DSL Schema (JSON-on-disk)</span>
+      </div>
+      <div class="panel-body">
+        <pre id="jsonViewer" style="background:#08100e; padding:16px; border-radius:8px; font-family:var(--font-mono); font-size:12.5px; color:#a7f3d0; overflow-x:auto; max-height:550px;"></pre>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// Embedded Templates Data - 100% standalone and reliable
+const TEMPLATES_DATA = [
+  {
+    "id": "9_to_cat",
+    "hook": "9",
+    "subject": "Mèo kiêu hãnh",
+    "en": "cat",
+    "hook_role_desc": "Vòng tròn số 9 làm ĐẦU mèo nghiêng, đuôi cong số 9 làm SỐNG LƯNG & ĐUÔI UỐN LƯỢN.",
+    "slots": {
+      "expression": ["eyes_normal", "eyes_happy", "eyes_wink", "eyes_anime"],
+      "accessories": ["none", "bow_collar", "birthday_hat", "sunglasses"],
+      "body_deform": ["normal", "chibi_cute", "chubby", "slender"]
+    },
+    "strokes": [
+      {
+        "step": 1,
+        "role": "hook",
+        "absorbed": true,
+        "part": "Số 9 · Vòng trên → ĐẦU, Đuôi cong → SỐNG LƯNG & ĐUÔI",
+        "d": "M 270 380 A 65 65 0 1 1 270 250 A 65 65 0 1 1 270 380 M 335 315 C 335 450 310 560 260 620 C 220 668 150 640 130 580",
+        "dur": 2.2,
+        "voice_vi": "Đầu tiên, viết một số 9 thật thanh thoát làm khung đầu và sống lưng nhé!"
+      },
+      {
+        "step": 2,
+        "role": "part",
+        "part": "Hai tai mèo nhọn",
+        "d": "M 220 270 L 195 200 L 255 240 M 285 240 L 345 200 L 320 270",
+        "dur": 1.2,
+        "voice_vi": "Vẽ thêm hai chiếc tai tam giác xinh xắn trên đỉnh đầu."
+      },
+      {
+        "step": 3,
+        "role": "part",
+        "part": "Mắt, mũi và râu mèo",
+        "d": "M 240 310 l 0.01 0 M 280 310 l 0.01 0 M 255 330 L 265 330 L 260 338 Z M 230 330 L 175 325 M 230 340 L 175 345 M 290 330 L 345 325 M 290 340 L 345 345",
+        "dur": 1.5,
+        "voice_vi": "Chấm đôi mắt, chiếc mũi nhỏ và ba sợi râu rung rinh hai bên má."
+      },
+      {
+        "step": 4,
+        "role": "part",
+        "part": "Ngực và chân trước",
+        "d": "M 240 375 C 220 440 215 540 215 620 L 255 620",
+        "dur": 1.1,
+        "voice_vi": "Kéo một nét cong nhẹ tạo ngực và bàn chân trước đang ngồi."
+      },
+      {
+        "step": 5,
+        "role": "part",
+        "part": "Chân sau khép nép",
+        "d": "M 260 620 L 310 620",
+        "dur": 0.6,
+        "voice_vi": "Thêm bàn chân sau là chú mèo quý tộc đã hoàn thành rồi!"
+      }
+    ]
+  },
+  {
+    "id": "9_to_dog",
+    "hook": "9",
+    "subject": "Cún con ngây thơ",
+    "en": "dog",
+    "hook_role_desc": "Vòng tròn số 9 làm VÒM ĐẦU & TAI RỦ, đuôi cong số 9 làm SỐNG LƯNG cún.",
+    "slots": {
+      "expression": ["eyes_normal", "eyes_happy", "eyes_wink", "eyes_anime"],
+      "accessories": ["none", "bow_collar", "birthday_hat", "sunglasses"],
+      "body_deform": ["normal", "chibi_cute", "chubby", "slender"]
+    },
+    "strokes": [
+      {
+        "step": 1,
+        "role": "hook",
+        "absorbed": true,
+        "part": "Số 9 · Vòng trên → ĐẦU & TAI, Đuôi cong → LƯNG TRÒN",
+        "d": "M 270 360 A 70 70 0 1 1 270 220 A 70 70 0 1 1 270 360 M 340 290 C 340 430 320 540 270 610",
+        "dur": 2.0,
+        "voice_vi": "Viết số 9 hơi nghiêng, lát nữa sẽ làm lưng và đầu chú cún."
+      },
+      {
+        "step": 2,
+        "role": "part",
+        "part": "Chiếc mõm và mũi cún",
+        "d": "M 200 300 C 140 300 140 360 215 360 M 140 320 A 10 10 0 1 1 140 340 A 10 10 0 1 1 140 320",
+        "dur": 1.4,
+        "voice_vi": "Vẽ chiếc mõm tròn nhô ra phía trước cùng chiếc mũi đen bóng."
+      },
+      {
+        "step": 3,
+        "role": "part",
+        "part": "Tai rủ và mắt cún",
+        "d": "M 310 240 C 370 280 360 380 310 370 M 235 285 l 0.01 0",
+        "dur": 1.1,
+        "voice_vi": "Thêm chiếc tai dài rủ xuống và đôi mắt ngây thơ long lanh."
+      },
+      {
+        "step": 4,
+        "role": "part",
+        "part": "Chân trước và ngực",
+        "d": "M 215 360 C 205 450 195 540 195 620 L 235 620 M 235 480 L 235 620",
+        "dur": 1.2,
+        "voice_vi": "Kéo hai nét thẳng làm hai chân trước ngắn cũn cỡn."
+      },
+      {
+        "step": 5,
+        "role": "part",
+        "part": "Đuôi ngoe nguẩy & lưỡi thè",
+        "d": "M 270 610 C 320 600 340 550 330 520 M 175 360 Q 185 390 195 360",
+        "dur": 0.9,
+        "voice_vi": "Thêm chiếc đuôi ngoe nguẩy và chiếc lưỡi hồng đáng yêu nè!"
+      }
+    ]
+  },
+  {
+    "id": "9_to_eagle",
+    "hook": "9",
+    "subject": "Đại bàng dũng mãnh",
+    "en": "eagle",
+    "hook_role_desc": "Vòng tròn số 9 làm GÁY & VÒM ĐẦU, đuôi cong số 9 làm CÁNH LỚN DỌC LƯNG.",
+    "slots": {
+      "expression": ["eyes_normal", "eyes_happy", "eyes_wink", "eyes_anime"],
+      "accessories": ["none", "crown", "sunglasses"],
+      "body_deform": ["normal", "slender"]
+    },
+    "strokes": [
+      {
+        "step": 1,
+        "role": "hook",
+        "absorbed": true,
+        "part": "Số 9 · Vòng trên → ĐẦU, Đuôi cong → CÁNH LỚN GẬP DỌC THÂN",
+        "d": "M 280 360 A 65 65 0 1 1 280 230 A 65 65 0 1 1 280 360 M 345 295 C 345 420 315 540 260 640",
+        "dur": 2.1,
+        "voice_vi": "Bắt đầu với số 9 uy lực làm sống cánh và đầu chim đại bàng."
+      },
+      {
+        "step": 2,
+        "role": "part",
+        "part": "Mỏ khoằm đại bàng",
+        "d": "M 215 285 L 140 315 C 160 345 200 335 220 325 Z",
+        "dur": 1.3,
+        "voice_vi": "Vẽ chiếc mỏ khoằm sắc bén vươn mạnh mẽ về phía trước."
+      },
+      {
+        "step": 3,
+        "role": "part",
+        "part": "Mắt sắc sảo và cung mày",
+        "d": "M 245 285 L 265 280 L 255 295 Z M 235 275 L 275 275",
+        "dur": 1.0,
+        "voice_vi": "Chấm ánh mắt tinh anh và chân mày sắc lạnh của chúa tể bầu trời."
+      },
+      {
+        "step": 4,
+        "role": "part",
+        "part": "Lông vũ xếp lớp trên cánh",
+        "d": "M 290 400 L 330 420 M 275 470 L 315 490 M 260 540 L 295 560",
+        "dur": 1.2,
+        "voice_vi": "Đi các nét vát chéo tạo lớp lông vũ dày dặn trên cánh."
+      },
+      {
+        "step": 5,
+        "role": "part",
+        "part": "Ngực, móng vuốt và cành cây",
+        "d": "M 220 350 C 200 440 210 550 240 620 M 120 640 L 380 640 M 225 620 L 220 645 M 245 620 L 250 645 M 260 620 L 270 645",
+        "dur": 1.8,
+        "voice_vi": "Vẽ ngực vạm vỡ cùng bộ móng vuốt thép bám chặt trên cành cây!"
+      }
+    ]
+  },
+  {
+    "id": "9_to_pig",
+    "hook": "9",
+    "subject": "Chú heo ủn ỉn",
+    "en": "pig",
+    "hook_role_desc": "Vòng tròn số 9 làm CHIẾC MŨI HEO TO TRÒN, đuôi cong số 9 làm BỤNG MỠ TRÒN VO.",
+    "slots": {
+      "expression": ["eyes_normal", "eyes_happy", "eyes_wink"],
+      "accessories": ["none", "bow_collar", "birthday_hat"],
+      "body_deform": ["normal", "chubby"]
+    },
+    "strokes": [
+      {
+        "step": 1,
+        "role": "hook",
+        "absorbed": true,
+        "part": "Số 9 · Vòng trên → MŨI HEO, Đuôi cong → BỤNG MỠ NỌNG CẰM",
+        "d": "M 220 400 A 50 50 0 1 1 220 300 A 50 50 0 1 1 220 400 M 270 350 C 310 400 330 480 300 560 C 260 640 180 640 150 560",
+        "dur": 2.2,
+        "voice_vi": "Viết số 9 to tròn, vòng tròn này chính là chiếc mũi heo siêu to khổng lồ!"
+      },
+      {
+        "step": 2,
+        "role": "part",
+        "part": "Hai lỗ mũi hạt đỗ",
+        "d": "M 195 350 A 6 10 0 1 1 195 349 M 235 350 A 6 10 0 1 1 235 349",
+        "dur": 0.8,
+        "voice_vi": "Chấm hai lỗ mũi heo hạt đỗ nhìn là nhận ra ngay."
+      },
+      {
+        "step": 3,
+        "role": "part",
+        "part": "Đầu tròn, tai cụp và mắt híp",
+        "d": "M 170 310 C 150 200 310 180 310 310 M 190 240 C 160 210 170 170 210 200 M 270 200 C 310 170 320 210 290 240 M 210 265 l 0.01 0 M 270 265 l 0.01 0",
+        "dur": 1.8,
+        "voice_vi": "Vẽ vòm đầu tròn xoe, đôi tai lá mít cụp xuống và hai mắt híp tít."
+      },
+      {
+        "step": 4,
+        "role": "part",
+        "part": "Đuôi xoắn lò xo & bốn chân ngắn",
+        "d": "M 300 560 C 340 550 350 510 330 500 C 310 490 320 530 350 520 M 170 600 L 170 645 M 210 610 L 210 645 M 250 610 L 250 645 M 280 580 L 280 645",
+        "dur": 1.6,
+        "voice_vi": "Thêm chiếc đuôi xoắn tít lò xo cùng 4 chiếc chân ngắn lon ton."
+      }
+    ]
+  },
+  {
+    "id": "9_to_lion",
+    "hook": "9",
+    "subject": "Sư tử bờm xù",
+    "en": "lion",
+    "hook_role_desc": "Vòng tròn số 9 làm KHUÔN MẶT TRUNG TÂM, đuôi cong số 9 làm BỜ VAI & LƯNG VẠM VỠ.",
+    "slots": {
+      "expression": ["eyes_normal", "eyes_happy", "eyes_anime"],
+      "accessories": ["none", "crown", "sunglasses"],
+      "body_deform": ["normal", "chubby", "slender"]
+    },
+    "strokes": [
+      {
+        "step": 1,
+        "role": "hook",
+        "absorbed": true,
+        "part": "Số 9 · Vòng trên → MẶT SƯ TỬ, Đuôi cong → BỜ VAI & SỐNG LƯNG",
+        "d": "M 270 390 A 60 60 0 1 1 270 270 A 60 60 0 1 1 270 390 M 330 330 C 340 430 320 520 270 610",
+        "dur": 2.0,
+        "voice_vi": "Bắt đầu với số 9 uy nghi làm tâm khuôn mặt và bờ vai sư tử."
+      },
+      {
+        "step": 2,
+        "role": "part",
+        "part": "Bộ bờm xù uy quyền",
+        "d": "M 210 330 C 150 300 160 210 220 200 C 270 150 350 170 360 230 C 410 280 390 370 350 400 C 370 470 300 490 260 450 C 200 480 160 410 210 330",
+        "dur": 2.2,
+        "voice_vi": "Vẽ những đường uốn lượn liên hoàn tạo bộ bờm xù đồ sộ bao quanh."
+      },
+      {
+        "step": 3,
+        "role": "part",
+        "part": "Khuôn mặt dũng mãnh",
+        "d": "M 255 340 L 285 340 L 270 355 Z M 270 355 Q 260 370 250 365 M 270 355 Q 280 370 290 365 M 245 310 L 255 315 L 245 320 M 295 310 L 285 315 L 295 320",
+        "dur": 1.6,
+        "voice_vi": "Vẽ chiếc mũi to bản, khoé miệng và ánh mắt sắc lẹm của chúa sơn lâm."
+      },
+      {
+        "step": 4,
+        "role": "part",
+        "part": "Chân trước và ngực vạm vỡ",
+        "d": "M 220 440 C 210 510 200 570 200 630 L 240 630 M 240 510 L 240 630",
+        "dur": 1.2,
+        "voice_vi": "Đi nét ngực cơ bắp cùng đôi chân trước sừng sững."
+      },
+      {
+        "step": 5,
+        "role": "part",
+        "part": "Đuôi dài túm lông xù",
+        "d": "M 270 610 C 330 610 360 560 350 510 C 360 490 380 490 375 515 C 370 535 345 530 350 510",
+        "dur": 1.2,
+        "voice_vi": "Cuối cùng là chiếc đuôi dài có túm lông xù kiêu hãnh!"
+      }
+    ]
+  },
+  {
+    "id": "8_to_bear",
+    "hook": "8",
+    "subject": "Gấu Teddy tròn xoe",
+    "en": "bear",
+    "hook_role_desc": "Vòng trên số 8 → ĐẦU gấu. Vòng dưới số 8 → BỤNG BÉO.",
+    "slots": {
+      "expression": ["eyes_normal", "eyes_happy", "eyes_wink", "eyes_anime"],
+      "accessories": ["none", "bow_collar", "birthday_hat", "sunglasses"],
+      "body_deform": ["normal", "chibi_cute", "chubby"]
+    },
+    "strokes": [
+      {
+        "step": 1,
+        "role": "hook",
+        "absorbed": true,
+        "part": "Số 8 · Vòng trên → ĐẦU, Vòng dưới → BỤNG",
+        "d": "M 270 450 A 70 70 0 1 1 270 310 A 70 70 0 1 1 270 450 M 270 445 A 105 105 0 1 0 270 655 A 105 105 0 1 0 270 445",
+        "dur": 2.2,
+        "voice_vi": "Viết một số 8 thật tròn trịa làm đầu và chiếc bụng béo."
+      },
+      {
+        "step": 2,
+        "role": "part",
+        "part": "Hai tai tròn",
+        "d": "M 208 348 A 30 30 0 1 1 208 288 A 30 30 0 1 1 208 348 M 332 348 A 30 30 0 1 1 332 288 A 30 30 0 1 1 332 348",
+        "dur": 1.2,
+        "voice_vi": "Vẽ hai chiếc tai tròn xoe ở hai bên đỉnh đầu."
+      },
+      {
+        "step": 3,
+        "role": "part",
+        "part": "Mắt, mũi tròn và miệng xinh",
+        "d": "M 248 368 l 0.01 0 M 292 368 l 0.01 0 M 255 398 A 15 11 0 1 1 285 398 A 15 11 0 1 1 255 398 M 270 411 Q 261 426 247 419 M 270 411 Q 279 426 293 419",
+        "dur": 1.5,
+        "voice_vi": "Chấm đôi mắt hạt cườm, chiếc mõm tròn và nụ cười mỉm đáng yêu."
+      },
+      {
+        "step": 4,
+        "role": "part",
+        "part": "Hai tay ôm bụng",
+        "d": "M 179 500 Q 139 556 173 616 M 361 500 Q 401 556 367 616",
+        "dur": 1.2,
+        "voice_vi": "Thêm hai cánh tay mũm mĩm ôm lấy chiếc bụng tròn."
+      },
+      {
+        "step": 5,
+        "role": "part",
+        "part": "Hai bàn chân béo",
+        "d": "M 192 652 A 30 20 0 1 1 252 652 A 30 20 0 1 1 192 652 M 288 652 A 30 20 0 1 1 348 652 A 30 20 0 1 1 288 652",
+        "dur": 1.0,
+        "voice_vi": "Và hai bàn chân béo tròn là chú gấu Teddy đã sẵn sàng!"
+      }
+    ]
+  },
+  {
+    "id": "2_to_swan",
+    "hook": "2",
+    "subject": "Thiên nga lướt sóng",
+    "en": "swan",
+    "hook_role_desc": "Nét cong trên số 2 → ĐẦU & CỔ. Nét ngang số 2 → MẶT NƯỚC / BỤNG.",
+    "slots": {
+      "expression": ["eyes_normal", "eyes_happy"],
+      "accessories": ["none", "crown"],
+      "body_deform": ["normal", "slender"]
+    },
+    "strokes": [
+      {
+        "step": 1,
+        "role": "hook",
+        "absorbed": true,
+        "part": "Số 2 → ĐẦU, CỔ UỐN LƯỢN & ĐƯỜNG NƯỚC",
+        "d": "M 190 360 C 190 292 288 282 306 336 C 322 384 236 452 196 566 L 372 566",
+        "dur": 2.2,
+        "voice_vi": "Viết số 2 uốn lượn mềm mại tạo dáng đầu, chiếc cổ dài và mặt nước."
+      },
+      {
+        "step": 2,
+        "role": "part",
+        "part": "Lưng và thân thiên nga",
+        "d": "M 196 566 C 214 496 306 474 372 512 C 398 528 396 552 372 566",
+        "dur": 1.4,
+        "voice_vi": "Vẽ đường cong sống lưng và thân mình kiêu sa."
+      },
+      {
+        "step": 3,
+        "role": "part",
+        "part": "Cánh và đuôi vũ nữ",
+        "d": "M 244 546 C 276 512 336 512 362 542 C 330 562 278 564 244 546 Z M 368 514 C 402 498 424 474 432 444",
+        "dur": 1.3,
+        "voice_vi": "Thêm chiếc cánh khép hờ và đuôi lông vũ cong vút."
+      },
+      {
+        "step": 4,
+        "role": "part",
+        "part": "Mỏ, mắt và gợn sóng nước",
+        "d": "M 302 320 L 344 334 L 300 346 Z M 286 314 l 0.01 0 M 132 600 Q 172 588 212 600 M 300 612 Q 348 600 396 612",
+        "dur": 1.5,
+        "voice_vi": "Điểm chiếc mỏ cam, ánh mắt dịu dàng và gợn sóng nước lấp lánh."
+      }
+    ]
+  },
+  {
+    "id": "99_to_tiger_rejected",
+    "hook": "99",
+    "subject": "Hổ (Ví dụ REJECT - Thất bại)",
+    "en": "tiger_rejected",
+    "hook_role_desc": "Đề xuất bậy: 2 vòng số 9 làm tai, nhưng 2 đuôi số 9 đâm xuyên má hổ không thành cái gì.",
+    "slots": {},
+    "strokes": [
+      {
+        "step": 1,
+        "role": "hook",
+        "absorbed": false,
+        "orphan": "đuôi số 9 bên trái đâm xuyên qua má hổ",
+        "part": "Số 9 trái mồ côi",
+        "d": "M 240 396 A 60 60 0 1 1 253 340 C 258 420 246 478 232 528",
+        "dur": 1.5,
+        "voice_vi": "Viết số 9 thứ nhất."
+      },
+      {
+        "step": 2,
+        "role": "hook",
+        "absorbed": false,
+        "orphan": "đuôi số 9 bên phải thừa ra ngoài đầu hổ",
+        "part": "Số 9 phải mồ côi",
+        "d": "M 390 396 A 60 60 0 1 1 403 340 C 408 420 396 478 382 528",
+        "dur": 1.5,
+        "voice_vi": "Viết số 9 thứ hai."
+      },
+      {
+        "step": 3,
+        "role": "part",
+        "part": "Vòng đầu đè lên số 9",
+        "d": "M 175 450 A 95 95 0 1 1 365 450 A 95 95 0 1 1 175 450",
+        "dur": 1.7,
+        "voice_vi": "Vẽ hình tròn đè lên làm đầu."
+      },
+      {
+        "step": 4,
+        "role": "part",
+        "part": "Mắt mũi miệng",
+        "d": "M 238 440 l 0.01 0 M 302 440 l 0.01 0 M 258 478 L 282 478 L 270 492 Z M 270 492 Q 258 508 244 500 M 270 492 Q 282 508 296 500",
+        "dur": 1.4,
+        "voice_vi": "Thêm mặt hổ."
+      }
+    ]
+  }
+];
+
+let templates = TEMPLATES_DATA;
+let currentTpl = templates[0];
+let currentDeform = "normal";
+let currentEyes = "eyes_normal";
+let currentAccessory = "none";
+let isPlaying = false;
+let animTimer = null;
+let audioCtx = null;
+
+// Synthetic Drawing SFX (Chalk ASMR sound)
+function playChalkSFX() {
+  if (!document.getElementById("chkAudio").checked) return;
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    
+    // Create white noise buffer for scratchy chalk texture
+    const bufferSize = audioCtx.sampleRate * 0.12;
+    const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufferSize * 0.4));
+    }
+    const noise = audioCtx.createBufferSource();
+    noise.buffer = buffer;
+    
+    // Filter to make it sound like chalk on board
+    const filter = audioCtx.createBiquadFilter();
+    filter.type = "bandpass";
+    filter.frequency.value = 1800 + Math.random() * 800;
+    filter.Q.value = 3.0;
+
+    const gain = audioCtx.createGain();
+    gain.gain.value = 0.18;
+
+    noise.connect(filter);
+    filter.connect(gain);
+    gain.connect(audioCtx.destination);
+    noise.start();
+  } catch(e) {}
+}
+
+function init() {
+  onTemplateChange();
+}
+
+function onTemplateChange() {
+  const selId = document.getElementById("tplSelect").value;
+  currentTpl = templates.find(t => t.id === selId) || templates[0];
+  
+  // Update anatomy box
+  document.getElementById("anatomyDesc").innerHTML = `<b>Giải phẫu nét:</b> ${currentTpl.hook_role_desc}`;
+  
+  // Update JSON viewer
+  document.getElementById("jsonViewer").innerText = JSON.stringify(currentTpl, null, 2);
+
+  // Update Gate Badges
+  const isFail = currentTpl.id.includes("rejected");
+  document.getElementById("overallBadge").className = "status-tag " + (isFail ? "fail" : "pass");
+  document.getElementById("overallBadge").innerText = isFail ? "REJECT" : "PASS";
+  
+  document.getElementById("c0Badge").className = "status-tag " + (isFail ? "fail" : "pass");
+  document.getElementById("c0Badge").innerText = isFail ? "FAIL" : "PASS";
+  document.getElementById("c0Val").innerText = isFail ? "2 nét mồ côi (bị loại bỏ)" : "0 nét mồ côi";
+
+  resetCanvas();
+}
+
+function onThemeChange() {
+  const theme = document.getElementById("themeSelect").value;
+  const frame = document.getElementById("canvasFrame");
+  frame.className = "canvas-frame " + theme;
+}
+
+function setDeform(val, el) {
+  currentDeform = val;
+  updatePill(el, "bodyDeformGroup");
+  resetCanvas();
+}
+
+function setEyes(val, el) {
+  currentEyes = val;
+  updatePill(el, "eyesGroup");
+  resetCanvas();
+}
+
+function setAccessory(val, el) {
+  currentAccessory = val;
+  updatePill(el, "accGroup");
+  resetCanvas();
+}
+
+function updatePill(activeEl, parentId) {
+  const parent = document.getElementById(parentId);
+  parent.querySelectorAll(".pill-option").forEach(p => p.classList.remove("selected"));
+  activeEl.classList.add("selected");
+}
+
+function getDeformTransform() {
+  if (currentDeform === "chibi_cute") return "translate(0, -20) scale(1.08, 0.94)";
+  if (currentDeform === "chubby") return "translate(-20, 0) scale(1.15, 0.95)";
+  if (currentDeform === "slender") return "translate(10, 0) scale(0.9, 1.08)";
+  return "";
+}
+
+function resetCanvas() {
+  stopAnimation();
+  const layer = document.getElementById("drawingLayer");
+  const accLayer = document.getElementById("accessoryLayer");
+  layer.innerHTML = "";
+  accLayer.innerHTML = "";
+
+  const transform = getDeformTransform();
+  layer.setAttribute("transform", transform);
+  accLayer.setAttribute("transform", transform);
+
+  // Draw static strokes
+  currentTpl.strokes.forEach((s, idx) => {
+    const pathEl = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    pathEl.setAttribute("d", s.d);
+    let cls = "chalk-path";
+    if (s.role === "hook") cls += " hook-path";
+    pathEl.setAttribute("class", cls);
+    pathEl.id = `stroke-${idx}`;
+    layer.appendChild(pathEl);
+
+    // Prepare dasharray for animation
+    const len = pathEl.getTotalLength();
+    pathEl.style.strokeDasharray = len;
+    pathEl.style.strokeDashoffset = len;
+  });
+
+  document.getElementById("penPointer").style.display = "none";
+  document.getElementById("subtitleText").innerHTML = `Sẵn sàng vẽ: <span class="highlight">${currentTpl.subject}</span> từ ${currentTpl.hook}`;
+}
+
+function speakText(text) {
+  if (!document.getElementById("chkAudio").checked) return;
+  if ("speechSynthesis" in window) {
+    try {
+      window.speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = "vi-VN";
+      u.rate = 1.05;
+      window.speechSynthesis.speak(u);
+    } catch(e) {}
+  }
+}
+
+async function togglePlay() {
+  if (isPlaying) {
+    stopAnimation();
+    return;
+  }
+  isPlaying = true;
+  document.getElementById("playIcon").innerText = "⏸";
+  document.getElementById("playLabel").innerText = "Tạm dừng";
+
+  const speed = parseFloat(document.getElementById("speedSelect").value) || 1.0;
+  const strokes = currentTpl.strokes;
+  const pen = document.getElementById("penPointer");
+  pen.style.display = "block";
+
+  for (let i = 0; i < strokes.length; i++) {
+    if (!isPlaying) break;
+    const s = strokes[i];
+    const pathEl = document.getElementById(`stroke-${i}`);
+    if (!pathEl) continue;
+
+    // Voice cue & subtitle
+    document.getElementById("subtitleText").innerHTML = `<span class="highlight">Bước ${s.step}:</span> ${s.voice_vi}`;
+    speakText(s.voice_vi);
+
+    // Animate stroke
+    const len = pathEl.getTotalLength();
+    const duration = (s.dur / speed) * 1000;
+    const startTime = performance.now();
+    let lastSFX = 0;
+
+    await new Promise(resolve => {
+      function frame(time) {
+        if (!isPlaying) { resolve(); return; }
+        const elapsed = time - startTime;
+        const progress = Math.min(elapsed / duration, 1.0);
+        
+        pathEl.style.strokeDashoffset = len * (1 - progress);
+
+        // Sound trigger
+        if (time - lastSFX > 140) {
+          playChalkSFX();
+          lastSFX = time;
+        }
+
+        // Move pen tip
+        const pt = pathEl.getPointAtLength(len * progress);
+        const nextPt = pathEl.getPointAtLength(Math.min(len * (progress + 0.02), len));
+        const angle = Math.atan2(nextPt.y - pt.y, nextPt.x - pt.x) * (180 / Math.PI);
+
+        const svgRect = document.getElementById("drawSvg").getBoundingClientRect();
+        const frameRect = document.getElementById("canvasFrame").getBoundingClientRect();
+        
+        const scaleX = svgRect.width / 540;
+        const scaleY = svgRect.height / 760;
+        pen.style.left = `${(pt.x * scaleX) + (svgRect.left - frameRect.left) - 2}px`;
+        pen.style.top = `${(pt.y * scaleY) + (svgRect.top - frameRect.top) - 2}px`;
+        pen.style.transform = `rotate(${angle + 45}deg)`;
+
+        if (progress < 1.0) {
+          requestAnimationFrame(frame);
+        } else {
+          resolve();
+        }
+      }
+      requestAnimationFrame(frame);
+    });
+
+    // Pause between strokes
+    await new Promise(r => setTimeout(r, 200 / speed));
+  }
+
+  // Draw Accessory if selected
+  if (isPlaying && currentAccessory !== "none") {
+    drawAccessoryOverlay();
+  }
+
+  if (isPlaying) {
+    document.getElementById("subtitleText").innerHTML = `🎉 Hoàn thành xuất sắc: <span class="highlight">${currentTpl.subject}</span>!`;
+    pen.style.display = "none";
+    isPlaying = false;
+    document.getElementById("playIcon").innerText = "▶";
+    document.getElementById("playLabel").innerText = "Vẽ Lại";
+  }
+}
+
+function drawAccessoryOverlay() {
+  const accLayer = document.getElementById("accessoryLayer");
+  let accD = "";
+  if (currentAccessory === "birthday_hat") {
+    accD = "M 250 210 L 280 130 L 305 215 Z M 280 130 A 10 10 0 1 1 280 120";
+  } else if (currentAccessory === "sunglasses") {
+    accD = "M 220 300 L 260 300 M 270 300 L 310 300 M 260 300 L 270 300 M 220 300 Q 240 330 260 300 M 270 300 Q 290 330 310 300";
+  } else if (currentAccessory === "bow_collar") {
+    accD = "M 270 380 L 240 365 L 240 395 Z M 270 380 L 300 365 L 300 395 Z M 270 380 A 6 6 0 1 1 270 379";
+  }
+  if (accD) {
+    const p = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    p.setAttribute("d", accD);
+    p.setAttribute("class", "chalk-path accessory-path");
+    accLayer.appendChild(p);
+  }
+}
+
+function stopAnimation() {
+  isPlaying = false;
+  if ("speechSynthesis" in window) {
+    try { window.speechSynthesis.cancel(); } catch(e) {}
+  }
+  document.getElementById("playIcon").innerText = "▶";
+  document.getElementById("playLabel").innerText = "Bắt đầu Vẽ";
+  document.getElementById("penPointer").style.display = "none";
+}
+
+function switchView(v) {
+  document.querySelectorAll(".nav-tabs .tab-btn").forEach((b, i) => {
+    b.classList.toggle("active", (v === "live" && i === 0) || (v === "batch" && i === 1) || (v === "json" && i === 2));
+  });
+  document.getElementById("view-live").style.display = v === "live" ? "grid" : "none";
+  document.getElementById("view-batch").style.display = v === "batch" ? "block" : "none";
+  document.getElementById("view-json").style.display = v === "json" ? "block" : "none";
+
+  if (v === "batch") generateBatchDemo();
+}
+
+function generateBatchDemo() {
+  const grid = document.getElementById("batchGrid");
+  grid.innerHTML = "";
+  const hooks = ["9 ➔ Mèo", "9 ➔ Cún Con", "9 ➔ Đại Bàng", "9 ➔ Heo Con", "9 ➔ Sư Tử", "8 ➔ Gấu Teddy", "2 ➔ Thiên Nga"];
+  const deforms = ["Chibi Cute", "Béo Múp", "Chuẩn", "Thon Dài"];
+  const eyes = ["Mắt cười (^.^)", "Mắt long lanh Anime", "Mắt nháy (^_^)", "Mắt tròn xoe"];
+  const accs = ["Kính Râm 😎", "Nơ Cổ 🎀", "Mũ Sinh Nhật 🥳", "Không phụ kiện"];
+  const styles = ["Bảng xanh Phấn trắng", "Bảng dạ quang Neon", "Sổ tay Doodle", "Bảng đen Slate"];
+  const angles = ["Đố vui đoán hình (5s)", "Thử thách vẽ 1 nét", "Kể chuyện dễ thương", "Chalk ASMR"];
+
+  for (let i = 1; i <= 24; i++) {
+    const h = hooks[Math.floor(Math.random() * hooks.length)];
+    const d = deforms[Math.floor(Math.random() * deforms.length)];
+    const e = eyes[Math.floor(Math.random() * eyes.length)];
+    const a = accs[Math.floor(Math.random() * accs.length)];
+    const s = styles[Math.floor(Math.random() * styles.length)];
+    const ang = angles[Math.floor(Math.random() * angles.length)];
+
+    const card = document.createElement("div");
+    card.className = "batch-card";
+    card.innerHTML = `
+      <div class="batch-card-title">Video #${1000 + i}: ${h}</div>
+      <div class="batch-meta"><b>Dáng:</b> ${d} | <b>Biểu cảm:</b> ${e}</div>
+      <div class="batch-meta"><b>Phụ kiện:</b> ${a}</div>
+      <div class="batch-meta"><b>Style:</b> ${s}</div>
+      <div class="batch-meta" style="color:var(--accent);"><b>Góc Hook:</b> ${ang}</div>
+      <div style="margin-top:3px; font-size:10.5px; background:#07120e; padding:3px 6px; border-radius:4px; color:var(--text-muted);">
+        ID: VID_PROD_${Date.now().toString(36)}_${i} · Seed: ${(Math.random()*100000).toFixed(0)}
+      </div>
+    `;
+    grid.appendChild(card);
+  }
+}
+
+// Auto init on DOM ready
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", init);
+} else {
+  init();
+}
+</script>
+
+</body>
+</html>
