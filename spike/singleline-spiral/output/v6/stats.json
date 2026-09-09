@@ -1,0 +1,34 @@
+{
+  "s0_input": {
+    "std": 0.2486,
+    "dark_frac": 0.6098,
+    "edge": 0.0153,
+    "colorful": 0.0042,
+    "pass": true,
+    "reasons": []
+  },
+  "params": {
+    "mode": "density",
+    "gap_min": 1.3,
+    "eps": 0.12,
+    "gap_p": 2.0,
+    "gap_max": 8.0,
+    "pp_turn": 140,
+    "gamma": 0.85,
+    "edge_k": 0.08,
+    "n_phi": 160,
+    "rim": 250.0,
+    "prep": "sharp"
+  },
+  "points": 19180,
+  "length_px": 152696.2,
+  "d_chars": 265809,
+  "m_commands": 1,
+  "realtime_s": 610.8,
+  "timelapse_45s": 13.57,
+  "likeness_S2": 0.4014,
+  "tone_pearson": 0.7334,
+  "likeness_S2_blur2": 0.2868,
+  "tone_pearson_blur2": 0.7049,
+  "sharpness": 0.2356
+}

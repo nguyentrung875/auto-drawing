@@ -90,3 +90,62 @@ node gate-singleline.mjs output/v4
 | `input/portrait.png` | Chân dung test (AI-generate) |
 | `output/v1 v2 v4 v5/` | Mỗi bản: `render.png`, `spiral.svg`, `oneline.json`, `stats.json` |
 | `output/v4/player.html` | Demo xem được ngay (251KB, standalone) |
+
+---
+
+## 6. Bản v6 — phản hồi người dùng "khó nhìn": density spiral (tone-mapping thật)
+
+**Phản hồi:** output spiral khó nhìn, cần sắc nét giống ảnh gốc.
+
+**Chẩn đoán:** v4 dùng AM (`r = r0 + amp·brightness`) — F1 đã chứng minh đây là
+*edge-emphasis*: chỉ nhấn biên sáng–tối, vùng phẳng (trán, má) bị rút nét nên
+mặt mờ, phải nheo mắt mới thấy. Muốn "nhìn ra mặt" phải là *tone-mapping*:
+vùng sáng (mặt) phải có **mật độ vòng xoắn cao** (sáng trắng), vùng tối phải
+**thưa** (tối).
+
+**Giải pháp v6 — recursion level-set theo góc** (mode `density`):
+
+```
+r_{k+1}(φ) = r_k(φ) + gap(b(r_k(φ), φ))
+gap(b) = min(gap_max, gap_min·((1+eps)/(b+eps))^p)
+```
+
+- Khoảng cách 2 vòng xoắn liên tiếp **tại góc φ** = gap của độ sáng **tại góc φ**
+  → tone-mapping cục bộ đúng nghĩa, mặt giữ nguyên hình dạng (không thành đĩa
+  tròn như bản radial-only trung gian).
+- Mỗi vòng là đường khép kín không tự cắt (gap > 0) → vẫn **1 nét duy nhất** (S1).
+- Nền tối "chạy" ra ngoài nhanh (gap lớn) → nền sạch, tối; `--rim` chặn bán kính
+  tại 250 tạo khung tròn gọn (tránh nét vẽ tràn góc).
+- Preprocessing `--prep sharp`: stretch 2–98 + unsharp 0.5 + blur 0.8 (v4 dùng
+  stretch 5–95 + blur 1.2 — mềm hơn). Render 2x (1080×1520), stroke 1.5.
+
+**Kết quả (portrait.png):**
+
+| Bản | S2 (edge) | Tone Pearson | Sharpness | Timelapse | Gate |
+|---|---|---|---|---|---|
+| v4 (cũ) | 0.266 | **−0.29** (sai tone) | 0.138 | 7.1x | PASS |
+| **v6** | **0.401** | **+0.73** | 0.236 | 13.6x | S3 sát ngưỡng ⚠️ |
+| **v6-video** | 0.374 | +0.76 | 0.250 | **11.4x** | **PASS 5/5** |
+
+Tone Pearson lật dấu −0.29 → +0.73 = bằng chứng số cho việc v6 giờ tái tạo
+tone ảnh thật (trước đây F2 ghi nhận metric tone âm là do AM chỉ vẽ biên).
+
+- `output/v6/` — bản nét mịn nhất (gap-min 1.3, S2 cao nhất). S3 13.6x (vượt 12x
+  1.6 điểm) do ưu tiên mật độ nét — dùng cho ảnh tĩnh.
+- `output/v6-video/` — bản cân bằng (gap-min 1.6): **PASS toàn bộ S0–S4**, dùng
+  cho track video 45s.
+- Xem so sánh: `comparison-v4-v6.png`; demo animation: `output/v6/player.html`
+  và `output/v6-video/player.html` (bấm ▶ Vẽ 24s + reveal).
+
+**Tổng quát hoá (cùng tham số v6 trên ảnh validation):** val_man S2=0.368,
+val_cat S2=0.453, val_elder S2=0.320, val_rose S2=0.171 (rose thấp — ảnh chủ thể
+nhỏ/isolated, lưu ý khi chọn nguồn ảnh).
+
+**Cách chạy:**
+
+```bash
+.venv/bin/python spiral.py input/portrait.png --mode density --prep sharp \
+  --gap-min 1.3 --gap-max 8.0 --stroke-w 1.5 --gap-p 2.0 --eps 0.12 \
+  --gamma 0.85 --rim 250 --edge-k 0.08 --out output/v6
+node gate-singleline.mjs output/v6
+```

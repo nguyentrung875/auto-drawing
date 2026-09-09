@@ -3,3 +3,6 @@ __pycache__/
 .venv/
 __pycache__/
 *.pyc
+
+# sweep artifacts (intermediate experiments)
+spike/singleline-spiral/output/sweep/

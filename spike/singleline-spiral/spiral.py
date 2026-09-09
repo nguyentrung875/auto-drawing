@@ -4,6 +4,7 @@
 Usage:
     .venv/bin/python spiral.py input/portrait.png --turns 90 --amp 2.2
     .venv/bin/python spiral.py input/portrait.png --turns 110 --amp 2.6 --out output/v2
+    .venv/bin/python spiral.py input/portrait.png --mode density --out output/v6
 
 Output (trong --out):
     render.png   — anh render de review bang mat (PIL)
@@ -11,9 +12,16 @@ Output (trong --out):
     oneline.json — SingleLineTemplate: 1 stroke duy nhat, tuong thich gate.mjs/preview.mjs
     stats.json   — so diem, do dai, uoc luong thoi gian ve
 
-Thuat toan: xoan oc Archimedes tu tam ra ngoai. Ban kinh tai moi goc:
-    r = r0 + amp * brightness
-Vung sang (mat) -> cac vong xit lai -> hien sang. Vung toi (nen) -> thua deu.
+Hai che do (mode):
+    am      — (v1..v4) Archimedes tu tam ra ngoai: r = r0 + amp * brightness.
+              Edge-emphasis: chi nhan bien sang-toi, vung phang bi rut net
+              (SPIKE-REPORT F1) -> mat phai nheo moi thay.
+    density — (v6+) tone-mapping that: buoc tien theo ban kinh moi diem
+              gap = gap_min * ((1+eps)/(brightness+eps))**p.
+              Vung sang -> buoc nho -> vong xit lai -> mat hien sang, net va
+              ro nhu anh goc. Day la cach cac buc "one-line spiral portrait"
+              viral duoc ve.
+
 Net lien tuc 100% (1 lenh M duy nhat) — dung tieu chi S1.
 """
 import argparse, json, math, os
@@ -66,21 +74,47 @@ def input_gate(img_path: str) -> dict:
             "pass": len(fails) == 0, "reasons": fails}
 
 
-def load_work_image(path: str) -> np.ndarray:
+def load_work_image(path: str, prep: str = "soft") -> np.ndarray:
+    """Anh lam viec WORKxWORK, 0..1.
+
+    prep=soft: giong het v4 (stretch 5-95, blur 1.2) — bao toan ket qua cu.
+    prep=sharp: stretch 2-98 + unsharp + blur nhe (0.8) — net hon, cho v6.
+    """
     img = Image.open(path).convert("L")
-    # crop vuong giua anh
     s = min(img.size)
     x0 = (img.width - s) // 2
     y0 = (img.height - s) // 2
     img = img.crop((x0, y0, x0 + s, y0 + s)).resize((WORK, WORK), Image.LANCZOS)
     a = np.asarray(img, dtype=np.float32) / 255.0
-    # keo tuong phan (percentile stretch) de mat noi ro
-    lo, hi = np.percentile(a, 5), np.percentile(a, 95)
+    if prep == "sharp":
+        lo, hi = np.percentile(a, 2), np.percentile(a, 98)
+        blur_r, unsharp = 0.8, 0.5
+    else:
+        lo, hi = np.percentile(a, 5), np.percentile(a, 95)
+        blur_r, unsharp = 1.2, 0.0
     a = np.clip((a - lo) / max(1e-6, hi - lo), 0, 1)
-    # mo nhe: diet nhieu pixel gay rung net
+    if unsharp > 0:
+        b = np.asarray(Image.fromarray((a * 255).astype(np.uint8))
+                       .filter(ImageFilter.GaussianBlur(2.0)), dtype=np.float32) / 255.0
+        a = np.clip(a + unsharp * (a - b), 0, 1)
     a = np.asarray(Image.fromarray((a * 255).astype(np.uint8))
-                   .filter(ImageFilter.GaussianBlur(1.2)), dtype=np.float32) / 255.0
+                   .filter(ImageFilter.GaussianBlur(blur_r)), dtype=np.float32) / 255.0
     return a
+
+
+def _px(a: np.ndarray, r: float, th: float) -> float:
+    """Sample bilinear 1 diem (scalar, nhanh) — (r, th) la toa do xoan oc."""
+    px = CX + r * math.cos(th)
+    py = CY + r * math.sin(th)
+    fx = (px - (CX - R_MAX)) / (2 * R_MAX) * (WORK - 1)
+    fy = (py - (CY - R_MAX)) / (2 * R_MAX) * (WORK - 1)
+    fx = min(max(fx, 0), WORK - 1.001)
+    fy = min(max(fy, 0), WORK - 1.001)
+    x0, y0 = int(fx), int(fy)
+    dx, dy = fx - x0, fy - y0
+    x1, y1 = min(x0 + 1, WORK - 1), min(y0 + 1, WORK - 1)
+    return float(a[y0, x0] * (1 - dx) * (1 - dy) + a[y0, x1] * dx * (1 - dy)
+                 + a[y1, x0] * (1 - dx) * dy + a[y1, x1] * dx * dy)
 
 
 def sample_bilinear(a: np.ndarray, fx: float, fy: float) -> float:
@@ -100,6 +134,7 @@ def tri_wave(u: float) -> float:
 
 def generate(a: np.ndarray, turns: int, amp: float, pp_turn: int = 90,
              gamma: float = 0.7, mode: str = "am", fm_per_turn: int = 48):
+    """Mode am/fm goc (v1..v5) — giu nguyen de bao toan ket qua cu."""
     theta_max = 2 * math.pi * turns
     n = turns * pp_turn
     thetas = np.linspace(0, theta_max, n)
@@ -124,6 +159,106 @@ def generate(a: np.ndarray, turns: int, amp: float, pp_turn: int = 90,
     return pts
 
 
+def gap_of(b: float, gap_min: float, eps: float, p: float,
+           gap_max: float = float("inf")) -> float:
+    """Buoc tien theo ban kinh (px/moi 2pi) — sang -> gap nho -> vong xit.
+
+    gap_max chan phia toi: neu khong, nen toi bi cap qua lon -> lo toan net
+    trang -> anh xam. Clamp giu nen toi that su toi, chi con net thua.
+    """
+    return np.minimum(gap_max, gap_min * ((1.0 + eps) / (b + eps)) ** p)
+
+
+def _polar_field(a: np.ndarray, n_r: int = 260, n_phi: int = 128) -> np.ndarray:
+    """Mau do sang tren luoi toa do cuc (rho x phi) — vector hoa."""
+    rhos = np.linspace(0, R_MAX + 8, n_r)[:, None]
+    phis = np.linspace(0, 2 * math.pi, n_phi, endpoint=False)[None, :]
+    px = CX + rhos * np.cos(phis)
+    py = CY + rhos * np.sin(phis)
+    fx = (px - (CX - R_MAX)) / (2 * R_MAX) * (WORK - 1)
+    fy = (py - (CY - R_MAX)) / (2 * R_MAX) * (WORK - 1)
+    fx = np.clip(fx, 0, WORK - 1.001)
+    fy = np.clip(fy, 0, WORK - 1.001)
+    x0 = fx.astype(int)
+    y0 = fy.astype(int)
+    dx, dy = fx - x0, fy - y0
+    x1 = np.minimum(x0 + 1, WORK - 1)
+    y1 = np.minimum(y0 + 1, WORK - 1)
+    return a[y0, x0] * (1 - dx) * (1 - dy) + a[y0, x1] * dx * (1 - dy) \
+        + a[y1, x0] * (1 - dx) * dy + a[y1, x1] * dx * dy
+
+
+def generate_density(a: np.ndarray, gap_min: float = 1.2, eps: float = 0.15,
+                     p: float = 1.6, pp: int = 140, gamma: float = 0.8,
+                     edge_k: float = 0.0, gap_max: float = 4.0,
+                     n_phi: int = 160, rim: float = 0.0,
+                     max_rings: int = 400) -> np.ndarray:
+    """Mode density (v6): tone-mapping xoan oc theo GOC (level-set roi rac).
+
+    Recursion per-ring, trang thai theo goc rieng biet:
+
+        r_{k+1}(phi) = r_k(phi) + gap(b(r_k(phi), phi))
+
+    - Khoang cach giua 2 vong xoan lien tiep TAI GOC phi bang gap cua do sang
+      TAI GOC phi -> tone-mapping cuc bo dung nghia: vung sang (mat) xit vong,
+      vung toi (nen) thua vong, duong vien mat giu DUNG HINH DANG (khong thanh
+      dia tron nhu ban radial-only).
+    - Tung vong la mot duong kin khong cat nhau (gap > 0 moi noi) -> net lien
+      tuc duy nhat, khong nhac but.
+    - Nen toi "chay" ra ngoai nhanh (gap lon) -> cac cung nen cua vong cuoi nam
+      ngoai canvas, tu dong bi clip khi render (khong ton mau muc). Neu --rim > 0
+      thi chan ban kinh tai rim (tao vien tron quanh chan dung).
+    """
+    n_r = 300
+    bf = _polar_field(a, n_r, n_phi)            # bf[rho_i, phi_j]
+    rho_axis = np.linspace(0, R_MAX + 50, n_r)
+    phi_axis = np.linspace(0, 2 * math.pi, n_phi, endpoint=False)
+    grad_r = None
+    if edge_k > 0:
+        g = np.gradient(bf, axis=0)
+        grad_r = np.clip(np.abs(g) * (n_r - 1) / (R_MAX + 50), 0, 1)  # ~/px
+
+    def sample_cols(rr):
+        """Bilinear theo hang (radius) tai cot co dinh j — vector hoa."""
+        cols = np.arange(n_phi)
+        ri = np.interp(rr, rho_axis, np.arange(n_r))
+        r0 = np.floor(ri).astype(int)
+        r1 = np.minimum(r0 + 1, n_r - 1)
+        fr = ri - r0
+        return bf[r0, cols] * (1 - fr) + bf[r1, cols] * fr
+
+    def sample_cols_grad(rr):
+        cols = np.arange(n_phi)
+        ri = np.interp(rr, rho_axis, np.arange(n_r))
+        r0 = np.floor(ri).astype(int)
+        r1 = np.minimum(r0 + 1, n_r - 1)
+        fr = ri - r0
+        return grad_r[r0, cols] * (1 - fr) + grad_r[r1, cols] * fr
+
+    # noi suy vong theo goc (wrap-aware)
+    xp = np.concatenate([phi_axis - 2 * math.pi, phi_axis, phi_axis + 2 * math.pi])
+    sweep = np.linspace(0, 2 * math.pi, pp, endpoint=False)
+    blocks = []
+    r_prev = np.full(n_phi, 1.0, dtype=np.float32)
+    for _ in range(max_rings):
+        b = sample_cols(r_prev) ** gamma
+        if edge_k > 0:
+            b = np.minimum(1.0, b + edge_k * sample_cols_grad(r_prev))
+        g = np.asarray(gap_of(b, gap_min, eps, p, gap_max))
+        r_cur = r_prev + g
+        if rim > 0:
+            r_cur = np.minimum(r_cur, rim)
+        # lam muot goc nhe (MA 3, wrap) de vong khong ran cua
+        r_cur = (r_cur + np.roll(r_cur, 1) + np.roll(r_cur, -1)) / 3.0
+        rs = np.interp(sweep, xp, np.concatenate([r_cur, r_cur, r_cur]))
+        blocks.append(np.stack([CX + rs * np.cos(sweep), CY + rs * np.sin(sweep)], axis=1))
+        r_prev = r_cur
+        if float(r_cur.min()) >= R_MAX - 2:
+            break
+    pts = np.vstack(blocks)
+    return pts
+
+
 def path_length(pts) -> float:
     d = np.diff(pts, axis=0)
     return float(np.hypot(d[:, 0], d[:, 1]).sum())
@@ -136,33 +271,43 @@ def to_path_d(pts) -> str:
     return " ".join(parts)
 
 
-def render_png(pts, path, stroke_w=2):
-    img = Image.new("RGB", (W, H), (15, 33, 29))
+def render_png(pts, path, stroke_w=2, scale=2):
+    img = Image.new("RGB", (W * scale, H * scale), (15, 33, 29))
     dr = ImageDraw.Draw(img)
-    flat = [float(v) for p in pts for v in p]
-    dr.line(flat, fill=(255, 255, 255), width=stroke_w, joint="curve")
+    flat = [float(v) * scale for p in pts for v in p]
+    dr.line(flat, fill=(255, 255, 255), width=max(1, round(stroke_w * scale)), joint="curve")
     img.save(path)
 
 
-def likeness(render_path: str, a: np.ndarray) -> float:
-    """S2: so sanh thumbnail render (mo) vs anh goc (mo) -> 0..1."""
+def _metrics(render_path: str, a: np.ndarray, scale: int = 1) -> dict:
+    """S2 (edge-corr), tone Pearson, sharpness — tren vung xoan oc bao phu."""
     ren = Image.open(render_path).convert("L")
-    # crop vung vuong 2R x 2R quanh tam (khop anh xa anh goc), roi moi resize
-    ren = ren.crop((CX - R_MAX, CY - R_MAX, CX + R_MAX, CY + R_MAX))
-    ren = ren.resize((WORK, WORK), Image.LANCZOS)
-    ren = np.asarray(ren.filter(ImageFilter.GaussianBlur(4)), dtype=np.float32) / 255.0
-    ref = np.asarray(Image.fromarray((a * 255).astype(np.uint8))
-                     .filter(ImageFilter.GaussianBlur(4)), dtype=np.float32) / 255.0
-    # mask tron: chi so vung xoan oc bao phu
+    R, CXs, CYs = R_MAX * scale, CX * scale, CY * scale
+    ren = ren.crop((CXs - R, CYs - R, CXs + R, CYs + R)).resize((WORK, WORK), Image.LANCZOS)
+    ren = np.asarray(ren, dtype=np.float32) / 255.0
     yy, xx = np.mgrid[0:WORK, 0:WORK]
-    mask = (((xx - WORK/2) / (WORK*0.47)) ** 2 + ((yy - WORK/2) / (WORK*0.47)) ** 2) < 1
-    # S2 = tuong quan GRADIENT (canh): spiral AM nhan manh canh, khong phai tone.
-    # Pearson tone am tinh cho ca ban dep -> sai metric (xem SPIKE-REPORT).
-    gr = np.hypot(*np.gradient(ren))[mask]
-    gf = np.hypot(*np.gradient(ref))[mask]
-    gr0, gf0 = gr - gr.mean(), gf - gf.mean()
-    denom = float(np.sqrt((gr0 ** 2).sum() * (gf0 ** 2).sum()))
-    return round(float((gr0 * gf0).sum() / denom) if denom > 0 else 0.0, 4)
+    mask = (((xx - WORK / 2) / (WORK * 0.47)) ** 2 + ((yy - WORK / 2) / (WORK * 0.47)) ** 2) < 1
+
+    def blur(x, r):
+        return np.asarray(Image.fromarray((x * 255).astype(np.uint8))
+                          .filter(ImageFilter.GaussianBlur(r)), dtype=np.float32) / 255.0
+
+    def pearson(x, y):
+        x0, y0 = x - x.mean(), y - y.mean()
+        denom = float(np.sqrt((x0 ** 2).sum() * (y0 ** 2).sum()))
+        return float((x0 * y0).sum() / denom) if denom > 0 else 0.0
+
+    out = {}
+    for rb in (4, 2):
+        ren_b = blur(ren, rb)[mask]
+        ref_b = blur(a, rb)[mask]
+        gr = np.hypot(*np.gradient(blur(ren, rb)))[mask]
+        gf = np.hypot(*np.gradient(blur(a, rb)))[mask]
+        tag = "" if rb == 4 else "_blur2"
+        out[f"likeness_S2{tag}"] = round(pearson(gr, gf), 4)
+        out[f"tone_pearson{tag}"] = round(pearson(ren_b, ref_b), 4)
+    out["sharpness"] = round(float(np.hypot(*np.gradient(ren))[mask].mean()), 4)
+    return out
 
 
 def main():
@@ -170,23 +315,44 @@ def main():
     ap.add_argument("image")
     ap.add_argument("--turns", type=int, default=90)
     ap.add_argument("--amp", type=float, default=2.2)
-    ap.add_argument("--pp-turn", type=int, default=90)
+    ap.add_argument("--pp-turn", type=int, default=140)
     ap.add_argument("--gamma", type=float, default=0.7)
-    ap.add_argument("--mode", choices=["am", "fm"], default="am")
+    ap.add_argument("--mode", choices=["am", "fm", "density"], default="am")
     ap.add_argument("--fm-per-turn", type=int, default=48)
-    ap.add_argument("--stroke-w", type=int, default=2)
+    ap.add_argument("--gap-min", type=float, default=1.2)
+    ap.add_argument("--eps", type=float, default=0.15)
+    ap.add_argument("--gap-p", type=float, default=1.6)
+    ap.add_argument("--gap-max", type=float, default=4.0)
+    ap.add_argument("--edge-k", type=float, default=0.0)
+    ap.add_argument("--n-phi", type=int, default=160)
+    ap.add_argument("--rim", type=float, default=0.0,
+                    help="chan ban kinh (0 = khong chan, de cung nen clip tu nhien)")
+    ap.add_argument("--prep", choices=["soft", "sharp"], default="soft")
+    ap.add_argument("--stroke-w", type=float, default=2)
+    ap.add_argument("--scale", type=int, default=2, help="render scale (2 = 1080x1520)")
     ap.add_argument("--out", default="output/v1")
     args = ap.parse_args()
 
     os.makedirs(args.out, exist_ok=True)
     s0 = input_gate(args.image)
-    a = load_work_image(args.image)
-    pts = generate(a, args.turns, args.amp, args.pp_turn, args.gamma,
-                   args.mode, args.fm_per_turn)
+    a = load_work_image(args.image, args.prep)
+    if args.mode == "density":
+        pts = generate_density(a, args.gap_min, args.eps, args.gap_p,
+                               args.pp_turn, args.gamma, args.edge_k, args.gap_max,
+                               args.n_phi, args.rim)
+        params = {"mode": "density", "gap_min": args.gap_min, "eps": args.eps,
+                  "gap_p": args.gap_p, "gap_max": args.gap_max, "pp_turn": args.pp_turn,
+                  "gamma": args.gamma, "edge_k": args.edge_k,
+                  "n_phi": args.n_phi, "rim": args.rim, "prep": args.prep}
+    else:
+        pts = generate(a, args.turns, args.amp, args.pp_turn, args.gamma,
+                       args.mode, args.fm_per_turn)
+        params = {"mode": args.mode, "turns": args.turns, "amp": args.amp,
+                  "pp_turn": args.pp_turn, "gamma": args.gamma, "prep": args.prep}
     length = path_length(pts)
     d = to_path_d(pts)
 
-    render_png(pts, f"{args.out}/render.png", args.stroke_w)
+    render_png(pts, f"{args.out}/render.png", args.stroke_w, args.scale)
     svg = (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {W} {H}" width="{W}" height="{H}">\n'
            f'<rect width="{W}" height="{H}" fill="#0f211d"/>\n'
            f'<path d="{d}" fill="none" stroke="#ffffff" stroke-width="{args.stroke_w}" stroke-linecap="round" stroke-linejoin="round"/>\n</svg>')
@@ -198,7 +364,7 @@ def main():
         "hook": "spiral",
         "subject": os.path.basename(args.image),
         "source_image": args.image,
-        "params": {"turns": args.turns, "amp": args.amp, "pp_turn": args.pp_turn},
+        "params": params,
         "strokes": [{
             "step": 1, "role": "hook", "absorbed": True,
             "part": "Xoan oc lien tuc duy nhat (khong nhac but)",
@@ -210,13 +376,14 @@ def main():
 
     stats = {
         "s0_input": s0,
+        "params": params,
         "points": len(pts),
         "length_px": round(length, 1),
         "d_chars": len(d),
         "m_commands": d.count("M "),
         "realtime_s": round(length / 250, 1),
         "timelapse_45s": round(length / 250 / 45, 2),
-        "likeness_S2": likeness(f"{args.out}/render.png", a),
+        **_metrics(f"{args.out}/render.png", a, args.scale),
     }
     json.dump(stats, open(f"{args.out}/stats.json", "w"), indent=2)
     print(json.dumps(stats, indent=2))
