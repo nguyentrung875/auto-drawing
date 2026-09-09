@@ -259,6 +259,130 @@ def generate_density(a: np.ndarray, gap_min: float = 1.2, eps: float = 0.15,
     return pts
 
 
+def generate_concentric(a: np.ndarray, gap_min: float = 1.4, gap_max: float = 7.5,
+                        eps: float = 0.10, p: float = 2.0, pp: int = 180,
+                        gamma: float = 0.9, wiggle: float = 1.2, edge_k: float = 0.0,
+                        local_m: float = 0.6, n_r: int = 300, n_phi: int = 160,
+                        k_phi: int = 24, rim: float = 250.0,
+                        max_turns: int = 200) -> np.ndarray:
+    """Mode concentric (v7): vong xoan oc TRON DONG TAM + tone-mapping cuc bo.
+
+    Phan hoi nguoi dung (2026-09-09): v6 lam vong meo/lech (wobble 11.8 vs v4 0.48).
+    v7 giu cau truc vong tron dong tam bang 2 nguyen tac:
+
+    1. TAM CO DINH (chong lech): buoc tien TRUNG BINH moi vong dung bang
+       spacing_radial(rho_k) — do sang trung binh theo ban kinh. Lech cuc bo
+       theo goc bi ep zero-mean (FFT bo DC) nen KHONG tich luy thanh lech tam:
+       r_k(phi) = rho_k + tong cac dev zero-mean (bounded) -> vong luon dong tam.
+    2. MAT DO THEO GOC (chi tiet mat): moi vong, khoang cach cuc bo
+       g(phi) = spacing_radial * (1 + local_m*(b(r_k(phi),phi)^g - bg^g))
+       -> mat sang = vong xit (dang day), mat toi (mat, mui, moi, toc) = vong
+       thua (thua loang) — tone-mapping cuc bo DUNG NGHIA nhu cac buc spiral
+       portrait kinh dien, nhung tren vong tron con giu duoc hinh dang.
+
+    So voi v6: cung dieu bien theo goc, nhung co rang buoc zero-mean moi vong
+    -> mat do doi ma vong khong bao gio meo/lech (do bang wobble).
+    """
+    bf = _polar_field(a, n_r, n_phi)                    # bf[rho_i, phi_j]
+    rho_axis = np.linspace(0, R_MAX + 50, n_r)
+    phi_axis = np.linspace(0, 2 * math.pi, n_phi, endpoint=False)
+    cols = np.arange(n_phi)
+
+    # profile theo ban kinh (tone trung binh) — muot ky
+    b_avg = bf.mean(axis=1)
+    k = 7
+    b_avg = np.convolve(b_avg, np.ones(k) / k, mode="same")
+    bg = np.clip(b_avg, 0, 1) ** gamma
+    spacing_radial = gap_of(bg, gap_min, eps, p, gap_max)
+
+    grad_r = None
+    if edge_k > 0:
+        grad_r = np.clip(np.abs(np.gradient(bf, axis=0)) * (n_r - 1) / (R_MAX + 50), 0, 1)
+
+    dth = 2 * math.pi / pp
+    max_steps = int(max_turns * pp)
+    rhos = np.empty(max_steps, dtype=np.float32)
+    ths = np.empty(max_steps, dtype=np.float32)
+
+    # vong co ban: duong tron dong tam, moi vong tien dung spacing_radial(rho)
+    rho = 1.0
+    base = [rho]
+    while len(base) < max_steps // pp and rho < R_MAX - 2:
+        rho += float(np.interp(rho, rho_axis, spacing_radial))
+        base.append(rho)
+    base = np.asarray(base, dtype=np.float32)
+
+    # recursion theo goc, zero-mean moi vong
+    def sample_cols(rr):
+        ri = np.interp(rr, rho_axis, np.arange(n_r))
+        r0 = np.floor(ri).astype(int)
+        r1 = np.minimum(r0 + 1, n_r - 1)
+        fr = ri - r0
+        return bf[r0, cols] * (1 - fr) + bf[r1, cols] * fr
+
+    def sample_cols_grad(rr):
+        ri = np.interp(rr, rho_axis, np.arange(n_r))
+        r0 = np.floor(ri).astype(int)
+        r1 = np.minimum(r0 + 1, n_r - 1)
+        fr = ri - r0
+        return grad_r[r0, cols] * (1 - fr) + grad_r[r1, cols] * fr
+
+    r_prev = np.full(n_phi, 1.0, dtype=np.float64)
+    rings = []
+    for kk in range(len(base)):
+        b = sample_cols(r_prev) ** gamma
+        local = b - float(np.interp(base[kk], rho_axis, bg))   # zero-mean ~
+        local = local - local.mean()
+        mod = np.clip(1.0 + local_m * local, 0.25, 2.0)
+        if edge_k > 0:
+            mod = np.clip(mod + edge_k * sample_cols_grad(r_prev), 0.25, 2.0)
+        g = float(spacing_radial[np.clip(int(np.searchsorted(rho_axis, base[kk])), 0, n_r - 1)]) * mod
+        g = g - (g.mean() - float(np.interp(base[kk], rho_axis, spacing_radial)))  # zero-mean advance
+        r_cur = r_prev + g
+        if rim > 0:
+            r_cur = np.minimum(r_cur, rim)
+        # low-pass theo goc tren phan lech (giu mean: FFT bo DC cua dev)
+        dev = r_cur - base[kk]
+        F = np.fft.rfft(dev)
+        F[0] = 0.0
+        if k_phi < len(F):
+            F[k_phi:] = 0.0
+        dev = np.fft.irfft(F, n=n_phi)
+        r_cur = base[kk] + dev
+        rings.append(r_cur)
+        r_prev = r_cur
+
+    # noi suy tung vong thanh duong lien tuc
+    xp = np.concatenate([phi_axis - 2 * math.pi, phi_axis, phi_axis + 2 * math.pi])
+    sweep = np.linspace(0, 2 * math.pi, pp, endpoint=False)
+    blocks = []
+    for r_cur in rings:
+        rs = np.interp(sweep, xp, np.concatenate([r_cur, r_cur, r_cur]))
+        blocks.append(np.stack([CX + rs * np.cos(sweep), CY + rs * np.sin(sweep)], axis=1))
+    pts = np.vstack(blocks)
+    return pts
+
+
+def ring_concentricity(pts, pp: int) -> dict:
+    """Do do dong tam: std ban kinh moi vong vs khoang cach vong.
+
+    - ring_std_px: median(std ban kinh trong moi vong) — vong cang tron cang nho
+    - ring_gap_px: median(khoang cach giua ban kinh trung binh 2 vong lien tiep)
+    - wobble: ring_std / ring_gap — >1 = vong meo hon ca khoang cach vong
+    """
+    n = len(pts) // pp
+    if n < 3:
+        return {"ring_std_px": 0.0, "ring_gap_px": 0.0, "wobble": 0.0}
+    rings = pts[: n * pp].reshape(n, pp, 2)
+    radii = np.hypot(rings[..., 0] - CX, rings[..., 1] - CY)
+    ring_std = radii.std(axis=1)
+    ring_mean = radii.mean(axis=1)
+    gaps = np.diff(ring_mean)
+    return {"ring_std_px": round(float(np.median(ring_std)), 2),
+            "ring_gap_px": round(float(np.median(gaps)), 2),
+            "wobble": round(float(np.median(ring_std) / max(1e-6, float(np.median(gaps)))), 2)}
+
+
 def path_length(pts) -> float:
     d = np.diff(pts, axis=0)
     return float(np.hypot(d[:, 0], d[:, 1]).sum())
@@ -317,13 +441,16 @@ def main():
     ap.add_argument("--amp", type=float, default=2.2)
     ap.add_argument("--pp-turn", type=int, default=140)
     ap.add_argument("--gamma", type=float, default=0.7)
-    ap.add_argument("--mode", choices=["am", "fm", "density"], default="am")
+    ap.add_argument("--mode", choices=["am", "fm", "density", "concentric"], default="am")
     ap.add_argument("--fm-per-turn", type=int, default=48)
     ap.add_argument("--gap-min", type=float, default=1.2)
     ap.add_argument("--eps", type=float, default=0.15)
     ap.add_argument("--gap-p", type=float, default=1.6)
     ap.add_argument("--gap-max", type=float, default=4.0)
     ap.add_argument("--edge-k", type=float, default=0.0)
+    ap.add_argument("--wiggle", type=float, default=1.2)
+    ap.add_argument("--local-m", type=float, default=0.6)
+    ap.add_argument("--k-phi", type=int, default=24)
     ap.add_argument("--n-phi", type=int, default=160)
     ap.add_argument("--rim", type=float, default=0.0,
                     help="chan ban kinh (0 = khong chan, de cung nen clip tu nhien)")
@@ -344,6 +471,16 @@ def main():
                   "gap_p": args.gap_p, "gap_max": args.gap_max, "pp_turn": args.pp_turn,
                   "gamma": args.gamma, "edge_k": args.edge_k,
                   "n_phi": args.n_phi, "rim": args.rim, "prep": args.prep}
+    elif args.mode == "concentric":
+        pts = generate_concentric(a, args.gap_min, args.gap_max, args.eps, args.gap_p,
+                                  args.pp_turn, args.gamma, args.wiggle, args.edge_k,
+                                  args.local_m, rim=args.rim, k_phi=args.k_phi,
+                                  n_phi=args.n_phi)
+        params = {"mode": "concentric", "gap_min": args.gap_min, "eps": args.eps,
+                  "gap_p": args.gap_p, "gap_max": args.gap_max, "pp_turn": args.pp_turn,
+                  "gamma": args.gamma, "wiggle": args.wiggle, "edge_k": args.edge_k,
+                  "local_m": args.local_m, "k_phi": args.k_phi, "n_phi": args.n_phi,
+                  "rim": args.rim, "prep": args.prep}
     else:
         pts = generate(a, args.turns, args.amp, args.pp_turn, args.gamma,
                        args.mode, args.fm_per_turn)
@@ -384,6 +521,7 @@ def main():
         "realtime_s": round(length / 250, 1),
         "timelapse_45s": round(length / 250 / 45, 2),
         **_metrics(f"{args.out}/render.png", a, args.scale),
+        **ring_concentricity(pts, args.pp_turn),
     }
     json.dump(stats, open(f"{args.out}/stats.json", "w"), indent=2)
     print(json.dumps(stats, indent=2))

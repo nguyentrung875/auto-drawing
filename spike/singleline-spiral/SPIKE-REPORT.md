@@ -149,3 +149,67 @@ nhỏ/isolated, lưu ý khi chọn nguồn ảnh).
   --gamma 0.85 --rim 250 --edge-k 0.08 --out output/v6
 node gate-singleline.mjs output/v6
 ```
+
+---
+
+## 7. Bản v7 — phản hồi "v6 méo/lệch, không đồng tâm như v4": concentric spiral
+
+**Phản hồi người dùng (2026-09-09):** v6 tệ hơn v4 — các đường spiral bị méo
+và lệch, không đồng tâm như v4. v4 chỉ hơi khó nhìn vì toàn nét trắng đều,
+nhưng vẫn nhìn ra hình cô gái. **Tiêu chí đúng: vòng phải tròn đồng tâm — mắt
+người là chuẩn cuối, không phải S2.**
+
+**Đo lường phản hồi bằng số (metric mới `wobble` = std bán kính mỗi vòng /
+khoảng cách vòng):**
+
+| Bản | wobble | Nhận xét |
+|---|---|---|
+| v4 | **0.48** | đồng tâm ✅ (đúng cảm nhận người dùng) |
+| v6 | **11.79** | méo gấp 12x khoảng cách vòng — đúng phản hồi ❌ |
+| **v7** | **1.38** | đồng tâm (gần v4), vòng vẫn tròn mượt ✅ |
+
+Bài học lặp lại đúng F2: S2=0.40 của v6 là **metric bị game** bởi méo vòng —
+cũng như v5 moiré 0.285 trước đây. S2 (edge-corr) chỉ đo cạnh, không đo độ
+đồng tâm, không đo cảm nhận.
+
+**Giải pháp v7 — mode `concentric`:**
+- **Tâm cố định (chống lệch):** bước tiến trung bình mỗi vòng = `spacing(b_avg(r))`
+  (độ sáng trung bình theo bán kính, đã làm mượt). Độ lệch cục bộ theo góc bị
+  ép zero-mean (FFT bỏ thành phần DC mỗi vòng) → **không tích lũy thành lệch
+  tâm** — đây là lỗi gốc của v6 (recursion theo góc không ràng buộc).
+- **Mật độ theo góc (mặt rõ):** khoảng cách cục bộ mỗi vòng
+  `g(φ) = spacing·(1 + 0.8·(b(r,φ)^0.85 − b_avg(r)^0.85))` →
+  vùng sáng (mặt) vòng xít, vùng tối (mắt, tóc, nền) vòng thưa.
+  Tone-mapping đúng nghĩa trên vòng tròn: mặt hiện thành vùng dày đặc,
+  nền tối sạch — không còn "toàn nét trắng đều" như v4.
+- Low-pass góc (k_phi=28/160) giữ vòng mượt, `--rim 250` viền tròn gọn.
+
+**Kết quả (portrait.png):**
+
+| Bản | S2 edge | Tone | eye-corr* | wobble | Gate S1..S4 |
+|---|---|---|---|---|---|
+| v4 | 0.239 | −0.29 | −0.04 | 0.48 | PASS |
+| v6 | 0.401 | +0.73 | — | 11.79 | PASS (nhưng xấu) |
+| **v7** | 0.153 | **+0.35** | **+0.90** | **1.38** | S2 FAIL ⚠️ |
+
+\* eye-corr: tương quan profile ngang qua dải mắt render vs ảnh gốc — đo trực
+tiếp "mặt có hiện đúng không". v7 = 0.90 (v4 = −0.04: mặt v4 chỉ đọc được nhờ
+đường viền, không nhờ tone).
+
+⚠️ **S2 gate FAIL cho v7 (0.153 < 0.25):** S2 hiện tại là edge-correlation,
+được calibrate cho AM edge-emphasis. v7 là density-based nên điểm S2 thấp dù
+mắt người thấy rõ hơn. Đề xuất cho track single-line: thay/cộng thêm **S2'
+= eye-corr ≥ 0.7 + wobble ≤ 2 + tone > 0** (đã có sẵn trong stats.json) —
+cần quyết định khi chốt gate pipeline thật.
+
+- Xem: `output/v7/render.png`, `comparison-v4-v6-v7.png`,
+  demo `output/v7/player.html`. Timelapse 3.1x (nhanh hơn nhiều so với 7.1x của v4).
+
+**Cách chạy:**
+
+```bash
+.venv/bin/python spiral.py input/portrait.png --mode concentric --prep sharp \
+  --rim 250 --pp-turn 180 --local-m 0.8 --wiggle 1.0 --k-phi 28 --gamma 0.85 \
+  --gap-p 2.4 --gap-max 9.0 --gap-min 1.45 --out output/v7
+node gate-singleline.mjs output/v7
+```

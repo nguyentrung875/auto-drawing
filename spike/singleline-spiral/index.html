@@ -3,18 +3,19 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Spiral Portrait v6 — Preview</title>
+<title>Spiral Portrait — Preview v4 / v6 / v7</title>
 <style>
   body { background:#0c1412; color:#f1f5f9; font-family:sans-serif; margin:0; padding:20px;
          display:flex; flex-direction:column; align-items:center; gap:16px; }
   h2 { margin:0; font-size:20px; }
   h2 span { color:#4ade80; }
-  p.note { color:#94a3b8; font-size:13px; margin:0; max-width:900px; text-align:center; }
-  .compare { max-width:min(96vw, 1100px); border:2px solid #24443b; border-radius:10px; overflow:hidden; }
+  p.note { color:#94a3b8; font-size:13px; margin:0; max-width:960px; text-align:center; }
+  .compare { max-width:min(98vw, 1280px); border:2px solid #24443b; border-radius:10px; overflow:hidden; }
   .compare img { width:100%; display:block; }
   .cards { display:flex; gap:14px; flex-wrap:wrap; justify-content:center; }
   .card { background:#0f211d; border:2px solid #24443b; border-radius:10px; padding:12px 16px;
           text-align:center; }
+  .card.hot { border-color:#4ade80; }
   .card a { color:#4ade80; font-weight:700; text-decoration:none; font-size:15px; }
   .card .sub { color:#94a3b8; font-size:12px; margin-top:4px; }
   .stats { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; }
@@ -25,24 +26,25 @@
 </head>
 <body>
 <h2>Spiral Portrait — <span>1 nét duy nhất, không nhấc bút</span></h2>
-<p class="note">Bản v6 (mode <i>density</i>): mật độ vòng xoắn theo độ sáng tại từng góc → mặt hiện rõ
-như ảnh gốc, sắc nét. Bấm vào player để xem animation nét vẽ (24s) + reveal đối chiếu ảnh gốc.</p>
+<p class="note">So sánh 4 bản: ảnh gốc · v4 (AM spiral cũ) · v6 (vòng méo — đã bỏ) ·
+<b>v7 (concentric — vòng tròn đồng tâm + mặt hiện rõ bằng mật độ vòng)</b>.
+Bấm player để xem animation nét vẽ + reveal đối chiếu ảnh gốc.</p>
 
-<div class="compare"><img src="comparison-v4-v6.png" alt="so sánh ảnh gốc | v4 | v6"></div>
+<div class="compare"><img src="comparison-v4-v6-v7.png" alt="so sánh gốc v4 v6 v7"></div>
 
 <div class="stats">
-  <div class="stat"><b>v6</b><br>S2 = 0.401 · tone +0.73</div>
-  <div class="stat"><b>v6-video</b><br>S2 = 0.374 · tone +0.76<br>PASS gate 5/5</div>
-  <div class="stat"><b>v4 (cũ)</b><br>S2 = 0.266 · tone −0.29</div>
+  <div class="stat"><b>v7 (mới)</b><br>wobble 1.38 · tone +0.35<br>eye-corr 0.90 · 3.1x</div>
+  <div class="stat"><b>v4 (cũ)</b><br>wobble 0.48 · tone −0.29<br>eye-corr −0.04 · 7.1x</div>
+  <div class="stat"><b>v6 (bỏ)</b><br>wobble 11.79 · tone +0.73<br>vòng méo/ lệch</div>
 </div>
 
 <div class="cards">
-  <div class="card"><a href="output/v6/player.html">▶ Player v6 (nét mịn nhất)</a>
-    <div class="sub">bấm ▶ Vẽ để xem 1 nét duy nhất</div></div>
-  <div class="card"><a href="output/v6-video/player.html">▶ Player v6-video (dùng cho video 45s)</a>
-    <div class="sub">pass toàn bộ gate S0–S4</div></div>
+  <div class="card hot"><a href="output/v7/player.html">▶ Player v7 — concentric (đề xuất)</a>
+    <div class="sub">vòng tròn đồng tâm, mặt rõ, nét mượt</div></div>
   <div class="card"><a href="output/v4/player.html">▶ Player v4 (bản cũ)</a>
     <div class="sub">để so sánh trước/sau</div></div>
+  <div class="card"><a href="output/v6/player.html">▶ Player v6 (đã bỏ — vòng méo)</a>
+    <div class="sub">giữ để tham khảo lịch sử</div></div>
 </div>
 </body>
 </html>

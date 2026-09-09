@@ -1,0 +1,40 @@
+{
+  "s0_input": {
+    "std": 0.2486,
+    "dark_frac": 0.6098,
+    "edge": 0.0153,
+    "colorful": 0.0042,
+    "pass": true,
+    "reasons": []
+  },
+  "params": {
+    "mode": "concentric",
+    "gap_min": 1.45,
+    "eps": 0.15,
+    "gap_p": 2.4,
+    "gap_max": 9.0,
+    "pp_turn": 180,
+    "gamma": 0.85,
+    "wiggle": 1.0,
+    "edge_k": 0.0,
+    "local_m": 0.8,
+    "k_phi": 28,
+    "n_phi": 160,
+    "rim": 250.0,
+    "prep": "sharp"
+  },
+  "points": 11160,
+  "length_px": 35427.3,
+  "d_chars": 155949,
+  "m_commands": 1,
+  "realtime_s": 141.7,
+  "timelapse_45s": 3.15,
+  "likeness_S2": 0.1533,
+  "tone_pearson": 0.3468,
+  "likeness_S2_blur2": -0.112,
+  "tone_pearson_blur2": 0.3271,
+  "sharpness": 0.2331,
+  "ring_std_px": 4.13,
+  "ring_gap_px": 3.0,
+  "wobble": 1.38
+}

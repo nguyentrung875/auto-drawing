@@ -35,14 +35,15 @@ def make_comparison(out_path):
     panels = [
         ("Ảnh gốc (portrait)", work_image()),
         ("v4 — AM spiral (cũ)", render_circle(os.path.join(SPIKE, "output", "v4"))),
-        ("v6 — density spiral (mới)", render_circle(os.path.join(SPIKE, "output", "v6"))),
+        ("v6 — density (vòng méo)", render_circle(os.path.join(SPIKE, "output", "v6"))),
+        ("v7 — concentric (mới)", render_circle(os.path.join(SPIKE, "output", "v7"))),
     ]
-    P, GAP, CAP = 500, 24, 44
+    P, GAP, CAP = 500, 20, 44
     W = len(panels) * P + (len(panels) + 1) * GAP
     H = P + GAP + CAP
     canvas = Image.new("RGB", (W, H), (10, 18, 16))
     dr = ImageDraw.Draw(canvas)
-    f = font(22)
+    f = font(20)
     x = GAP
     for label, img in panels:
         canvas.paste(img.convert("RGB"), (x, GAP))
@@ -70,7 +71,7 @@ def make_player(out_dir):
 if __name__ == "__main__":
     which = sys.argv[1] if len(sys.argv) > 1 else "all"
     if which in ("all", "compare"):
-        make_comparison(os.path.join(SPIKE, "comparison-v4-v6.png"))
+        make_comparison(os.path.join(SPIKE, "comparison-v4-v6-v7.png"))
     if which in ("all", "player"):
-        make_player(os.path.join(SPIKE, "output", "v6"))
-        make_player(os.path.join(SPIKE, "output", "v6-video"))
+        for d in ("v6", "v6-video", "v7"):
+            make_player(os.path.join(SPIKE, "output", d))
