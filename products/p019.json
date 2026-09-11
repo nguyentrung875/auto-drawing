@@ -1,0 +1,12 @@
+{
+  "productId": "p019",
+  "name": "Máy pha cà phê mini",
+  "image": "assets/p019.webp",
+  "price": 4500000,
+  "currency": "VND",
+  "source": "mock",
+  "updatedAt": "2026-09-11T00:00:00Z",
+  "category": "bếp",
+  "brand": "Delonghi",
+  "affiliate_link": "https://shopee.vn/p019?aff=123"
+}

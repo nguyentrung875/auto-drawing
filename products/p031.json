@@ -1,0 +1,12 @@
+{
+  "productId": "p031",
+  "name": "Áo khoác gió nam",
+  "image": "assets/p031.webp",
+  "price": 890000,
+  "currency": "VND",
+  "source": "mock",
+  "updatedAt": "2026-09-11T00:00:00Z",
+  "category": "thời trang",
+  "brand": "Uniqlo",
+  "affiliate_link": "https://shopee.vn/p031?aff=123"
+}

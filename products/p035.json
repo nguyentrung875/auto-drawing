@@ -1,0 +1,12 @@
+{
+  "productId": "p035",
+  "name": "Túi xách nữ mini",
+  "image": "assets/p035.webp",
+  "price": 5500000,
+  "currency": "VND",
+  "source": "mock",
+  "updatedAt": "2026-09-11T00:00:00Z",
+  "category": "thời trang",
+  "brand": "Coach",
+  "affiliate_link": "https://shopee.vn/p035?aff=123"
+}

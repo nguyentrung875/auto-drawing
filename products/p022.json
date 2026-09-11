@@ -1,0 +1,12 @@
+{
+  "productId": "p022",
+  "name": "Máy massage cổ vai",
+  "image": "assets/p022.webp",
+  "price": 1900000,
+  "currency": "VND",
+  "source": "mock",
+  "updatedAt": "2026-09-11T00:00:00Z",
+  "category": "sức khỏe",
+  "brand": "Beurer",
+  "affiliate_link": "https://shopee.vn/p022?aff=123"
+}

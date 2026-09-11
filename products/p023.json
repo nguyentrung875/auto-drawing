@@ -1,0 +1,12 @@
+{
+  "productId": "p023",
+  "name": "Cân sức khỏe điện tử",
+  "image": "assets/p023.webp",
+  "price": 590000,
+  "currency": "VND",
+  "source": "mock",
+  "updatedAt": "2026-09-11T00:00:00Z",
+  "category": "sức khỏe",
+  "brand": "Omron",
+  "affiliate_link": "https://shopee.vn/p023?aff=123"
+}

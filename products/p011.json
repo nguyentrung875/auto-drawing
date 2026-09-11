@@ -1,0 +1,12 @@
+{
+  "productId": "p011",
+  "name": "Màn hình 27 inch 2K",
+  "image": "assets/p011.webp",
+  "price": 6500000,
+  "currency": "VND",
+  "source": "mock",
+  "updatedAt": "2026-09-11T00:00:00Z",
+  "category": "điện tử",
+  "brand": "LG",
+  "affiliate_link": "https://shopee.vn/p011?aff=123"
+}

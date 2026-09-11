@@ -1,0 +1,12 @@
+{
+  "productId": "p029",
+  "name": "Bóng đá size 5",
+  "image": "assets/p029.webp",
+  "price": 620000,
+  "currency": "VND",
+  "source": "mock",
+  "updatedAt": "2026-09-11T00:00:00Z",
+  "category": "thể thao",
+  "brand": "Nike",
+  "affiliate_link": "https://shopee.vn/p029?aff=123"
+}

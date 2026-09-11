@@ -1,0 +1,12 @@
+{
+  "productId": "p007",
+  "name": "Đồng hồ thông minh thể thao",
+  "image": "assets/p007.webp",
+  "price": 6900000,
+  "currency": "VND",
+  "source": "mock",
+  "updatedAt": "2026-09-11T00:00:00Z",
+  "category": "điện tử",
+  "brand": "Garmin",
+  "affiliate_link": "https://shopee.vn/p007?aff=123"
+}

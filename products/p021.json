@@ -1,0 +1,12 @@
+{
+  "productId": "p021",
+  "name": "Bàn chải điện",
+  "image": "assets/p021.webp",
+  "price": 1290000,
+  "currency": "VND",
+  "source": "mock",
+  "updatedAt": "2026-09-11T00:00:00Z",
+  "category": "sức khỏe",
+  "brand": "Oral-B",
+  "affiliate_link": "https://shopee.vn/p021?aff=123"
+}

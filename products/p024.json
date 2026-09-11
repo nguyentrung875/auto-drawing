@@ -1,0 +1,12 @@
+{
+  "productId": "p024",
+  "name": "Nhiệt kế hồng ngoại",
+  "image": "assets/p024.webp",
+  "price": 480000,
+  "currency": "VND",
+  "source": "mock",
+  "updatedAt": "2026-09-11T00:00:00Z",
+  "category": "sức khỏe",
+  "brand": "Microlife",
+  "affiliate_link": "https://shopee.vn/p024?aff=123"
+}

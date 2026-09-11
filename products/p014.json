@@ -1,0 +1,12 @@
+{
+  "productId": "p014",
+  "name": "Cáp sạc nhanh Type-C",
+  "image": "assets/p014.webp",
+  "price": 150000,
+  "currency": "VND",
+  "source": "mock",
+  "updatedAt": "2026-09-11T00:00:00Z",
+  "category": "điện tử",
+  "brand": "Baseus",
+  "affiliate_link": "https://shopee.vn/p014?aff=123"
+}
