@@ -119,4 +119,25 @@ describe('ProductProvider (Story 1.3)', () => {
       rmSync(dir, { recursive: true, force: true });
     }
   });
+
+  it('reloads multiple SKUs edited in quick succession (watch coalescing)', async () => {
+    const dir = makeTempProductsDir([
+      makeProduct('p001', 100000),
+      makeProduct('p002', 200000),
+    ]);
+    const provider = new ProductProvider(dir, { watch: true, debounceMs: 20 });
+    try {
+      writeFileSync(path.join(dir, 'p001.json'), JSON.stringify(makeProduct('p001', 111000)));
+      writeFileSync(path.join(dir, 'p002.json'), JSON.stringify(makeProduct('p002', 222000)));
+      await expect
+        .poll(() => provider.get('p001')!.price, { timeout: 3000, interval: 50 })
+        .toBe(111000);
+      await expect
+        .poll(() => provider.get('p002')!.price, { timeout: 3000, interval: 50 })
+        .toBe(222000);
+    } finally {
+      provider.close();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
 });

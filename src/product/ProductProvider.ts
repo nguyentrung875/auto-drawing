@@ -39,6 +39,7 @@ export class ProductProvider {
   private watcher: FSWatcher | undefined;
   private debounce: NodeJS.Timeout | undefined;
   private readonly debounceMs: number;
+  private readonly pendingFiles = new Set<string>();
 
   constructor(dir: string, options: ProductProviderOptions = {}) {
     this.dir = dir;
@@ -112,6 +113,7 @@ export class ProductProvider {
 
   close(): void {
     if (this.debounce) clearTimeout(this.debounce);
+    this.pendingFiles.clear();
     this.watcher?.close();
     this.watcher = undefined;
   }
@@ -144,9 +146,12 @@ export class ProductProvider {
         ) {
           return;
         }
+        this.pendingFiles.add(fileName);
         if (this.debounce) clearTimeout(this.debounce);
         this.debounce = setTimeout(() => {
-          this.readIntoCache(fileName);
+          const files = [...this.pendingFiles];
+          this.pendingFiles.clear();
+          for (const f of files) this.readIntoCache(f);
         }, this.debounceMs);
       },
     );

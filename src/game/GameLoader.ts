@@ -61,7 +61,23 @@ function checkScenes(scenes: string[]): void {
 export class GameLoader {
   /** Load and validate a single Game JSON file. */
   static load(filePath: string): GameJson {
-    const raw = readFileSync(filePath, 'utf8');
+    if (!existsSync(filePath)) {
+      throw new GameError(
+        'E_GAME_FILE_NOT_FOUND',
+        filePath,
+        'game file does not exist',
+      );
+    }
+    let raw: string;
+    try {
+      raw = readFileSync(filePath, 'utf8');
+    } catch (err) {
+      throw new GameError(
+        'E_GAME_FILE_NOT_FOUND',
+        filePath,
+        `cannot read game file: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
     return GameLoader.parse(raw, filePath);
   }
 

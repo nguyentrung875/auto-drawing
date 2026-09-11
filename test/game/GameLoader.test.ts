@@ -98,6 +98,13 @@ describe('GameLoader (Story 1.2)', () => {
     expect(e.code).toBe('E_MISSING_REQUIRED_SCENE');
   });
 
+  it('rejects a missing file with E_GAME_FILE_NOT_FOUND', () => {
+    const e = expectThrows(() => GameLoader.load('no-such-file.json'));
+    expect(e.code).toBe('E_GAME_FILE_NOT_FOUND');
+    expect(e.field).toBe('no-such-file.json');
+    expect(e.hint).toBeTruthy();
+  });
+
   it('rejects duplicate gameId across a batch with E_DUPLICATE_GAME_ID', () => {
     const tmp = mkdtempSync(path.join(os.tmpdir(), 'game-loader-'));
     try {
