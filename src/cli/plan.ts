@@ -32,13 +32,20 @@ const MECHANIC_ALIASES: Record<string, Mechanic> = {
   one_away: 'ONE_AWAY',
 };
 
-/** Parse `--flag value` pairs from a `game plan` argv slice. */
+/** Parse `--flag value` pairs from a `game plan` or `game render` argv slice. */
 export function parsePlanArgs(argv: string[]): PlanArgs {
   const flags = new Map<string, string>();
-  for (let i = 0; i < argv.length; i += 2) {
+  for (let i = 0; i < argv.length; i += 1) {
     const key = argv[i];
     if (!key?.startsWith('--')) continue;
-    flags.set(key.slice(2), argv[i + 1] ?? '');
+    const name = key.slice(2);
+    const next = argv[i + 1];
+    if (next && !next.startsWith('--')) {
+      flags.set(name, next);
+      i += 1;
+    } else {
+      flags.set(name, 'true');
+    }
   }
   const raw = (flags.get('mechanic') ?? 'hi_lo').toLowerCase();
   const mechanic = MECHANIC_ALIASES[raw] ?? (raw.toUpperCase() as Mechanic);
