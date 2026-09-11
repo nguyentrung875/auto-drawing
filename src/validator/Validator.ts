@@ -20,7 +20,7 @@ import { performance } from 'node:perf_hooks';
 import { ZodError } from 'zod';
 import { gameSchema, MVP_SCENES, REQUIRED_SCENES } from '../game/schema';
 import type { Product } from '../product/schema';
-import type { GameJson, Mechanic } from '../types/game';
+import type { GameJson, Interaction, Mechanic } from '../types/game';
 
 export interface ValidationIssue {
   code: string;
@@ -40,6 +40,19 @@ export interface ValidationResult {
 export const HILO_MIN_DELTA = 0.05;
 /** Minimum MOST_EXPENSIVE top-2 delta (FR-7). */
 export const MOST_EXPENSIVE_MIN_DELTA = 0.02;
+
+/**
+ * Each mechanic's required viewer interaction (FR-6 BOOLEAN, FR-7
+ * MULTIPLE_CHOICE, FR-8 DIGIT). A Game JSON whose `gameplay.interaction`
+ * contradicts its `metadata.mechanic` would drive the Scene System to build
+ * the wrong scene, so it is rejected here (same class of cross-check as the
+ * metadata.mechanic ↔ gameplay.mechanic rule).
+ */
+const EXPECTED_INTERACTIONS: Record<Mechanic, Interaction> = {
+  HI_LO: 'BOOLEAN',
+  MOST_EXPENSIVE: 'MULTIPLE_CHOICE',
+  ONE_AWAY: 'DIGIT',
+};
 
 export interface ValidateOptions {
   /**
@@ -101,6 +114,17 @@ export class Validator {
           'E_SCHEMA_MISSING_FIELD',
           'gameplay.mechanic',
           `must match metadata.mechanic ('${parsed.data.metadata.mechanic}')`,
+        ),
+      );
+    }
+    const expectedInteraction = EXPECTED_INTERACTIONS[parsed.data.metadata.mechanic];
+    const interaction = parsed.data.gameplay.interaction;
+    if (interaction !== undefined && interaction !== expectedInteraction) {
+      errors.push(
+        issue(
+          'E_GAME_LOGIC_INVALID',
+          'gameplay.interaction',
+          `must match mechanic '${parsed.data.metadata.mechanic}' (expected '${expectedInteraction}')`,
         ),
       );
     }

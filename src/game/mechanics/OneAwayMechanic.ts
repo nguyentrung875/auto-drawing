@@ -7,8 +7,7 @@
 import { GameError } from '../errors';
 import { createRng } from '../rng';
 import type { Product } from '../../product/schema';
-import { buildBaseGame, maskPrice } from './shared';
-import { layoutCards } from './shared';
+import { buildBaseGame, layoutCards, maskPrice } from './shared';
 import type { IMechanic, MechanicInput, MechanicOutput } from './types';
 import { STAGE_HEIGHT, STAGE_WIDTH } from './types';
 

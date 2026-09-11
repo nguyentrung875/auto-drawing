@@ -65,6 +65,15 @@ describe('Story 2.1 — Validator.validate', () => {
     expect(result.errors.some((e) => e.field === 'choices')).toBe(true);
   });
 
+  it('rejects a mechanic/interaction mismatch (HI_LO with MULTIPLE_CHOICE)', () => {
+    const game = hiLoGame();
+    game.gameplay.interaction = 'MULTIPLE_CHOICE';
+    const result = Validator.validate(game, [p001, p042]);
+    expect(result.ok).toBe(false);
+    expect(result.errors.map((e) => e.code)).toContain('E_GAME_LOGIC_INVALID');
+    expect(result.errors.find((e) => e.field === 'gameplay.interaction')).toBeTruthy();
+  });
+
   it('warns W_AFFILIATE_MISSING without blocking (AD-4)', () => {
     const noLink = product('p042', 2490000, { affiliate_link: '' });
     const result = Validator.validate(hiLoGame(), [p001, noLink]);

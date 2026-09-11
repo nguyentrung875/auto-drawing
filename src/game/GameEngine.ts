@@ -171,6 +171,23 @@ export class GameEngine {
       };
     }
 
+    // AR-4: the answer is Engine-computed, never authored. A Game JSON whose
+    // `gameplay.answer` contradicts the deterministic computation is a defect
+    // (an LLM hallucination must not leak into the reveal). Compare by value
+    // (`String`) so a type-only difference (authoring `"0"` vs the Engine's
+    // numeric `0`) is not treated as a contradiction. `options` and
+    // `correct_digit` are likewise Engine-authoritative via `detail`.
+    if (
+      game.gameplay.answer !== undefined &&
+      String(game.gameplay.answer) !== String(answer)
+    ) {
+      throw new GameError(
+        'E_GAME_LOGIC_INVALID',
+        'gameplay.answer',
+        `authored answer '${String(game.gameplay.answer)}' contradicts Engine ('${String(answer)}')`,
+      );
+    }
+
     return {
       gameId: game.metadata.gameId,
       mechanic,
