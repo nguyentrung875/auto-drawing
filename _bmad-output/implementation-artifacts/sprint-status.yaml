@@ -29,7 +29,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 09-11-2026 07:42
-last_updated: 09-11-2026 08:07
+last_updated: 09-11-2026 09:45
 project: auto-drawing
 project_key: NOKEY
 tracking_system: file-system
@@ -41,12 +41,12 @@ development_status:
   1-3-productprovider-50-files-products-pxxx-json: done
   epic-1-retrospective: optional
 
-  epic-2: backlog
-  2-1-two-layer-validator-schema-game-logic: backlog
-  2-2-deterministic-answer-timeline-engine: backlog
-  2-3-hi_lo-mechanic-boolean: backlog
-  2-4-most_expensive-mechanic-multiple_choice: backlog
-  2-5-one_away-mechanic-digit-digitreveal-prep: backlog
+  epic-2: done
+  2-1-two-layer-validator-schema-game-logic: done
+  2-2-deterministic-answer-timeline-engine: done
+  2-3-hi_lo-mechanic-boolean: done
+  2-4-most_expensive-mechanic-multiple_choice: done
+  2-5-one_away-mechanic-digit-digitreveal-prep: done
   epic-2-retrospective: optional
 
   epic-3: backlog

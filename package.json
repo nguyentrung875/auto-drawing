@@ -18,6 +18,8 @@
     "products:list": "node bin/game.js products list"
   },
   "dependencies": {
+    "@types/seedrandom": "^3.0.8",
+    "seedrandom": "^3.0.5",
     "zod": "^3.23.8"
   },
   "devDependencies": {

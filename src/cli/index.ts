@@ -6,11 +6,16 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { ProductProvider } from '../product/ProductProvider';
 import { formatVnd } from '../utils/format';
+import { runPlan } from './plan';
 
 const HELP = `Universal AI Game Video Engine — CLI
 
 Usage:
   game products list        List all SKUs (productId, name, price VND, affiliate_link)
+  game plan ...             Validate + compute answer/timeline (Epic 2, no render)
+                            --mechanic hi_lo|most_expensive|one_away
+                            --products p001,p042 --seed 839271
+                            --result-variant in_video|comment [--hidden-index 3]
   game --help               Show this help
 
 Coming in Epic 4:
@@ -36,6 +41,9 @@ export function run(argv: string[]): number {
   if (command === 'products' && (sub === 'list' || sub === undefined)) {
     listProducts();
     return 0;
+  }
+  if (command === 'plan') {
+    return runPlan(argv.slice(1));
   }
   if (command === 'help' || command === '--help' || command === '-h') {
     console.log(HELP);

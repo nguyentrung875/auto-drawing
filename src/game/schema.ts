@@ -53,6 +53,12 @@ export const gameSchema = z.object({
     mechanic: z.enum(MECHANICS),
     interaction: z.enum(INTERACTIONS).optional(),
     hidden_index: z.number().int().optional(),
+    answer: z.union([z.string(), z.number()]).optional(),
+    correct_digit: z.string().optional(),
+    options: z.array(z.number().int()).optional(),
+    choices: z
+      .array(z.object({ id: z.string(), label: z.string() }))
+      .optional(),
   }),
   scenes: z.array(z.string()).min(1),
   audio: z.object({
