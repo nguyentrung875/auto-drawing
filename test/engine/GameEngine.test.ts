@@ -52,6 +52,24 @@ describe('Story 2.2 — GameEngine.compute determinism', () => {
     expect(() => buildTimeline(broken)).toThrowError(/E_TIMELINE_DRIFT/);
   });
 
+  it('throws E_GAME_LOGIC_INVALID when the authored answer contradicts the Engine', () => {
+    const broken = { ...hiLo, gameplay: { ...hiLo.gameplay, answer: 'lower' } };
+    // p042 (2.49M) > p001 (189K), so the Engine must compute 'higher'.
+    expect(() => GameEngine.compute(broken, [p001, p042], 839271)).toThrowError(
+      /E_GAME_LOGIC_INVALID/,
+    );
+  });
+
+  it('tolerates a type-only authored answer ("0" string vs numeric 0)', () => {
+    const oneAway = MechanicRegistry.get('ONE_AWAY').create({
+      products: [p001],
+      seed: 839273,
+      hiddenIndex: 3,
+    }).game;
+    oneAway.gameplay.answer = '0'; // same value, different type
+    expect(() => GameEngine.compute(oneAway, [p001], 839273)).not.toThrow();
+  });
+
   it('throws E_TIMELINE_DRIFT when the total duration leaves the 15-21s window', () => {
     const broken = { ...hiLo, scenes: ['countdown', 'reveal'] };
     expect(() => buildTimeline(broken)).toThrowError(/E_TIMELINE_DRIFT/);
