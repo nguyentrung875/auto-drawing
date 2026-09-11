@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Preview hi_lo_001 — HI_LO</title>
+<style>
+  *{box-sizing:border-box} body{margin:0;font-family:system-ui,Inter,sans-serif;background:#dbeafe;transform:rotate(2deg)}
+  .wrap{max-width:480px;margin:24px auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.15)}
+  .stage{aspect-ratio:9/16;position:relative;overflow:hidden;background:linear-gradient(180deg,#fefce8,#fef3c7)}
+  .scene{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center}
+  .scene.active{display:flex}
+  .badge{background:#111;color:#fff;padding:6px 12px;border-radius:999px;font-size:12px;letter-spacing:0.04em}
+  .hook{font-size:22px;font-weight:800}
+  .question{font-size:18px;font-weight:600;color:#1f2937}
+  .count{font-size:64px;font-weight:900;color:#dc2626}
+  .cards{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+  .card{border:1px solid #e5e7eb;border-radius:12px;padding:10px 12px;background:#fff;min-width:140px}
+  .card-name{font-weight:600}
+  .card-price{color:#059669;font-weight:700}
+  .card-link{font-size:11px;color:#6b7280}
+  .reveal{font-size:18px;background:#fff;padding:12px 16px;border-radius:12px;border:2px solid #111}
+  .digit-reveal{border-color:#7c3aed}
+  .digit{font-size:28px;font-weight:900;color:#7c3aed}
+  .result{margin-top:12px;padding:10px;border-radius:10px;font-weight:600}
+  .in-video{background:#dcfce7;color:#065f46}
+  .comment{background:#fef9c3;color:#854d0e}
+  .cta{font-size:16px;font-weight:700;color:#fff;background:#111;padding:10px 18px;border-radius:999px}
+  .progress{height:6px;background:#e5e7eb;display:flex}
+  .tl{padding:2px 4px;font-size:10px;background:#111;color:#fff;border-right:1px solid #fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .meta{padding:12px 16px;font-size:12px;color:#6b7280;background:#f9fafb;border-top:1px solid #e5e7eb}
+  .controls{padding:12px;display:flex;gap:8px;justify-content:center}
+  .controls button{padding:8px 14px;border-radius:999px;border:1px solid #111;background:#fff;cursor:pointer}
+  .controls button.primary{background:#111;color:#fff}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="progress"><span class="tl" style="flex:2">hook 2s</span><span class="tl" style="flex:3">product 3s</span><span class="tl" style="flex:3">question 3s</span><span class="tl" style="flex:3">countdown 3s</span><span class="tl" style="flex:2">reveal 2s</span><span class="tl" style="flex:2">result 2s</span><span class="tl" style="flex:3">cta 3s</span></div>
+  <div class="stage" id="stage">
+    <div class="scene active" data-scene="hook"><span class="badge">HOOK 2s</span><div class="hook">Bạn đoán đúng được mấy vòng?</div><div style="margin-top:8px;font-size:12px;color:#6b7280">seed 839271 • variant in_video • tilt 2° • tension_02</div></div>
+    <div class="scene" data-scene="product"><span class="badge">PRODUCT 3s</span><div class="cards">
+    <div class="card">
+      <div class="card-img">📦 p001</div>
+      <div class="card-name">Nước giặt 3.5kg</div>
+      <div class="card-price">189.000₫</div>
+      <div class="card-link">🔗 https://shopee.vn/p001?aff=123…</div>
+    </div>
+  
+    <div class="card">
+      <div class="card-img">📦 p042</div>
+      <div class="card-name">Robot hút bụi X10</div>
+      <div class="card-price">2.490.000₫</div>
+      <div class="card-link">🔗 https://shopee.vn/p042?aff=123…</div>
+    </div>
+  </div></div>
+    <div class="scene" data-scene="question"><span class="badge">QUESTION 3s</span><div class="question">Robot hút bụi này CAO HƠN hay THẤP HƠN nước giặt 189K?</div><div style="margin-top:8px;font-size:12px">🎙️ Nước giặt một trăm tám mươi chín nghìn. Robot này cao hơn hay thấp hơn?</div></div>
+    <div class="scene" data-scene="countdown"><span class="badge">COUNTDOWN 3s</span><div class="count" id="count">3</div><div style="font-size:12px">tick mỗi 0.5s • SFX countdown</div></div>
+    <div class="scene" data-scene="reveal"><span class="badge">REVEAL 2s (PriceReveal)</span><div class="reveal">A: 189.000₫ vs B: 2.490.000₫ → <b>HIGHER</b></div></div>
+    <div class="scene" data-scene="result"><span class="badge">RESULT 2s</span><div class="result in-video">✅ Đáp án hiện trong video: higher</div><div style="margin-top:8px;font-size:11px;color:#6b7280">Variant in_video: answer burned into Reveal/Result</div></div>
+    <div class="scene" data-scene="cta"><span class="badge">CTA 3s</span><div class="cta">Comment số vòng bạn đúng!</div><div style="margin-top:8px;font-size:12px">🔗 link trong caption/comment</div></div>
+  </div>
+  <div class="meta">
+    <b>Đoán giá #001 — HI_LO (hi_lo_001)</b><br>
+    Timeline: hook 2s → product 3s → question 3s → countdown 3s → reveal 2s → result 2s → cta 3s = 18s<br>
+    Answer: {"answer":"higher","priceA":189000,"priceB":2490000,"_randSample":0.5684447545264333}<br>
+    Voice: Nước giặt một trăm tám mươi chín nghìn. Robot này cao hơn hay thấp hơn? (stub, chưa gọi viPiper) • SFX: countdown@8s, reveal@11s, correct@13s
+  </div>
+  <div class="controls">
+    <button class="primary" onclick="play()">▶ Play 18s</button>
+    <button onclick="restart()">↺ Restart</button>
+    <span id="timer" style="align-self:center;font-size:12px;color:#6b7280">0.0s / 18.0s</span>
+  </div>
+</div>
+<script>
+  const scenes = Array.from(document.querySelectorAll('.scene'));
+  const durations = [2,3,3,3,2,2,3];
+  const total = 18;
+  let t=0, idx=0, raf=null, start=null, counting=null;
+  function show(i){
+    scenes.forEach((el,j)=> el.classList.toggle('active', j===i));
+  }
+  function play(){
+    if(raf) cancelAnimationFrame(raf);
+    if(counting) clearInterval(counting);
+    start=performance.now(); t=0; idx=0; show(0);
+    document.getElementById('count').textContent='3';
+    counting=null;
+    function tick(now){
+      const elapsed=(now-start)/1000;
+      t=elapsed;
+      document.getElementById('timer').textContent=t.toFixed(1)+'s / '+total+'s';
+      // find scene by accumulated duration
+      let acc=0, next=0;
+      for(let i=0;i<durations.length;i++){ acc+=durations[i]; if(t<acc){ next=i; break; } }
+      if(next!==idx){ idx=next; show(idx); if(scenes[idx].dataset.scene==='countdown'){ startCountdown(); } }
+      // countdown number
+      if(scenes[idx] && scenes[idx].dataset.scene==='countdown'){
+        const countStart = durations.slice(0,3).reduce((a,b)=>a+b,0); // after hook+product+question
+        const cElapsed = t - countStart;
+        const left = Math.max(0, 3 - Math.floor(cElapsed*2)/2); // 0.5 step but display int
+        // show integer 3..0
+        const intLeft = Math.max(0, Math.ceil(3 - cElapsed));
+        document.getElementById('count').textContent=intLeft;
+      }
+      if(t<total) raf=requestAnimationFrame(tick);
+      else { document.getElementById('timer').textContent=total.toFixed(1)+'s — done'; }
+    }
+    raf=requestAnimationFrame(tick);
+  }
+  function startCountdown(){}
+  function restart(){ if(raf) cancelAnimationFrame(raf); t=0; idx=0; show(0); document.getElementById('timer').textContent='0.0s / 18.0s'; document.getElementById('count').textContent='3'; }
+  // auto play once
+  play();
+</script>
+</body>
+</html>

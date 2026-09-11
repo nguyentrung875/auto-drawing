@@ -1,0 +1,30 @@
+{
+  "total": 4,
+  "passed": 3,
+  "failed": 1,
+  "avg_render_ms": 18000,
+  "jobs": [
+    {
+      "jobId": "001",
+      "gameId": "hi_lo_001",
+      "status": "done"
+    },
+    {
+      "jobId": "002",
+      "gameId": "most_exp_001",
+      "status": "done"
+    },
+    {
+      "jobId": "003",
+      "gameId": "one_away_001",
+      "status": "done"
+    },
+    {
+      "jobId": "004",
+      "gameId": "tie_fail",
+      "status": "failed",
+      "error": "E_GAME_LOGIC_INVALID"
+    }
+  ],
+  "generatedAt": "2026-09-11T04:30:50.851Z"
+}

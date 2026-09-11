@@ -1,0 +1,269 @@
+{
+  "generatedAt": "2026-09-11T04:30:50.852Z",
+  "checks": [
+    {
+      "name": "hi_lo_001 validator",
+      "pass": true
+    },
+    {
+      "name": "hi_lo_001 determinism",
+      "pass": true
+    },
+    {
+      "name": "most_exp_001 validator",
+      "pass": true
+    },
+    {
+      "name": "most_exp_001 determinism",
+      "pass": true
+    },
+    {
+      "name": "one_away_001 validator",
+      "pass": true
+    },
+    {
+      "name": "one_away_001 determinism",
+      "pass": true
+    },
+    {
+      "name": "7 scenes reuse",
+      "pass": true
+    },
+    {
+      "name": "Result 2 variants",
+      "pass": true
+    },
+    {
+      "name": "fail-forward",
+      "pass": true
+    },
+    {
+      "name": "seed determinism",
+      "pass": true
+    }
+  ],
+  "results": [
+    {
+      "gameId": "hi_lo_001",
+      "ok": true,
+      "answer": {
+        "answer": "higher",
+        "priceA": 189000,
+        "priceB": 2490000,
+        "_randSample": 0.5684447545264333
+      },
+      "timeline": {
+        "timeline": [
+          {
+            "type": "hook",
+            "duration": 2,
+            "start": 0,
+            "end": 2
+          },
+          {
+            "type": "product",
+            "duration": 3,
+            "start": 2,
+            "end": 5
+          },
+          {
+            "type": "question",
+            "duration": 3,
+            "start": 5,
+            "end": 8
+          },
+          {
+            "type": "countdown",
+            "duration": 3,
+            "start": 8,
+            "end": 11
+          },
+          {
+            "type": "reveal",
+            "duration": 2,
+            "start": 11,
+            "end": 13
+          },
+          {
+            "type": "result",
+            "duration": 2,
+            "start": 13,
+            "end": 15
+          },
+          {
+            "type": "cta",
+            "duration": 3,
+            "start": 15,
+            "end": 18
+          }
+        ],
+        "totalDuration": 18
+      },
+      "warnings": []
+    },
+    {
+      "gameId": "most_exp_001",
+      "ok": true,
+      "answer": {
+        "answer": "p015",
+        "prices": [
+          {
+            "id": "p001",
+            "price": 189000
+          },
+          {
+            "id": "p015",
+            "price": 890000
+          },
+          {
+            "id": "p028",
+            "price": 450000
+          }
+        ],
+        "_randSample": 0.5684525808956964
+      },
+      "timeline": {
+        "timeline": [
+          {
+            "type": "hook",
+            "duration": 2,
+            "start": 0,
+            "end": 2
+          },
+          {
+            "type": "product",
+            "duration": 3,
+            "start": 2,
+            "end": 5
+          },
+          {
+            "type": "question",
+            "duration": 3,
+            "start": 5,
+            "end": 8
+          },
+          {
+            "type": "countdown",
+            "duration": 3,
+            "start": 8,
+            "end": 11
+          },
+          {
+            "type": "reveal",
+            "duration": 2,
+            "start": 11,
+            "end": 13
+          },
+          {
+            "type": "result",
+            "duration": 2,
+            "start": 13,
+            "end": 15
+          },
+          {
+            "type": "cta",
+            "duration": 3,
+            "start": 15,
+            "end": 18
+          }
+        ],
+        "totalDuration": 18
+      },
+      "warnings": []
+    },
+    {
+      "gameId": "one_away_001",
+      "ok": true,
+      "answer": {
+        "answer": 0,
+        "correct_digit": "0",
+        "hidden_index": 3,
+        "price": 189000,
+        "priceStr": "189000",
+        "options": [
+          0,
+          1
+        ],
+        "_randSample": 0.11406827914907437
+      },
+      "timeline": {
+        "timeline": [
+          {
+            "type": "hook",
+            "duration": 2,
+            "start": 0,
+            "end": 2
+          },
+          {
+            "type": "product",
+            "duration": 3,
+            "start": 2,
+            "end": 5
+          },
+          {
+            "type": "question",
+            "duration": 3,
+            "start": 5,
+            "end": 8
+          },
+          {
+            "type": "countdown",
+            "duration": 3,
+            "start": 8,
+            "end": 11
+          },
+          {
+            "type": "reveal",
+            "duration": 2,
+            "start": 11,
+            "end": 13
+          },
+          {
+            "type": "result",
+            "duration": 2,
+            "start": 13,
+            "end": 15
+          },
+          {
+            "type": "cta",
+            "duration": 3,
+            "start": 15,
+            "end": 18
+          }
+        ],
+        "totalDuration": 18
+      },
+      "warnings": []
+    }
+  ],
+  "batch": {
+    "total": 4,
+    "passed": 3,
+    "failed": 1,
+    "avg_render_ms": 18000,
+    "jobs": [
+      {
+        "jobId": "001",
+        "gameId": "hi_lo_001",
+        "status": "done"
+      },
+      {
+        "jobId": "002",
+        "gameId": "most_exp_001",
+        "status": "done"
+      },
+      {
+        "jobId": "003",
+        "gameId": "one_away_001",
+        "status": "done"
+      },
+      {
+        "jobId": "004",
+        "gameId": "tie_fail",
+        "status": "failed",
+        "error": "E_GAME_LOGIC_INVALID"
+      }
+    ],
+    "generatedAt": "2026-09-11T04:30:50.851Z"
+  }
+}
