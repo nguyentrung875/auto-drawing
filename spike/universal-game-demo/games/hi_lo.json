@@ -1,0 +1,42 @@
+{
+  "metadata": {
+    "gameId": "hi_lo_001",
+    "mechanic": "HI_LO",
+    "language": "vi-VN",
+    "difficulty": "medium",
+    "seed": 839271,
+    "result_variant": "in_video"
+  },
+  "content": {
+    "title": "Đoán giá #001",
+    "hook": "Bạn đoán đúng được mấy vòng?",
+    "question": "Robot hút bụi này CAO HƠN hay THẤP HƠN nước giặt 189K?",
+    "cta": "Comment số vòng bạn đúng!",
+    "caption": "Bạn đoán đúng không? #doangia #quiz",
+    "hashtags": ["doangia", "quiz"],
+    "voice_script": "Nước giặt một trăm tám mươi chín nghìn. Robot này cao hơn hay thấp hơn?"
+  },
+  "entities": [
+    { "productId": "p001" },
+    { "productId": "p042" }
+  ],
+  "gameplay": {
+    "mechanic": "HI_LO",
+    "interaction": "BOOLEAN"
+  },
+  "scenes": ["hook", "product", "question", "countdown", "reveal", "result", "cta"],
+  "audio": {
+    "voice": { "script": "Nước giặt một trăm tám mươi chín nghìn. Robot này cao hơn hay thấp hơn?", "enabled": true },
+    "music": { "track": "tension_01", "volume": 0.18 },
+    "sfx": [
+      { "type": "countdown", "at": 8 },
+      { "type": "reveal", "at": 11 },
+      { "type": "correct", "at": 13 }
+    ]
+  },
+  "publishing": {
+    "caption": "Bạn đoán đúng không?",
+    "hashtags": ["doangia"],
+    "outputPath": "export/hi_lo_001_839271.mp4"
+  }
+}

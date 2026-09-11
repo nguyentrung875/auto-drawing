@@ -1,0 +1,12 @@
+{
+  "productId": "p001",
+  "name": "Nước giặt 3.5kg",
+  "image": "assets/p001.webp",
+  "price": 189000,
+  "currency": "VND",
+  "source": "mock",
+  "updatedAt": "2026-09-11T00:00:00Z",
+  "category": "gia dụng",
+  "brand": "BrandA",
+  "affiliate_link": "https://shopee.vn/p001?aff=123"
+}

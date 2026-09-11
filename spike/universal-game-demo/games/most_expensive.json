@@ -1,0 +1,43 @@
+{
+  "metadata": {
+    "gameId": "most_exp_001",
+    "mechanic": "MOST_EXPENSIVE",
+    "language": "vi-VN",
+    "difficulty": "medium",
+    "seed": 839272,
+    "result_variant": "comment"
+  },
+  "content": {
+    "title": "Món nào đắt nhất?",
+    "hook": "3 món — món nào đắt nhất?",
+    "question": "Trong 3 món này, món nào ĐẮT NHẤT?",
+    "cta": "Đáp án ở comment!",
+    "caption": "Bạn chọn món nào? #doangia",
+    "hashtags": ["doangia"],
+    "voice_script": "Ba món này, món nào đắt nhất?"
+  },
+  "entities": [
+    { "productId": "p001" },
+    { "productId": "p015" },
+    { "productId": "p028" }
+  ],
+  "gameplay": {
+    "mechanic": "MOST_EXPENSIVE",
+    "interaction": "MULTIPLE_CHOICE"
+  },
+  "scenes": ["hook", "product", "question", "countdown", "reveal", "result", "cta"],
+  "audio": {
+    "voice": { "script": "Ba món này, món nào đắt nhất?", "enabled": true },
+    "music": { "track": "tension_01", "volume": 0.18 },
+    "sfx": [
+      { "type": "countdown", "at": 8 },
+      { "type": "reveal", "at": 11 },
+      { "type": "correct", "at": 13 }
+    ]
+  },
+  "publishing": {
+    "caption": "Bạn chọn món nào?",
+    "hashtags": ["doangia"],
+    "outputPath": "export/most_exp_001_839272.mp4"
+  }
+}
