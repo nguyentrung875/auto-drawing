@@ -1,0 +1,12 @@
+{
+  "productId": "p037",
+  "name": "Sữa tắm hương hoa",
+  "image": "assets/p037.webp",
+  "price": 160000,
+  "currency": "VND",
+  "source": "mock",
+  "updatedAt": "2026-09-11T00:00:00Z",
+  "category": "sắc đẹp",
+  "brand": "Dove",
+  "affiliate_link": "https://shopee.vn/p037?aff=123"
+}

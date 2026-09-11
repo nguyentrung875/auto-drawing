@@ -1,0 +1,12 @@
+{
+  "productId": "p036",
+  "name": "Mũ lưỡi trai basic",
+  "image": "assets/p036.webp",
+  "price": 480000,
+  "currency": "VND",
+  "source": "mock",
+  "updatedAt": "2026-09-11T00:00:00Z",
+  "category": "thời trang",
+  "brand": "MLB",
+  "affiliate_link": "https://shopee.vn/p036?aff=123"
+}

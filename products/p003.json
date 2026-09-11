@@ -1,0 +1,12 @@
+{
+  "productId": "p003",
+  "name": "Nồi chiên không dầu 5L",
+  "image": "assets/p003.webp",
+  "price": 1290000,
+  "currency": "VND",
+  "source": "mock",
+  "updatedAt": "2026-09-11T00:00:00Z",
+  "category": "bếp",
+  "brand": "Lock&Lock",
+  "affiliate_link": "https://shopee.vn/p003?aff=123"
+}

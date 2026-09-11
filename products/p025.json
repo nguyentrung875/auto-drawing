@@ -1,0 +1,12 @@
+{
+  "productId": "p025",
+  "name": "Đồng hồ bấm giờ tập gym",
+  "image": "assets/p025.webp",
+  "price": 320000,
+  "currency": "VND",
+  "source": "mock",
+  "updatedAt": "2026-09-11T00:00:00Z",
+  "category": "thể thao",
+  "brand": "Xiaomi",
+  "affiliate_link": "https://shopee.vn/p025?aff=123"
+}

@@ -1,0 +1,12 @@
+{
+  "productId": "p028",
+  "name": "Găng tay tập gym",
+  "image": "assets/p028.webp",
+  "price": 390000,
+  "currency": "VND",
+  "source": "mock",
+  "updatedAt": "2026-09-11T00:00:00Z",
+  "category": "thể thao",
+  "brand": "Adidas",
+  "affiliate_link": "https://shopee.vn/p028?aff=123"
+}

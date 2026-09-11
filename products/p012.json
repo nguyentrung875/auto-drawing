@@ -1,0 +1,12 @@
+{
+  "productId": "p012",
+  "name": "Ổ cứng SSD 1TB",
+  "image": "assets/p012.webp",
+  "price": 2400000,
+  "currency": "VND",
+  "source": "mock",
+  "updatedAt": "2026-09-11T00:00:00Z",
+  "category": "điện tử",
+  "brand": "Samsung",
+  "affiliate_link": "https://shopee.vn/p012?aff=123"
+}

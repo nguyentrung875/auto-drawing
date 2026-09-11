@@ -3,3 +3,14 @@ __pycache__/
 .venv/
 __pycache__/
 *.pyc
+
+# Node / TypeScript
+node_modules/
+dist/
+coverage/
+
+# Runtime output (not committed)
+export/
+queue/
+logs/
+products/*.tmp.json

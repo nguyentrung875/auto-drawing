@@ -1,0 +1,12 @@
+{
+  "productId": "p030",
+  "name": "Giày chạy bộ nữ",
+  "image": "assets/p030.webp",
+  "price": 3200000,
+  "currency": "VND",
+  "source": "mock",
+  "updatedAt": "2026-09-11T00:00:00Z",
+  "category": "thời trang",
+  "brand": "Onitsuka",
+  "affiliate_link": "https://shopee.vn/p030?aff=123"
+}

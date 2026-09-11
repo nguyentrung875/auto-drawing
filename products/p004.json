@@ -1,0 +1,12 @@
+{
+  "productId": "p004",
+  "name": "Máy xay sinh tố đa năng",
+  "image": "assets/p004.webp",
+  "price": 890000,
+  "currency": "VND",
+  "source": "mock",
+  "updatedAt": "2026-09-11T00:00:00Z",
+  "category": "bếp",
+  "brand": "Philips",
+  "affiliate_link": "https://shopee.vn/p004?aff=123"
+}

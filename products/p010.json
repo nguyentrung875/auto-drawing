@@ -1,0 +1,12 @@
+{
+  "productId": "p010",
+  "name": "Bàn phím cơ RGB",
+  "image": "assets/p010.webp",
+  "price": 1890000,
+  "currency": "VND",
+  "source": "mock",
+  "updatedAt": "2026-09-11T00:00:00Z",
+  "category": "điện tử",
+  "brand": "Corsair",
+  "affiliate_link": "https://shopee.vn/p010?aff=123"
+}

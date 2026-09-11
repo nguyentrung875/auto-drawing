@@ -1,0 +1,12 @@
+{
+  "productId": "p005",
+  "name": "Bàn ủi hơi nước cầm tay",
+  "image": "assets/p005.webp",
+  "price": 450000,
+  "currency": "VND",
+  "source": "mock",
+  "updatedAt": "2026-09-11T00:00:00Z",
+  "category": "gia dụng",
+  "brand": "Panasonic",
+  "affiliate_link": "https://shopee.vn/p005?aff=123"
+}

@@ -1,0 +1,12 @@
+{
+  "productId": "p013",
+  "name": "Sạc dự phòng 20000mAh",
+  "image": "assets/p013.webp",
+  "price": 750000,
+  "currency": "VND",
+  "source": "mock",
+  "updatedAt": "2026-09-11T00:00:00Z",
+  "category": "điện tử",
+  "brand": "Anker",
+  "affiliate_link": "https://shopee.vn/p013?aff=123"
+}
