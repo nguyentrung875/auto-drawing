@@ -108,6 +108,19 @@ export class Validator {
         );
       }
     }
+    if (
+      errors.length === 0 &&
+      (scenes.length !== MVP_SCENES.length ||
+        scenes.some((scene, index) => scene !== MVP_SCENES[index]))
+    ) {
+      errors.push(
+        issue(
+          'E_SCHEMA_SCENE_INVALID',
+          'scenes',
+          `scene order must be ${MVP_SCENES.join(' → ')}`,
+        ),
+      );
+    }
     if (parsed.data.metadata.mechanic !== parsed.data.gameplay.mechanic) {
       errors.push(
         issue(

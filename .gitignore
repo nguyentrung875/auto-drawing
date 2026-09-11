@@ -10,6 +10,7 @@ dist/
 coverage/
 
 # Runtime output (not committed)
+/output/
 export/
 queue/
 logs/

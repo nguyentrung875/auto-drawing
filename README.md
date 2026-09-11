@@ -25,6 +25,20 @@ Game Engine (answer/timeline deterministic) → 7 scenes → Audio → Render MP
 - [x] Story 2.4 — MOST_EXPENSIVE (MULTIPLE_CHOICE) 3–4 cards, `E_MOST_EXPENSIVE_TIE` khi top2 <2%
 - [x] Story 2.5 — ONE_AWAY (DIGIT) `189,?00`, options delta 1 seeded, `DigitReveal`
 
+## Epic 3: Scene & Audio ✅
+
+- [x] Story 3.1 — `src/scene/`: seven renderer-neutral scenes, deterministic frame model,
+      `PriceReveal`/`DigitReveal`, ProductCard layout and Result `in_video`/`comment` variants
+- [x] Story 3.2 — `src/audio/`: `IAudioEngine`, offline `ViPiperEngine` WAV stub,
+      six countdown cues at 0.5s, reveal sync and `E_AUDIO_MISSING_SFX`
+- [x] Story 3.3 — `src/preview/`: autoplay HTML preview at 1080×1920, CLI `game render --preview`,
+      and CommonJS compatibility for the original spike runner
+
+```bash
+game render --mechanic hi_lo --products p001,p042 --seed 839271 --preview
+node spike/universal-game-demo/src/run_spike.js
+```
+
 ```bash
 game plan --mechanic hi_lo --products p001,p002 --seed 839271
 game plan --mechanic most_expensive --products p001,p015,p028 --seed 839272

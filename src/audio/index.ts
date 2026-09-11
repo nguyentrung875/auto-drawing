@@ -1,5 +1,16 @@
-/**
- * Bounded context: audio — viPiper voice + SFX + music (IAudioEngine adapter).
- * Implemented in Epic 3.
- */
 export const AUDIO_CONTEXT = 'audio';
+
+export {
+  AudioEngine,
+  AudioError,
+  ViPiperEngine,
+  synthesizeAudio,
+} from './AudioEngine';
+export type {
+  AudioSegment,
+  IAudioEngine,
+  MusicTrack,
+  SfxCue,
+  VoiceOptions,
+  VoiceResult,
+} from './AudioEngine';

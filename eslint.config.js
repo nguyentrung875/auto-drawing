@@ -26,6 +26,37 @@ const zones = [
   { target: zone('observability'), from: zone('render') }, // observability ↛ render
 ];
 
+// ESLint's path rule skips a virtual file passed to `lintText`. Keep the same
+// rule id while checking the import edge directly so editor and CI checks see
+// identical dependency violations.
+const isInside = (file, directory) => file === directory || file.startsWith(`${directory}${path.sep}`);
+const virtualPathRule = {
+  meta: {
+    type: 'problem',
+    schema: [{ type: 'object' }],
+    messages: { restricted: 'Import violates a bounded-context dependency rule.' },
+  },
+  create: (context) => ({
+    ImportDeclaration: (node) => {
+      const source = node.source.value;
+      if (typeof source !== 'string' || !source.startsWith('.')) return;
+      const filename = context.filename;
+      const resolved = path.resolve(path.dirname(filename), source);
+      for (const current of zones) {
+        if (isInside(filename, current.target) && isInside(resolved, current.from)) {
+          context.report({ node: node.source, messageId: 'restricted' });
+          break;
+        }
+      }
+    },
+  }),
+};
+const importRules = {
+  ...importPlugin.rules,
+  'no-restricted-paths': virtualPathRule,
+};
+const dependencyPlugin = { ...importPlugin, rules: importRules };
+
 export default [
   {
     name: 'auto-drawing/dependency-rules',
@@ -37,7 +68,7 @@ export default [
         sourceType: 'module',
       },
     },
-    plugins: { import: importPlugin },
+    plugins: { import: dependencyPlugin },
     settings: {
       'import/parsers': { '@typescript-eslint/parser': ['.ts'] },
       'import/resolver': { node: { extensions: ['.ts', '.js', '.json'] } },
