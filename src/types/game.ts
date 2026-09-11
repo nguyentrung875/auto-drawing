@@ -39,6 +39,14 @@ export interface GameGameplay {
   mechanic: Mechanic;
   interaction?: Interaction;
   hidden_index?: number;
+  /** Epic 2 — answer computed by the Engine (never by an LLM). */
+  answer?: string | number;
+  /** ONE_AWAY — the masked digit as a string, e.g. "0". */
+  correct_digit?: string;
+  /** ONE_AWAY — the two digit options (correct + delta 1), seeded order. */
+  options?: number[];
+  /** BOOLEAN / MULTIPLE_CHOICE — the choices presented to the viewer. */
+  choices?: Array<{ id: string; label: string }>;
 }
 
 export interface GameAudio {
@@ -62,4 +70,38 @@ export interface GameJson {
   scenes: string[];
   audio: GameAudio;
   publishing: GamePublishing;
+}
+
+/** Epic 2 — Reveal scene variants (AR-6). */
+export type RevealType = 'PriceReveal' | 'DigitReveal';
+
+export interface TimelineSlot {
+  type: string;
+  duration: number;
+  start: number;
+  end: number;
+}
+
+export interface Timeline {
+  slots: TimelineSlot[];
+  totalDuration: number;
+}
+
+export interface Diversification {
+  bgColor: string;
+  tilt: number;
+  bgm: string;
+}
+
+export interface ComputedGame {
+  gameId: string;
+  mechanic: Mechanic;
+  seed: number;
+  /** Answer computed deterministically by the Engine. */
+  answer: string | number;
+  /** Extra mechanic-specific detail (prices, digits, options...). */
+  detail: Record<string, unknown>;
+  timeline: Timeline;
+  revealType: RevealType;
+  diversification: Diversification;
 }

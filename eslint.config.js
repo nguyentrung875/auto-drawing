@@ -44,6 +44,17 @@ export default [
     },
     rules: {
       'import/no-restricted-paths': ['error', { zones }],
+      // AR-10 / Story 2.2: determinism — all randomness must go through
+      // `seedrandom` (src/game/rng.ts). Math.random() is banned.
+      'no-restricted-properties': [
+        'error',
+        {
+          object: 'Math',
+          property: 'random',
+          message:
+            'Math.random() is banned (AR-10) — use createRng(seed) from src/game/rng.ts',
+        },
+      ],
     },
   },
 ];
