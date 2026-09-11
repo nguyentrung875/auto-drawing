@@ -2,7 +2,8 @@
 title: Universal AI Game Video Engine
 created: 2026-09-11
 updated: 2026-09-11
-status: draft
+reviewed: 2026-09-11
+status: final
 changelog:
   - 2026-09-11: Khởi tạo từ idea PRD 25 mục (Universal Game Video Engine v1). Bound workspace, chọn Coaching path + Internal Factory Local-first.
   - 2026-09-11: Coaching §0-§11 hoàn chỉnh (Vision, JTBD, 3 UJ, Glossary 10 terms, FR-1..FR-11, Non-Goals, MVP 3 mechanics HI_LO/MOST_EXPENSIVE/ONE_AWAY, SM 6+2, NFR 5, OQ 6, A-01..A-08, Entity Model). Pivot: dừng Drawing SVG, PRD này supersede auto-drawing v2.
@@ -71,7 +72,7 @@ LLM chỉ sáng tạo *lời dẫn, câu hỏi, lựa chọn, hook/CTA* — **kh
 - **Protagonist:** Trung + Hermes (Hermes là actor hệ thống trên cùng máy local).
 - **Entry state:** Trung đã duyệt danh sách 50 cặp Product do Hermes đề xuất từ 50 SKU mock (Hermes dùng heuristic đơn giản ở v1: random + price delta >10% để câu hỏi có nghĩa).
 - **Path:**
-  1. Trung chạy `game batch --count 50 --mechanic hi_lo,most_expensive,check_out --seed auto` — lệnh này đẩy 50 Game JSON vào local queue.
+  1. Trung chạy `game batch --count 50 --mechanic hi_lo,most_expensive,one_away --seed auto` — lệnh này đẩy 50 Game JSON vào local queue.
   2. Hermes (ở v1 là script stub, sau này là agent) dequeue từng job: gọi LLM sinh hook/question/cta → Validator 2 tầng → Asset Resolver (ảnh `assets/p001.webp`) → Game Engine tính đáp án → Audio Engine (viPiper + SFX) → Motion Canvas render MP4.
   3. Engine tự retry tối đa 3 lần nếu LLM trả JSON hỏng; log chi tiết `planning/tts/render/encode` + seed + file size.
   4. Diversification Engine phối màu nền giấy, màu mực, tilt ±2° cho mỗi video để tránh TikTok quét trùng.
@@ -106,6 +107,7 @@ Mọi tài liệu, mã nguồn và giao diện dòng lệnh downstream **bắt b
 - **Seed:** Số nguyên `int` để đảm bảo **Reproducibility 100%** — cùng `Game JSON + seed` phải ra cùng timeline, geometry và audio.
 - **ProductProvider:** Nguồn sự thật cho `price` và `affiliate_link`. MVP là **mock DB 50 SKU cứng** trên local; Phase 2 Hermes sẽ thay bằng crawl TikTok Shop/Shopee.
 - **Timeline:** Dãy `scenes` có thứ tự với `duration` và `audioCues`, do Game Engine tính deterministically. Tổng thời lượng MVP: **15–21s** (Hook 2s + Product 3s + Question 3s + Countdown 3s + Reveal 2s + Result/CTA 2-3s).
+- **Hermes:** Agent headless chạy local trên máy Trung, đảm nhận đề xuất Game ideas từ Product DB, gọi Engine qua CLI/queue, validate, đăng bài và trả lời comment. Ở MVP Hermes chỉ là stub (Trung bấm `game batch`), Phase 2 mới crawl/post/comment AI.
 
 ---
 
@@ -365,4 +367,4 @@ Logs (logs/<gameId>.json)
 
 ---
 
-*File này đang ở trạng thái coaching — mỗi section sẽ được điền sau từng vòng hỏi đáp. Xem `idea-validation.md` để hiểu vì sao draft 25 mục chưa đủ chuẩn downstream.*
+*PRD đã finalize — sẵn sàng cho `bmad-architecture` và `bmad-create-epics-and-stories`. Xem `review-rubric.md` và `validation-report.md` để hiểu quyết định.*
