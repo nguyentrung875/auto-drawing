@@ -120,7 +120,12 @@ export class QueueStore {
         continue;
       }
       const job = result.job;
-      const mtimeMs = statSync(full).mtimeMs;
+      let mtimeMs = 0;
+      try {
+        mtimeMs = statSync(full).mtimeMs;
+      } catch {
+        // File moved/deleted during list
+      }
       mtimes.set(file, mtimeMs);
       if (job.enqueuedAt === undefined) {
         job.enqueuedAt = Math.round(mtimeMs);

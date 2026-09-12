@@ -40,7 +40,8 @@ export async function runPool<T, R>(
   worker: (task: PoolTask<T>) => Promise<R>,
   options: PoolOptions<R> = {},
 ): Promise<Array<R | null>> {
-  const concurrency = Math.max(1, options.concurrency ?? workerPoolSize());
+  const rawConcurrency = options.concurrency ?? workerPoolSize();
+  const concurrency = Number.isFinite(rawConcurrency) && rawConcurrency > 0 ? Math.max(1, Math.floor(rawConcurrency)) : workerPoolSize();
   const results: Array<R | null> = new Array(items.length).fill(null);
   let cursor = 0;
 
