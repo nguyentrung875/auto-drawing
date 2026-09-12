@@ -2,6 +2,7 @@ import type { Product } from '../product/schema';
 import {
   answerOf,
   frame,
+  SceneError,
   slotFor,
   type Frame,
   type IScene,
@@ -40,6 +41,49 @@ function productCards(ctx: SceneContext): Array<Record<string, unknown>> {
   });
 }
 
+function validateProductCards(ctx: SceneContext, cards: Array<Record<string, unknown>>): void {
+  const stage = ctx.sceneData?.stage ?? { width: STAGE_WIDTH, height: STAGE_HEIGHT };
+  if (![stage.width, stage.height].every(Number.isFinite) || stage.width <= 0 || stage.height <= 0) {
+    throw new SceneError('E_SCENE_LAYOUT_INVALID', 'sceneData.stage', 'stage dimensions must be finite and positive');
+  }
+
+  const boxes = cards.map((card, index) => {
+    const box = {
+      x: Number(card.x),
+      y: Number(card.y),
+      width: Number(card.width),
+      height: Number(card.height),
+    };
+    if (![box.x, box.y, box.width, box.height].every(Number.isFinite)) {
+      throw new SceneError('E_SCENE_LAYOUT_INVALID', `sceneData.cards.${index}`, 'card geometry must be finite');
+    }
+    if (box.width <= 0 || box.width > 400 || box.height <= 0) {
+      throw new SceneError(
+        'E_SCENE_LAYOUT_INVALID',
+        `sceneData.cards.${index}`,
+        'card width must be 1..400px and height must be positive',
+      );
+    }
+    if (box.x < 0 || box.y < 0 || box.x + box.width > stage.width || box.y + box.height > stage.height) {
+      throw new SceneError('E_SCENE_LAYOUT_INVALID', `sceneData.cards.${index}`, 'card must stay inside the stage');
+    }
+    return box;
+  });
+
+  for (let left = 0; left < boxes.length; left += 1) {
+    for (let right = left + 1; right < boxes.length; right += 1) {
+      const a = boxes[left]!;
+      const b = boxes[right]!;
+      const disjoint =
+        a.x + a.width <= b.x || b.x + b.width <= a.x ||
+        a.y + a.height <= b.y || b.y + b.height <= a.y;
+      if (!disjoint) {
+        throw new SceneError('E_SCENE_LAYOUT_INVALID', 'sceneData.cards', `cards ${left} and ${right} overlap`);
+      }
+    }
+  }
+}
+
 function answerLabel(ctx: SceneContext): string {
   const answer = answerOf(ctx);
   return answer === undefined ? '' : String(answer);
@@ -76,6 +120,7 @@ export class ProductScene extends BaseScene {
 
   render(ctx: SceneContext): Frame[] {
     const cards = productCards(ctx);
+    validateProductCards(ctx, cards);
     return this.oneFrame(ctx, [
       { kind: 'badge', text: 'PRODUCT' },
       { kind: 'product-cards', cards },

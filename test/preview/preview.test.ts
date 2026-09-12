@@ -44,4 +44,18 @@ describe('HTML preview', () => {
     expect(html).toContain('Đáp án ở comment');
     expect(html).not.toContain('Đáp án: p015');
   });
+
+  it('honors autoPlay=false while keeping manual playback available', () => {
+    const products = [product('p001', 189000), product('p042', 2490000)];
+    const output = MechanicRegistry.get('HI_LO').create({ products, seed: 839271 });
+    const computed = GameEngine.compute(output.game, products);
+    const html = generatePreviewHtml(output.game, products, {
+      computed,
+      sceneData: output.sceneData,
+      autoPlay: false,
+    });
+    expect(html).toContain('const autoPlay=false');
+    expect(html).toContain('if(autoPlay)play()');
+    expect(html).toContain("addEventListener('click',play)");
+  });
 });

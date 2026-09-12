@@ -72,4 +72,45 @@ describe('SceneSystem', () => {
     expect(() => SceneSystem.render(broken)).toThrowError(SceneError);
     expect(Validator.validate(broken, [p001, p042]).errors[0]?.code).toBe('E_SCHEMA_SCENE_INVALID');
   });
+
+  it('rejects a supplied timeline whose duration or total drifts', () => {
+    const output = MechanicRegistry.get('HI_LO').create({ products: [p001, p042], seed: 1 });
+    const computed = GameEngine.compute(output.game, [p001, p042]);
+    const timeline = structuredClone(computed.timeline);
+    const countdown = timeline.slots.find((slot) => slot.type === 'countdown')!;
+    countdown.duration = 4;
+    countdown.end += 1;
+    expect(() => SceneSystem.render(output.game, { timeline })).toThrowError(
+      expect.objectContaining({ code: 'E_TIMELINE_DRIFT' }),
+    );
+
+    const totalDrift = structuredClone(computed.timeline);
+    const cta = totalDrift.slots.at(-1)!;
+    cta.duration += 0.06;
+    cta.end += 0.06;
+    totalDrift.totalDuration += 0.06;
+    expect(() => SceneSystem.render(output.game, { timeline: totalDrift })).toThrowError(
+      expect.objectContaining({ code: 'E_TIMELINE_DRIFT' }),
+    );
+  });
+
+  it('rejects custom cards that overlap or exceed the 400px width limit', () => {
+    const output = MechanicRegistry.get('HI_LO').create({ products: [p001, p042], seed: 1 });
+    const baseCard = {
+      productId: 'p001', name: 'A', image: '', priceLabel: '1',
+      x: 100, y: 100, width: 500, height: 200,
+    };
+    expect(() => SceneSystem.render(output.game, {
+      sceneData: { cards: [baseCard] },
+    })).toThrowError(expect.objectContaining({ code: 'E_SCENE_LAYOUT_INVALID' }));
+
+    expect(() => SceneSystem.render(output.game, {
+      sceneData: {
+        cards: [
+          { ...baseCard, width: 300 },
+          { ...baseCard, productId: 'p002', width: 300, x: 200 },
+        ],
+      },
+    })).toThrowError(expect.objectContaining({ code: 'E_SCENE_LAYOUT_INVALID' }));
+  });
 });

@@ -66,6 +66,7 @@ function buildPreviewHtml(
   timeline: Timeline,
   computed?: ComputedGame,
   sceneData?: SceneData,
+  autoPlay = true,
 ): string {
   const diversification = computed?.diversification ?? {
     bgColor: '#fef3c7',
@@ -117,13 +118,13 @@ body{padding:24px}.preview-shell{width:min(100%,520px);margin:auto;background:#f
 </main>
 <script>
 const scenes=[...document.querySelectorAll('.scene')];
-const durations=${jsonForScript(durations)};const total=${total};
+const durations=${jsonForScript(durations)};const total=${total};const autoPlay=${autoPlay};
 let raf=0,start=0,index=0;
 function show(next){index=next;scenes.forEach((scene,i)=>scene.classList.toggle('active',i===next));}
 function updateCountdown(elapsed){const begin=durations.slice(0,3).reduce((a,b)=>a+b,0);const value=Math.max(0,3-Math.floor((elapsed-begin)*2)/2);document.getElementById('count').textContent=String(value%1===0?value:value.toFixed(1));}
 function play(){cancelAnimationFrame(raf);start=performance.now();show(0);document.getElementById('count').textContent='3';function tick(now){const elapsed=Math.min(total,(now-start)/1000);document.getElementById('timer').textContent=elapsed.toFixed(1)+'s / '+total+'s';let cursor=0,next=durations.length-1;for(let i=0;i<durations.length;i++){cursor+=durations[i];if(elapsed<cursor){next=i;break;}}if(next!==index)show(next);if(scenes[index]?.dataset.scene==='countdown')updateCountdown(elapsed);if(elapsed<total)raf=requestAnimationFrame(tick);else document.getElementById('timer').textContent=total.toFixed(1)+'s — done';}raf=requestAnimationFrame(tick);}
 function restart(){cancelAnimationFrame(raf);show(0);document.getElementById('count').textContent='3';document.getElementById('timer').textContent='0.0s / '+total+'s';}
-document.getElementById('play').addEventListener('click',play);document.getElementById('restart').addEventListener('click',restart);play();
+document.getElementById('play').addEventListener('click',play);document.getElementById('restart').addEventListener('click',restart);if(autoPlay)play();
 </script>
 </body>
 </html>`;
@@ -150,7 +151,7 @@ export function generatePreviewHtml(
     sceneData: options.sceneData,
     timeline,
   });
-  return buildPreviewHtml(game, products, timeline, computed, options.sceneData);
+  return buildPreviewHtml(game, products, timeline, computed, options.sceneData, options.autoPlay);
 }
 
 export function writePreviewFile(
