@@ -1,7 +1,6 @@
 image-search/
 __pycache__/
 .venv/
-__pycache__/
 *.pyc
 
 # Node / TypeScript
@@ -9,9 +8,13 @@ node_modules/
 dist/
 coverage/
 
-# Runtime output (not committed)
+# Runtime output (not committed) — root-anchored: `src/queue/` is source code,
+# `queue/` at the repository root is Hermes' job queue.
 /output/
-export/
-queue/
-logs/
+/export/
+/queue/
+/logs/
+/temp/
+/assets/
 products/*.tmp.json
+

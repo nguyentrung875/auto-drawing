@@ -21,3 +21,22 @@
 - **[DF4] RESOLVED in Epic 3** — the dependency-rule test now checks virtual `lintText`
   paths through the same `import/no-restricted-paths` rule id, so queue → render violations
   are reported in both editor/CI lint and the test harness.
+
+## Deferred from: Epic 4 self-review (2026-09-12)
+
+- **[DF5] Motion Canvas headless backend not installed** — `src/render/RenderEngine.ts`
+  resolves the frame stage through the AD-8 contract and currently always lands on the
+  built-in software rasteriser; when `config.frameRenderer = 'motion-canvas'` the render
+  still succeeds and records `W_RENDERER_FALLBACK` in the job warnings. Swapping in the
+  real `@motion-canvas/2d` headless backend is a drop-in `IFrameRenderer` implementation
+  (no queue/CLI change) and should be re-measured against the 45s budget when adopted.
+
+- **[DF6] `metadata.mechanic` vs `gameplay.mechanic` (still DF1)** — no Epic 4 change; the
+  CLI derives both from the same `--mechanic` flag, so the mismatch can only be authored
+  by hand in a `--game` JSON file. Revisit with the Hermes error vocabulary (DF2).
+
+- **[DF7] Batch retry policy** — FR-11 mentions "retry 3×" for the batch. Epic 4 implements
+  the LLM-stub retry (3 attempts on malformed JSON, per the 4.3 AC) and records
+  `attempts`/`retries` per job; a render-stage retry (e.g. re-run once after
+  `E_ENCODE_FAILED`) is deliberately not automatic — a failed job is logged and the batch
+  fails forward. Consider a bounded retry when real overnight failure data exists.

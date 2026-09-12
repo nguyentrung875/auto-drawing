@@ -49,6 +49,77 @@ game plan --mechanic one_away --products p001 --seed 839273 --hidden-index 3
 và in JSON `{answer, timeline, revealType, diversification, game, sceneData}`;
 lỗi → exit 1 + `{"code","field","hint"}`.
 
+## Epic 4: Render & Batch ✅
+
+- [x] Story 4.1 — `src/render/`: `RenderEngine.render()` → PNG sequence (software
+      rasteriser, Motion Canvas contract giữ nguyên) → FFmpeg `libx264 -crf 18
+      -preset fast` 1080×1920@30 + AAC, `export/<gameId>_<seed>.mp4` +
+      `<gameId>_<seed>.caption.json`; pixel-scan chứng minh affiliate link
+      **không** bị burn vào video; render >45s → `W_RENDER_SLOW` nhưng vẫn xong;
+      treo quá 90s → `PROCESS_TIMEOUT` (SIGTERM → SIGKILL); `temp/<jobId>/` xoá
+      trong `finally`
+- [x] Story 4.2 — `src/cli/`: `game render` (queue file `status: pending` →
+      Validator → Engine → Audio → Scene → Render → `status: done` + `logs/<gameId>.json`,
+      exit 0 + `batch_report` 1 job; lỗi → exit 1 + `{"code","field","hint"}`),
+      `game products list` (50 SKU), `game queue status`, `game logs`, `game config`
+- [x] Story 4.3 — `src/queue/` + `src/observability/`: `game batch --count 50`
+      hoặc 50 files `queue/job_*.json`, pool `min(CPU-1,3)` (mỗi worker 1 job),
+      FIFO, fail-forward (job fail không abort batch), RAM ≤4GB, pre-flight disk
+      ≥2GB → `INSUFFICIENT_DISK_SPACE`, LLM stub retry 3×, cuối batch
+      `export/batch-<ts>/batch_report.json` + summary `passed 49/50` (SM-1 ≥98%)
+
+```bash
+game batch --count 50 --mechanics hi_lo,most_expensive,one_away --result-variant comment
+game batch --count 50 --quiet                 # report vẫn ghi ra disk
+game logs --gameId hi_lo_839271
+game queue status
+```
+
+### Usage notes (Trung & Hermes)
+
+**`game render`** — một video, dùng trước khi batch:
+
+```bash
+game render --mechanic hi_lo --products p001,p042 --seed 839271 --result-variant in_video
+game render --game games/hi_lo.json --products p001,p042     # Game JSON tự soạn
+```
+
+Kết quả: `queue/job_<uuid>.json` (`done`), `export/<gameId>_<seed>.mp4`,
+`export/<gameId>_<seed>.caption.json {caption, hashtags, affiliate_link}`,
+`logs/<gameId>.json`. `affiliate_link` **chỉ** nằm trong caption/comment —
+pixel-scan sẽ fail render (`E_AFFILIATE_BURNED_IN`) nếu link xuất hiện trong
+pixels. Lỗi → exit 1 + JSON `{code, field, hint}` (`E_GAME_LOGIC_INVALID`,
+`E_PRICE_SOURCE_INVALID`, …).
+
+**`game batch`** — 50 video qua đêm, không cần canh:
+
+- Pool `WORKER_POOL_MAX = min(CPU-1, 3)`, mỗi worker một job; `--concurrency`
+  chỉ dùng khi test/CI.
+- Job fail (Validator / LLM / timeout / render) → `logs/<gameId>.json`
+  `{code, filter, cause}`, queue job `status: failed`, batch chạy tiếp.
+- `export/batch-<ts>/batch_report.json`:
+  `{total, passed, failed, pass_rate, avg_render_ms, worker_pool_max, duration_ms, manual_interventions, jobs[], failed_jobs[], warnings[]}`.
+  Exit 0 khi SM-1 đạt (`pass_rate ≥ 0.98`), exit 1 khi dưới.
+- Mỗi `logs/<gameId>.json` có `planning_ms, tts_ms, audio_voice_ms, render_ms,
+  encode_ms, audio_mix_ms, total_ms, seed, products[], file_size,
+  validator_errors[], warnings[]`.
+- Hermes có thể tự ghi `queue/job_<uuid>.json` rồi chạy `game batch` không kèm
+  `--count`; file hỏng bị từ chối (`E_QUEUE_JOB_INVALID`, hiện trong
+  `failed_jobs[]`) nhưng không chặn các job khác.
+- `filter` trong log/report để Hermes route: `schema`, `game_logic`,
+  `price_source`, `asset`, `audio`, `scene`, `render`, `timeout`, `disk`, `llm`,
+  `queue`.
+
+**Sự cố thường gặp**
+
+| Triệu chứng | Nguyên nhân / cách xử lý |
+| --- | --- |
+| `E_FFMPEG_MISSING` | `@ffmpeg-installer/ffmpeg` chưa cài → `npm install`, hoặc set `FFMPEG_PATH` / `config.json → render.ffmpegPath` |
+| `W_RENDER_SLOW` | Render >45s (máy yếu, video dài) — video vẫn hợp lệ, chỉ là cảnh báo trong log |
+| `PROCESS_TIMEOUT` | Frame stage hoặc encode treo quá ngưỡng (AD-10) → xem `logs/<gameId>.json`, giảm `--count` |
+| `INSUFFICIENT_DISK_SPACE` | Dưới 2GB trống — batch abort trước khi render job nào |
+| `E_RENDER_STAGE_MISSING` | Job chạy qua `JobRunner` mà không inject renderer (chỉ xảy ra khi gọi API trực tiếp, CLI đã wire sẵn) |
+
 ## Cấu trúc (modular monolith)
 
 ```
@@ -83,6 +154,12 @@ npm test               # vitest
 npm run lint           # eslint (dependency rule)
 npm run products:list  # = game products list
 node bin/game.js products list
+
+# Epic 4 — render & batch
+node bin/game.js render --mechanic hi_lo --products p001,p042 --seed 839271
+node bin/game.js batch --count 50 --mechanics hi_lo,most_expensive,one_away
+node bin/game.js queue status
+node bin/game.js logs --gameId hi_lo_839271
 ```
 
 ## Planning artifacts
