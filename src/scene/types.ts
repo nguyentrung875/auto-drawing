@@ -52,6 +52,7 @@ export interface FrameElement {
   kind: string;
   text?: string;
   value?: string | number;
+  display?: number;
   visible?: boolean;
   [key: string]: unknown;
 }

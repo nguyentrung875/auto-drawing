@@ -82,3 +82,20 @@ all four are fixed in this change. The residual, genuinely-deferred work is belo
   synth only) to **mean −28.9 dB / max −5.1 dB**.
   `assets/` stays git-ignored; the generator is the reproduction mechanism. These are
   *synthetic* placeholder images — real product photography is a content task, not a code one.
+
+## Raised by the Epics 1–4 retrospective (2026-09-12)
+
+- **[DF10] RESOLVED (2026-09-12)** — `src/observability/BatchReporter.ts`.
+  `formatSummary` printed only `avg_render_ms` (~6.4–7.9s), omitting encode
+  (~9.5s), so the figure everyone quoted as "cost per video" understated it by
+  more than half. The summary now also prints `avg_job <n>s wall-clock`
+  (duration / job count). Measured truth: ~17–19s per video, 15m42s for 50.
+
+- **[DF11] No end-to-end viewer review step** — process, not code.
+  The frozen-countdown defect (ring animating while the digit sat on "3" for the
+  whole scene) was found by tiling a whole video into a contact sheet and looking
+  at it, not by any test. `layoutScan` now covers static layout, but pacing,
+  animation continuity and "is this watchable" remain unverified by automation.
+  Recommend a contact-sheet spot-check of at least one video per mechanic before
+  publishing a batch:
+  `ffmpeg -i <mp4> -vf "fps=12/18,scale=270:-1,tile=4x3" -frames:v 1 sheet.png`

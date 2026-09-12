@@ -29,7 +29,8 @@ Game Engine (answer/timeline deterministic) → 7 scenes → Audio → Render MP
 
 - [x] Story 3.1 — `src/scene/`: seven renderer-neutral scenes, deterministic frame model,
       `PriceReveal`/`DigitReveal`, ProductCard layout and Result `in_video`/`comment` variants
-- [x] Story 3.2 — `src/audio/`: `IAudioEngine`, offline `ViPiperEngine` WAV stub,
+- [x] Story 3.2 — `src/audio/`: `IAudioEngine`, `ViPiperEngine` (Piper → built-in
+      Vietnamese formant voice → silence, mỗi bậc đều báo warning),
       six countdown cues at 0.5s, reveal sync and `E_AUDIO_MISSING_SFX`
 - [x] Story 3.3 — `src/preview/`: autoplay HTML preview at 1080×1920, CLI `game render --preview`,
       and CommonJS compatibility for the original spike runner
@@ -128,7 +129,7 @@ src/
 ├── product/     # ProductProvider — 50 SKU files, cache, atomic write, FS watch
 ├── validator/   # Two-layer validation (Validator.ts) — Epic 2
 ├── scene/       # (Epic 3) 7 reusable scenes
-├── audio/       # (Epic 3) viPiper + SFX
+├── audio/       # (Epic 3) ViPiper + formant fallback + SFX
 ├── render/      # (Epic 4) Motion Canvas → FFmpeg
 ├── queue/       # (Epic 4) file-based job queue
 ├── observability/ # (Epic 4) logs + batch_report
@@ -149,6 +150,7 @@ queue → validator → game → {audio, scene} → render → observability
 
 ```bash
 npm install
+npm run assets:generate  # BẮT BUỘC trước lần render đầu — sinh assets/ (xem dưới)
 npm run build          # tsc --noEmit (strict)
 npm test               # vitest
 npm run lint           # eslint (dependency rule)
@@ -160,6 +162,50 @@ node bin/game.js render --mechanic hi_lo --products p001,p042 --seed 839271
 node bin/game.js batch --count 50 --mechanics hi_lo,most_expensive,one_away
 node bin/game.js queue status
 node bin/game.js logs --gameId hi_lo_839271
+```
+
+## Assets & giọng đọc (bắt buộc đọc trước khi chạy production)
+
+### `assets/` — sinh bằng script, không commit
+
+`assets/` nằm trong `.gitignore` (5.4 MB ảnh + audio). Tái tạo bằng:
+
+```bash
+npm run assets:generate   # 50 ảnh PNG 512×512 + 6 SFX + 3 music bed
+```
+
+Generator là **deterministic và offline**: seed từ `productId` qua FNV-1a, không
+dùng `Math.random()` (AR-10), nên chạy lại trên máy khác cho ra byte giống hệt.
+
+Nếu chưa chạy, mọi card sẽ hiện placeholder xám và job log bắn
+`W_ASSET_PLACEHOLDER`. Ảnh SKU phải là **PNG** — `isRenderableImage()` chỉ decode
+PNG, khai `.webp` sẽ âm thầm rơi về placeholder.
+
+### Giọng đọc — Piper (khuyến nghị) → formant (mặc định)
+
+`ViPiperEngine` xuống cấp theo thứ tự, mỗi bậc đều báo warning:
+
+| Bậc | Điều kiện | Warning |
+|---|---|---|
+| **Piper** (chất lượng phát hành) | có binary + model `vi_VN` | — |
+| **FormantViEngine** (mặc định hiện tại) | không có Piper | `W_VOICE_FORMANT_FALLBACK` |
+| WAV câm | formant lỗi | `W_VOICE_SILENT_STUB` |
+
+Giọng formant **nghe được nhưng như robot** — dùng để kiểm thử pipeline, **không
+nên đăng**. Bật giọng thật, không cần sửa code:
+
+```bash
+export PIPER_PATH=/path/to/piper
+export PIPER_VOICE=assets/voices/vi_VN.onnx   # mặc định nếu không set
+```
+
+### Kiểm tra trước khi đăng
+
+```bash
+# Layout gate chạy tự động mỗi job (W_LAYOUT_OVERLAP). Còn nhịp/animation thì soi bằng mắt:
+ffmpeg -i export/<video>.mp4 -vf "fps=12/18,scale=270:-1,tile=4x3" -frames:v 1 sheet.png
+
+REQUIRE_ASSETS=1 node bin/game.js batch --count 50   # fail cứng nếu thiếu asset
 ```
 
 ## Planning artifacts

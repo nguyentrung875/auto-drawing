@@ -29,7 +29,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 09-11-2026 07:42
-last_updated: 09-12-2026 03:10
+last_updated: 09-12-2026 09:40
 project: auto-drawing
 project_key: NOKEY
 tracking_system: file-system
@@ -39,7 +39,7 @@ development_status:
   1-1-project-scaffolding-modular-monolith-structure: done
   1-2-universal-game-json-schema-versioning: done
   1-3-productprovider-50-files-products-pxxx-json: done
-  epic-1-retrospective: optional
+  epic-1-retrospective: done
 
   epic-2: done
   2-1-two-layer-validator-schema-game-logic: done
@@ -47,16 +47,28 @@ development_status:
   2-3-hi_lo-mechanic-boolean: done
   2-4-most_expensive-mechanic-multiple_choice: done
   2-5-one_away-mechanic-digit-digitreveal-prep: done
-  epic-2-retrospective: optional
+  epic-2-retrospective: done
 
   epic-3: done
   3-1-seven-reusable-scenes-result-2-variants: done
   3-2-audio-engine-vipiper-sfx-sync: done
   3-3-html-preview-integration-spike-polish-production: done
-  epic-3-retrospective: optional
+  epic-3-retrospective: done
 
   epic-4: done
   4-1-local-render-motion-canvas-headless-ffmpeg-mp4: done
   4-2-cli-single-game-render-game-products-list: done
   4-3-batch-50-observability-fail-forward-hands-free: done
-  epic-4-retrospective: optional
+  epic-4-retrospective: done
+
+# Appended by the Epics 1-4 retrospective (2026-09-12).
+# Source: _bmad-output/implementation-artifacts/epic-1-4-retrospective-2026-09-12.md
+action_items:
+  ai-1-visual-layout-gate: done
+  ai-2-audible-narration-assertions: done
+  ai-3-countdown-raster-cache-test: done
+  ai-4-generate-asset-pack-png-migration: done
+  ai-5-every-fallback-emits-a-warning: done
+  ai-6-install-piper-vi-vn-voice: open        # DF8 — blocked by network egress, no code change needed
+  ai-7-report-wall-clock-per-job: done
+  ai-8-end-to-end-viewer-review-before-publish: open   # DF11 — process step, not code

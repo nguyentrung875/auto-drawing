@@ -310,7 +310,9 @@ export function paintFrame(canvas: Canvas, frame: RenderFrame, ctx: PaintContext
     }
     case 'countdown': {
       drawFrameBadge(canvas, frame, DANGER);
-      const value = String(element(frame, 'countdown')?.value ?? '');
+      // Whole-second display value; `value` keeps the precise remaining time.
+      const countdown = element(frame, 'countdown');
+      const value = String(countdown?.display ?? countdown?.value ?? '');
       canvas.drawText(value, {
         x: Math.round(STAGE_WIDTH / 2),
         y: 760,
@@ -351,10 +353,12 @@ export function paintFrame(canvas: Canvas, frame: RenderFrame, ctx: PaintContext
           color: MUTED,
           align: 'center',
         });
+        // The digit, then the completed price, then its caption — stacked with
+        // measured gaps. `layoutScan` enforces that these never touch.
         canvas.drawText(String(digitReveal.revealedDigit ?? ''), {
           x: Math.round(STAGE_WIDTH / 2),
-          y: 1010,
-          size: 220,
+          y: 1040,
+          size: 200,
           weight: 700,
           color: ACCENT,
           align: 'center',
@@ -365,8 +369,8 @@ export function paintFrame(canvas: Canvas, frame: RenderFrame, ctx: PaintContext
         if (resolved) {
           canvas.drawText(resolved, {
             x: Math.round(STAGE_WIDTH / 2),
-            y: 1290,
-            size: 104,
+            y: 1310,
+            size: 96,
             weight: 700,
             color: INK,
             align: 'center',
@@ -374,7 +378,7 @@ export function paintFrame(canvas: Canvas, frame: RenderFrame, ctx: PaintContext
           });
           canvas.drawText('Giá đúng', {
             x: Math.round(STAGE_WIDTH / 2),
-            y: 1400,
+            y: 1450,
             size: 52,
             weight: 400,
             color: MUTED,

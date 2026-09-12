@@ -201,12 +201,17 @@ export class CountdownScene extends BaseScene {
     return Array.from({ length: ticks }, (_, index) => {
       const start = Number((slot.start + index * 0.5).toFixed(3));
       const remaining = Number(Math.max(0, slot.duration - index * 0.5).toFixed(1));
+      // Ticks run twice a second so the ring animates smoothly, but a viewer
+      // counts in whole seconds: show ceil(remaining) so the digits read
+      // 3,3,2,2,1,1 rather than 3,2.5,2,1.5,1,0.5.
+      const display = Math.max(1, Math.ceil(remaining));
       return frame(ctx, this.name, [
         { kind: 'badge', text: 'COUNTDOWN' },
-        { kind: 'countdown', value: remaining, text: String(remaining) },
+        { kind: 'countdown', value: remaining, display, text: String(display) },
       ], {
         tick: index,
         remaining,
+        display,
         interval: 0.5,
       }, start, 0.5);
     });

@@ -78,8 +78,16 @@ export class BatchReporter {
   /** The one-line summary the CLI prints at the end of a batch. */
   static formatSummary(report: BatchReport): string {
     const rate = (report.pass_rate * 100).toFixed(0);
+    // Report render time *and* true per-job wall-clock. `avg_render_ms` excludes
+    // encoding (~9.5s of a ~17s job), so quoting it alone understates capacity
+    // by more than half — it was read as the cost per video and it is not.
+    const avgJobSeconds =
+      report.total > 0 ? report.duration_ms / report.total / 1000 : 0;
     const lines = [
-      `batch ${report.batch_id}: passed ${report.passed}/${report.total} (${rate}%) — avg_render_ms ${Math.round(report.avg_render_ms)} — ${(report.duration_ms / 1000).toFixed(1)}s`,
+      `batch ${report.batch_id}: passed ${report.passed}/${report.total} (${rate}%) — ` +
+        `avg_render_ms ${Math.round(report.avg_render_ms)} — ` +
+        `avg_job ${avgJobSeconds.toFixed(1)}s wall-clock — ` +
+        `${(report.duration_ms / 1000).toFixed(1)}s total`,
     ];
     if (report.failed_jobs.length > 0) {
       for (const job of report.failed_jobs) {

@@ -56,6 +56,7 @@ export interface RenderFrameElement {
   kind: string;
   text?: string;
   value?: string | number;
+  display?: number;
   role?: string;
   [key: string]: unknown;
 }
