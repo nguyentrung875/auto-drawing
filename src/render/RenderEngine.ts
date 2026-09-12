@@ -20,6 +20,7 @@ import { RENDER_ERROR_CODES, RENDER_WARNING_CODES, RenderError } from './errors'
 import { FFmpegMuxer } from './ffmpeg';
 import { assertNoAffiliateBurn } from './pixelScan';
 import { SoftwareFrameRenderer } from './softwareFrameRenderer';
+import { BrowserFrameRenderer } from './browserFrameRenderer';
 import {
   DEFAULT_RENDER_CONFIG,
   type FrameRenderContext,
@@ -94,6 +95,9 @@ export class RenderEngine {
   /** Frame stage backend, with the honest fallback recorded as a warning. */
   private createFrameRenderer(config: RenderConfig, warnings: RenderWarning[]): IFrameRenderer {
     if (this.options.frameRenderer) return this.options.frameRenderer;
+    if (config.frameRenderer === 'browser') {
+      return new BrowserFrameRenderer();
+    }
     if (config.frameRenderer === 'motion-canvas') {
       warnings.push({
         code: RENDER_WARNING_CODES.RENDERER_FALLBACK,

@@ -10,10 +10,12 @@ import { JobRunner, type JobOutcome, type RunJobOptions } from '../queue/JobRunn
 import type { RenderStagePort } from '../queue/ports';
 import type { QueueJob } from '../queue/schema';
 
+import type { RenderConfig } from '../render';
+
 /** Adapt `RenderEngine` to the queue's render port. */
-export function createRenderStage(rootDir = process.cwd()): RenderStagePort {
+export function createRenderStage(rootDir = process.cwd(), config?: Partial<RenderConfig>): RenderStagePort {
   return {
-    render: (input) => RenderEngine.render(input as unknown as RenderInput, { rootDir }),
+    render: (input) => RenderEngine.render(input as unknown as RenderInput, { rootDir, config }),
   };
 }
 

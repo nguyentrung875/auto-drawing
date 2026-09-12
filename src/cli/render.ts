@@ -14,7 +14,7 @@ import type { RenderStagePort } from '../queue/ports';
 import { QueueStore } from '../queue/QueueStore';
 import type { QueueJob } from '../queue/schema';
 import type { BatchJobSummary } from '../observability/types';
-import { runJobWithRenderEngine } from './pipeline';
+import { createRenderStage, runJobWithRenderEngine } from './pipeline';
 
 export interface RenderArgs {
   mechanic?: string;
@@ -29,6 +29,7 @@ export interface RenderArgs {
   exportDir?: string;
   logsDir?: string;
   renderer?: RenderStagePort;
+  rendererType?: 'browser' | 'software';
   keepQueueFile?: boolean;
 }
 
@@ -85,6 +86,7 @@ export function parseRenderArgs(argv: string[], rootDir = process.cwd()): Render
     hiddenIndex: hiddenIndex === undefined ? undefined : Number(hiddenIndex),
     gameFile: flags.get('game'),
     queueDir: flags.get('queue-dir') ?? 'queue',
+    rendererType: flags.get('renderer') === 'software' ? 'software' : flags.get('renderer') === 'browser' ? 'browser' : undefined,
     rootDir,
   };
 }
@@ -177,7 +179,7 @@ export async function runRenderCommand(args: RenderArgs): Promise<RenderCommandR
     rootDir,
     exportDir: args.exportDir,
     logsDir: args.logsDir,
-    renderer: args.renderer,
+    renderer: args.renderer ?? (args.rendererType ? createRenderStage(rootDir, { frameRenderer: args.rendererType }) : undefined),
     startedAt: undefined,
   });
   store.update(job, {

@@ -59,14 +59,12 @@ export function generateRenderHtml(input: RenderInput): string {
 <meta name="viewport" content="width=1080, height=1920, initial-scale=1">
 <title>${game.metadata.gameId}</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&display=swap');
-
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body, html {
     width: 1080px;
     height: 1920px;
     overflow: hidden;
-    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     background: ${bgColor};
     color: #ffffff;
     user-select: none;
@@ -81,8 +79,9 @@ export function generateRenderHtml(input: RenderInput): string {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: space-between;
-    padding: 80px 50px 100px 50px;
+    justify-content: flex-start;
+    gap: 30px;
+    padding: 80px 50px 440px 50px; /* Bottom 440px reserved clean for TikTok overlay & pixel-scan */
     overflow: hidden;
   }
 
@@ -296,7 +295,7 @@ export function generateRenderHtml(input: RenderInput): string {
   /* Result Overlay Banner */
   .result-banner {
     position: absolute;
-    bottom: 300px;
+    top: 1240px;
     left: 50%;
     transform: translateX(-50%);
     background: linear-gradient(135deg, #059669, #10b981);
@@ -312,17 +311,18 @@ export function generateRenderHtml(input: RenderInput): string {
     opacity: 0;
   }
 
-  /* Bottom Zone / CTA */
+  /* Bottom Zone / CTA placed in safe zone above y=1500 */
   .bottom-zone {
     width: 100%;
     text-align: center;
     z-index: 10;
+    margin-top: 20px;
   }
   .cta-banner {
     background: linear-gradient(90deg, #6366f1, #a855f7, #ec4899);
-    padding: 24px 48px;
+    padding: 20px 44px;
     border-radius: 9999px;
-    font-size: 34px;
+    font-size: 30px;
     font-weight: 900;
     color: #ffffff;
     box-shadow: 0 16px 40px rgba(99, 102, 241, 0.4);
@@ -400,9 +400,6 @@ export function generateRenderHtml(input: RenderInput): string {
   <div class="bottom-zone">
     <div class="cta-banner" id="cta-banner">${game.content.cta}</div>
   </div>
-
-  <!-- Timeline progress bar -->
-  <div class="progress-line" id="progress-line"></div>
 </div>
 
 <script>

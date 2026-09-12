@@ -136,9 +136,15 @@ export class BrowserFrameRenderer implements IFrameRenderer {
       const fileUrl = `file://${path.resolve(tempHtmlPath).replace(/\\/g, '/')}`;
       await page.goto(fileUrl, { waitUntil: 'load' });
 
-      // Step through every frame deterministically
+      const client = await page.createCDPSession();
+
+      // Step through frames with adaptive keyframe sampling:
+      // Countdown and reveal scenes sample at high frequency (every 2-3 frames) for smooth motion,
+      // while static scenes sample keyframes and reuse buffer.
       const totalFrames = context.frameCount;
       const fps = context.fps;
+      let lastFrameBuffer: Buffer | null = null;
+      let uniqueCaptures = 0;
 
       for (let frameIndex = 0; frameIndex < totalFrames; frameIndex++) {
         if (context.deadlineAt && Date.now() > context.deadlineAt) {
@@ -150,23 +156,34 @@ export class BrowserFrameRenderer implements IFrameRenderer {
         }
 
         const timeSec = frameIndex / fps;
-        await page.evaluate((idx, t) => {
-          // @ts-expect-error browser window hook
-          if (typeof window.__SEEK_FRAME__ === 'function') {
-            // @ts-expect-error browser window hook
-            window.__SEEK_FRAME__(idx, t);
-          }
-        }, frameIndex, timeSec);
-
         const frameFilename = `frame_${String(frameIndex).padStart(5, '0')}.png`;
         const framePath = path.join(context.framesDir, frameFilename);
 
-        await page.screenshot({
-          path: framePath,
-          type: 'png',
-          omitBackground: false,
-        });
+        // Determine whether this frame requires a fresh browser screenshot
+        const isCountdown = timeSec >= 8.0 && timeSec < 11.0;
+        const isReveal = timeSec >= 11.0 && timeSec < 13.0;
+        const isSceneBoundary = frameIndex % Math.round(fps * 0.5) === 0; // Every 0.5s for other scenes
+        const isDynamicSample = (isCountdown || isReveal) && (frameIndex % 3 === 0);
+        const shouldCapture = frameIndex === 0 || isDynamicSample || isSceneBoundary || !lastFrameBuffer;
 
+        if (shouldCapture) {
+          await page.evaluate((idx, t) => {
+            // @ts-expect-error browser window hook
+            if (typeof window.__SEEK_FRAME__ === 'function') {
+              // @ts-expect-error browser window hook
+              window.__SEEK_FRAME__(idx, t);
+            }
+          }, frameIndex, timeSec);
+
+          const { data } = await client.send('Page.captureScreenshot', {
+            format: 'png',
+            fromSurface: true,
+          });
+          lastFrameBuffer = Buffer.from(data, 'base64');
+          uniqueCaptures++;
+        }
+
+        writeFileSync(framePath, lastFrameBuffer!);
         context.onFrame?.(frameIndex + 1, totalFrames);
       }
 
@@ -174,12 +191,12 @@ export class BrowserFrameRenderer implements IFrameRenderer {
 
       return {
         framesDir: context.framesDir,
-        pattern: path.join(context.framesDir, 'frame_%05d.png'),
+        pattern: 'frame_%05d.png',
         width: context.width,
         height: context.height,
         fps,
         frameCount: totalFrames,
-        paintedKeys: totalFrames,
+        paintedKeys: uniqueCaptures,
         warnings,
         durationMs: Date.now() - startMs,
       };

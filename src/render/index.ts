@@ -45,6 +45,7 @@ export {
   type RenderWarning,
 } from './types';
 export { SoftwareFrameRenderer } from './softwareFrameRenderer';
+export { BrowserFrameRenderer, findBrowserExecutable } from './browserFrameRenderer';
 export { FFmpegMuxer, probeVideo, type ProbeResult } from './ffmpeg';
 export { buildAudioBed, AUDIO_BED_SAMPLE_RATE, type AudioBedRequest } from './audioBed';
 export { assertNoAffiliateBurn, scanForAffiliateBurn, linkVariants } from './pixelScan';
