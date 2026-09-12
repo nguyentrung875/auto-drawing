@@ -60,3 +60,13 @@ single bad job never stops the run.
 - Live run: `game batch --count 50 --mechanics hi_lo,most_expensive,one_away
   --result-variant comment --seed 839271` on the real render engine; report at
   `export/batch-<ts>/batch_report.json` and every `logs/<gameId>.json` present.
+
+### Review Findings
+
+- [x] [Review][Patch] Fix QueueStore mtime comparison for same-ms FIFO sorting [`src/queue/QueueStore.ts:143`]
+- [x] [Review][Patch] Safely handle statSync exception in QueueStore.list() [`src/queue/QueueStore.ts:133`]
+- [x] [Review][Patch] Add unhandled rejection protection in withTimeout async helper [`src/utils/async.ts:25`]
+- [x] [Review][Patch] Ensure BatchOrchestrator updates queue job status to failed on unhandled worker error [`src/queue/BatchOrchestrator.ts:157`]
+- [x] [Review][Patch] Guard WorkerPool concurrency against NaN/non-finite inputs [`src/queue/WorkerPool.ts:38`]
+- [x] [Review][Patch] Fix test assertion in QueueStore same-ms FIFO test [`test/queue/queue.test.ts:108`]
+

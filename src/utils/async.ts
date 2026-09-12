@@ -26,6 +26,8 @@ export async function withTimeout<T>(
   stage = 'task',
 ): Promise<T> {
   if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) return promise;
+  // Prevent unhandled rejections if the underlying promise fails after timeout
+  promise.catch(() => {});
   let timer: NodeJS.Timeout | undefined;
   try {
     return await Promise.race([

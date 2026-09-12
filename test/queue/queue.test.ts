@@ -101,8 +101,7 @@ describe('QueueStore (AD-9)', () => {
     sameMs.enqueue({ jobId: 'z', gameId: 'g_z', mechanic: 'HI_LO', productIds: ['p001', 'p002'], seed: 3 });
     sameMs.enqueue({ jobId: 'y', gameId: 'g_y', mechanic: 'ONE_AWAY', productIds: ['p001'], seed: 4 });
     const sameMsOrder = sameMs.list().entries.map((entry) => entry.job.jobId);
-    expect(sameMsOrder).toHaveLength(2);
-    expect([...sameMsOrder].sort()).toEqual(['y', 'z']);
+    expect(sameMsOrder).toEqual(['y', 'z']);
     expect(readdirSync(path.join(workDir, 'queue')).some((file) => file.endsWith('.tmp.json'))).toBe(false);
   });
 

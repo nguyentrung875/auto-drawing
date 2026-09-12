@@ -169,27 +169,37 @@ export class BatchOrchestrator {
         this.options.onJobStarted?.(job, worker);
         const jobStartedAt = this.options.now?.() ?? Date.now();
         this.store.update(job, { status: 'running', worker, attempts: (job.attempts ?? 0) + 1 });
-        const outcome = await JobRunner.run({
-          ...this.options.jobOptions,
-          job,
-          rootDir: this.rootDir,
-          productsDir: this.productsDir,
-          exportDir: this.exportDir,
-          logsDir: this.logsDir,
-          workerIndex: worker,
-          startedAt: jobStartedAt,
-        });
-        this.store.update(job, {
-          status: outcome.status,
-          videoPath: outcome.videoPath,
-          captionPath: outcome.captionPath,
-          code: outcome.error?.code,
-          filter: outcome.error?.filter,
-          cause: outcome.error?.cause,
-        });
-        outcomes[index] = outcome;
-        this.options.onJobFinished?.(outcome, index);
-        return outcome;
+        try {
+          const outcome = await JobRunner.run({
+            ...this.options.jobOptions,
+            job,
+            rootDir: this.rootDir,
+            productsDir: this.productsDir,
+            exportDir: this.exportDir,
+            logsDir: this.logsDir,
+            workerIndex: worker,
+            startedAt: jobStartedAt,
+          });
+          this.store.update(job, {
+            status: outcome.status,
+            videoPath: outcome.videoPath,
+            captionPath: outcome.captionPath,
+            code: outcome.error?.code,
+            filter: outcome.error?.filter,
+            cause: outcome.error?.cause,
+          });
+          outcomes[index] = outcome;
+          this.options.onJobFinished?.(outcome, index);
+          return outcome;
+        } catch (error) {
+          this.store.update(job, {
+            status: 'failed',
+            code: 'E_UNKNOWN',
+            filter: 'queue',
+            cause: (error as Error).message ?? String(error),
+          });
+          throw error;
+        }
       },
       { concurrency },
     );
