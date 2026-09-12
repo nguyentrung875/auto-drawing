@@ -1,7 +1,7 @@
 {
   "productId": "p022",
   "name": "Máy massage cổ vai",
-  "image": "assets/p022.webp",
+  "image": "assets/p022.png",
   "price": 1900000,
   "currency": "VND",
   "source": "mock",

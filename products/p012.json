@@ -1,7 +1,7 @@
 {
   "productId": "p012",
   "name": "Ổ cứng SSD 1TB",
-  "image": "assets/p012.webp",
+  "image": "assets/p012.png",
   "price": 2400000,
   "currency": "VND",
   "source": "mock",

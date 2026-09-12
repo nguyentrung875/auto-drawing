@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { FormantViEngine } from './FormantViEngine';
 import type { GameJson, Timeline } from '../types/game';
 
 /**
@@ -10,6 +11,18 @@ import type { GameJson, Timeline } from '../types/game';
  * log so an operator can tell a voiced render from a mute one.
  */
 export const VOICE_STUB_WARNING = 'W_VOICE_SILENT_STUB';
+
+/**
+ * Raised when Piper is unavailable and the built-in Vietnamese formant voice
+ * spoke the line instead — audible, but robotic and not publication quality.
+ */
+export const VOICE_FORMANT_WARNING = 'W_VOICE_FORMANT_FALLBACK';
+
+/**
+ * Raised when Piper produced narration longer than the FR-9 2s slot. The clip is
+ * not silently clamped — the over-long script is the defect worth seeing.
+ */
+export const VOICE_TRUNCATED_WARNING = 'W_VOICE_OVER_BUDGET';
 
 export interface VoiceOptions {
   language?: string;
@@ -159,10 +172,14 @@ function wavDuration(filePath: string): number | null {
  * Resolution order is `PIPER_PATH` → `piper` on PATH; the voice model comes
  * from `PIPER_VOICE` or `assets/voices/vi_VN.onnx`.
  *
- * When Piper (or its model) is absent the adapter still returns a valid WAV so
- * the pipeline stays runnable offline — but it is *silent*, so it reports
- * `W_VOICE_SILENT_STUB`. That warning is the honest signal that a rendered MP4
- * has no narration; it must never be mistaken for a real voice track.
+ * When Piper (or its model) is absent the adapter degrades in two steps rather
+ * than jumping straight to silence:
+ *   1. the built-in `FormantViEngine` — a deterministic Vietnamese formant
+ *      synthesiser that really speaks the script (robotic, but audible), and
+ *      reports `W_VOICE_FORMANT_FALLBACK`;
+ *   2. a silent WAV only if that also fails, reporting `W_VOICE_SILENT_STUB`.
+ *
+ * Both warnings reach the job log, so a render is never quietly mute.
  */
 export const PIPER_DEFAULT_VOICE = 'assets/voices/vi_VN.onnx';
 
@@ -173,6 +190,8 @@ export interface ViPiperOptions {
   voiceModel?: string;
   /** Project root used to resolve a relative voice model. */
   rootDir?: string;
+  /** Set false to skip the formant voice and fall straight back to silence. */
+  formantFallback?: boolean;
 }
 
 export class ViPiperEngine implements IAudioEngine {
@@ -220,19 +239,43 @@ export class ViPiperEngine implements IAudioEngine {
       if (!spoken.error && spoken.status === 0 && existsSync(voiceWavPath)) {
         const duration = wavDuration(voiceWavPath);
         if (duration !== null && duration > 0) {
-          return { voiceWavPath, duration: Math.min(1.9, duration) };
+          // Report the WAV's *true* length. Clamping the number to 1.9 while the
+          // file ran longer would desync the mux and hide an over-budget script
+          // behind a valid-looking duration; let AudioEngine reject it instead.
+          if (duration < 2) return { voiceWavPath, duration };
+          this.warnings.push({
+            code: VOICE_TRUNCATED_WARNING,
+            hint: `piper narration ran ${duration.toFixed(2)}s but FR-9 caps the clip at <2s; the script is too long for the slot and was replaced by the built-in voice`,
+          });
         }
       }
       this.warnings.push({
-        code: VOICE_STUB_WARNING,
-        hint: `piper at '${binary}' failed to synthesise; a silent placeholder WAV was used — the video has no narration`,
+        code: VOICE_FORMANT_WARNING,
+        hint: `piper at '${binary}' failed to synthesise; the built-in Vietnamese formant voice was used instead`,
       });
     } else {
       this.warnings.push({
-        code: VOICE_STUB_WARNING,
+        code: VOICE_FORMANT_WARNING,
         hint: binary
-          ? `piper voice model not found (set PIPER_VOICE or add ${PIPER_DEFAULT_VOICE}); a silent placeholder WAV was used — the video has no narration`
-          : 'piper binary not found (set PIPER_PATH or install piper); a silent placeholder WAV was used — the video has no narration',
+          ? `piper voice model not found (set PIPER_VOICE or add ${PIPER_DEFAULT_VOICE}); the built-in Vietnamese formant voice was used instead`
+          : 'piper binary not found (set PIPER_PATH or install piper); the built-in Vietnamese formant voice was used instead',
+      });
+    }
+
+    // Step 2: audible built-in voice before ever considering silence.
+    if (this.options.formantFallback !== false) {
+      try {
+        return await new FormantViEngine().synthesizeVoice(normalized);
+      } catch (error) {
+        this.warnings.push({
+          code: VOICE_STUB_WARNING,
+          hint: `formant voice failed (${String(error)}); a silent placeholder WAV was used — the video has no narration`,
+        });
+      }
+    } else {
+      this.warnings.push({
+        code: VOICE_STUB_WARNING,
+        hint: 'formant fallback disabled; a silent placeholder WAV was used — the video has no narration',
       });
     }
 

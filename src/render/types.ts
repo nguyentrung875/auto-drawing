@@ -104,6 +104,7 @@ export interface RenderCardView {
 export interface RenderSceneDataView {
   cards?: RenderCardView[];
   maskedPrice?: string;
+  resolvedPrice?: string;
   revealType?: 'PriceReveal' | 'DigitReveal';
   stage?: { width: number; height: number };
 }

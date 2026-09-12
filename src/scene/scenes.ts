@@ -244,6 +244,12 @@ export class DigitReveal extends RevealImplementation {
   render(ctx: SceneContext): Frame[] {
     const answer = answerLabel(ctx);
     const maskedPrice = ctx.sceneData?.maskedPrice ?? '?';
+    // Substituting the digit back into the mask is what actually answers the
+    // question: showing "2,6?0,000" and a lone "0" leaves the viewer to do the
+    // edit in their head, and the price is the thing the affiliate link is for.
+    const resolvedPrice = maskedPrice.includes('?')
+      ? maskedPrice.replace('?', answer)
+      : maskedPrice;
     return [frame(ctx, 'reveal', [
       { kind: 'badge', text: 'REVEAL' },
       {
@@ -251,6 +257,7 @@ export class DigitReveal extends RevealImplementation {
         animation: 'flip',
         maskedPrice,
         revealedDigit: answer,
+        resolvedPrice,
         text: `${maskedPrice} → ${answer}`,
       },
     ], {
@@ -258,6 +265,7 @@ export class DigitReveal extends RevealImplementation {
       animation: 'flip',
       maskedPrice,
       revealedDigit: answer,
+      resolvedPrice,
     })];
   }
 }

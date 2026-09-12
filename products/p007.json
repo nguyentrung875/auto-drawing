@@ -1,7 +1,7 @@
 {
   "productId": "p007",
   "name": "Đồng hồ thông minh thể thao",
-  "image": "assets/p007.webp",
+  "image": "assets/p007.png",
   "price": 6900000,
   "currency": "VND",
   "source": "mock",

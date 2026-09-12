@@ -122,3 +122,32 @@ describe('RevealScene layout (regression)', () => {
     expect(cards.length).toBeLessThanOrEqual(1);
   });
 });
+
+describe('DigitReveal completes the price (ONE_AWAY)', () => {
+  it('substitutes the revealed digit back into the masked price', () => {
+    const products = [product('p001', 2620000)];
+    const output = MechanicRegistry.get('ONE_AWAY').create({
+      products,
+      seed: 841225,
+      hiddenIndex: 2,
+    });
+    const computed = GameEngine.compute(output.game, products);
+    const scenes = SceneSystem.render(output.game, {
+      products,
+      computed,
+      sceneData: output.sceneData,
+      timeline: computed.timeline,
+    });
+    const reveal = scenes.scenes.find((scene) => scene.name === 'reveal');
+    const data = reveal?.frames[0]?.data as {
+      maskedPrice?: string;
+      resolvedPrice?: string;
+    };
+
+    expect(data?.maskedPrice).toContain('?');
+    // The payoff must be a real, fully-formed price — no '?' left behind.
+    expect(data?.resolvedPrice).toBeTruthy();
+    expect(data?.resolvedPrice).not.toContain('?');
+    expect(data?.resolvedPrice?.replace(/\D/g, '')).toBe('2620000');
+  });
+});

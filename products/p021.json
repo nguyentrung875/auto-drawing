@@ -1,7 +1,7 @@
 {
   "productId": "p021",
   "name": "Bàn chải điện",
-  "image": "assets/p021.webp",
+  "image": "assets/p021.png",
   "price": 1290000,
   "currency": "VND",
   "source": "mock",

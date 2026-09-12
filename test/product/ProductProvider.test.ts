@@ -10,7 +10,7 @@ function makeProduct(productId: string, price = 100000): Product {
   return {
     productId,
     name: `Sản phẩm ${productId}`,
-    image: `assets/${productId}.webp`,
+    image: `assets/${productId}.png`,
     price,
     currency: 'VND',
     source: 'mock',
@@ -42,12 +42,19 @@ describe('ProductProvider (Story 1.3)', () => {
   });
 
   it('returns a product even when its image asset is missing (not a provider error)', () => {
-    const provider = new ProductProvider('products', { watch: false });
-    const p001 = provider.get('p001');
-    expect(p001).not.toBeNull();
-    // No assets/ dir is committed, so hasAsset must report false without throwing.
-    expect(provider.hasAsset('p001')).toBe(false);
-    provider.close();
+    // A missing asset is a Validator concern (E_ASSET_MISSING), never a
+    // Provider error: `get()` still resolves and `hasAsset()` answers false
+    // without throwing. Uses a temp SKU so the result does not depend on
+    // whether `assets/` has been generated in this checkout.
+    const dir = makeTempProductsDir([makeProduct('p001')]);
+    const provider = new ProductProvider(dir, { watch: false });
+    try {
+      const p001 = provider.get('p001');
+      expect(p001).not.toBeNull();
+      expect(provider.hasAsset('p001')).toBe(false);
+    } finally {
+      provider.close();
+    }
   });
 
   it('get() returns null for unknown ids', () => {
@@ -64,7 +71,7 @@ describe('ProductProvider (Story 1.3)', () => {
       const assetsDir = path.join(tmp, 'assets');
       mkdirSync(assetsDir, { recursive: true });
       writeFileSync(path.join(productsDir, 'p001.json'), JSON.stringify(makeProduct('p001')));
-      writeFileSync(path.join(assetsDir, 'p001.webp'), 'fake-image');
+      writeFileSync(path.join(assetsDir, 'p001.png'), 'fake-image');
 
       const provider = new ProductProvider(productsDir, { watch: false });
       expect(provider.hasAsset('p001')).toBe(true);

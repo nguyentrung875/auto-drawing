@@ -49,18 +49,36 @@
 Four defects were found by inspecting rendered frames and audio rather than scene data;
 all four are fixed in this change. The residual, genuinely-deferred work is below.
 
-- **[DF8] No real Vietnamese voice in this environment** — `src/audio/AudioEngine.ts`.
-  `ViPiperEngine` now actually invokes Piper (`PIPER_PATH` → `piper` on PATH, model from
-  `PIPER_VOICE` → `assets/voices/vi_VN.onnx`) and only falls back to a silent placeholder
-  WAV when the binary or the model is absent — reporting `W_VOICE_SILENT_STUB` on the job
-  log when it does. Piper is *not* installed here, so local renders are still mute; that
-  is now visible instead of silent. Installing Piper + a `vi_VN` model turns narration on
-  with no code change. Previously this gap was undocumented, which is why FR-9 looked
-  satisfied while every MP4 had no voice (measured `mean_volume -37.9 dB`, music bed only).
+- **[DF8] PARTIALLY RESOLVED — narration is audible, but not neural** —
+  `src/audio/AudioEngine.ts`, `src/audio/FormantViEngine.ts`.
+  The adapter now degrades in three ordered steps instead of jumping to silence:
+  **Piper** (`PIPER_PATH` → `piper` on PATH, model from `PIPER_VOICE` →
+  `assets/voices/vi_VN.onnx`) → **`FormantViEngine`**, a built-in deterministic Vietnamese
+  formant synthesiser that really speaks the script, reporting
+  `W_VOICE_FORMANT_FALLBACK` → **silent WAV** (`W_VOICE_SILENT_STUB`) only if the formant
+  voice itself throws. Measured after the change: the voice clip carries 36,764 non-zero
+  PCM frames at 82% peak, where it was 100% zeros before.
+  The formant voice is a source-filter model (3 formants + the six Vietnamese tone
+  contours + onset bursts/nasal codas). It is intelligible-ish and robotic — **good enough
+  that a render is never mute, not good enough to publish**. Piper remains the intended
+  production voice and is still preferred automatically when installed.
+  *Why not just install Piper:* this sandbox can only reach `registry.npmjs.org` and
+  `api.github.com`; GitHub release assets (`objects.githubusercontent.com`), Hugging Face
+  and `raw.githubusercontent.com` all fail TLS, there is no root for `apt-get`, and npm
+  publishes only browser/WASM Piper builds. Installing Piper + a `vi_VN` model on a
+  networked machine upgrades the voice with **no code change**.
 
-- **[DF9] Product images are still absent** — there is no `assets/` directory and no seed
-  script, so every ProductCard renders the deterministic `P0xx` placeholder and
-  `W_ASSET_PLACEHOLDER` fires on 100% of jobs. The asset *check* no longer disables itself
-  silently (see below), but real imagery is still outstanding. `W_ASSET_PLACEHOLDER` and
-  `W_MUSIC_MISSING` remain always-on until assets land; treat them as environment state,
-  not per-job signal, when reading `batch_report.json`.
+- **[DF9] RESOLVED (2026-09-12)** — `scripts/generate-assets.mjs`, `npm run assets:generate`.
+  A deterministic offline generator now produces the full asset pack: 50 product PNGs
+  (512×512, hue per category, motif + vignette, seeded by FNV-1a over the product id — no
+  `Math.random()`, so AR-10 holds and reruns are byte-identical), 6 SFX WAVs and 3 loopable
+  music beds (partials rounded to whole cycles so the loop seam does not click). 5.4 MB total.
+  SKU `image` fields were migrated `.webp` → `.png` because `isRenderableImage()` only
+  decodes PNG — that mismatch, not a missing directory, was the real cause of
+  `W_ASSET_PLACEHOLDER` firing on 100% of jobs.
+  Effect on a `hi_lo p001,p042 --seed 839271` render: job warnings dropped from 4
+  (`W_ASSETS_DIR_MISSING`, `W_VOICE_SILENT_STUB`, `W_MUSIC_MISSING`, `W_ASSET_PLACEHOLDER`)
+  to 1 (`W_VOICE_FORMANT_FALLBACK`), and the mix went from `mean_volume -37.9 dB` (music
+  synth only) to **mean −28.9 dB / max −5.1 dB**.
+  `assets/` stays git-ignored; the generator is the reproduction mechanism. These are
+  *synthetic* placeholder images — real product photography is a content task, not a code one.

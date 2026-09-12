@@ -1,7 +1,7 @@
 {
   "productId": "p002",
   "name": "Robot hút bụi X10",
-  "image": "assets/p002.webp",
+  "image": "assets/p002.png",
   "price": 2490000,
   "currency": "VND",
   "source": "mock",

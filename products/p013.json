@@ -1,7 +1,7 @@
 {
   "productId": "p013",
   "name": "Sạc dự phòng 20000mAh",
-  "image": "assets/p013.webp",
+  "image": "assets/p013.png",
   "price": 750000,
   "currency": "VND",
   "source": "mock",

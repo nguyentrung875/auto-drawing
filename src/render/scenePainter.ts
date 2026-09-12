@@ -353,12 +353,34 @@ export function paintFrame(canvas: Canvas, frame: RenderFrame, ctx: PaintContext
         });
         canvas.drawText(String(digitReveal.revealedDigit ?? ''), {
           x: Math.round(STAGE_WIDTH / 2),
-          y: 1050,
-          size: 260,
+          y: 1010,
+          size: 220,
           weight: 700,
           color: ACCENT,
           align: 'center',
         });
+        // Close the loop: show the price with the digit substituted back in, so
+        // the viewer reads the real number instead of reconstructing it.
+        const resolved = String(digitReveal.resolvedPrice ?? '');
+        if (resolved) {
+          canvas.drawText(resolved, {
+            x: Math.round(STAGE_WIDTH / 2),
+            y: 1290,
+            size: 104,
+            weight: 700,
+            color: INK,
+            align: 'center',
+            maxWidth: 940,
+          });
+          canvas.drawText('Giá đúng', {
+            x: Math.round(STAGE_WIDTH / 2),
+            y: 1400,
+            size: 52,
+            weight: 400,
+            color: MUTED,
+            align: 'center',
+          });
+        }
       } else {
         const cards = cardsOf(frame, ctx);
         if (cards.length > 0) drawCards(canvas, frame, ctx);

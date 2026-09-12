@@ -44,8 +44,12 @@ function revealHtml(game: GameJson, products: Product[], computed?: ComputedGame
   const answer = answerFor(game, computed);
   if (game.metadata.mechanic === 'ONE_AWAY') {
     const masked = sceneData?.maskedPrice ?? '?';
+    // Mirror the renderer: the resolved price is the payoff, not the bare digit.
+    const resolved =
+      sceneData?.resolvedPrice ?? (masked.includes('?') ? masked.replace('?', answer) : masked);
     return `<div class="reveal digit-reveal" data-reveal-type="DigitReveal">
       <span class="masked">${escapeHtml(masked)}</span><span class="flip-arrow">→</span><span class="digit">${escapeHtml(answer)}</span>
+      <strong>${escapeHtml(resolved)}</strong>
       <small>DigitReveal · flip</small>
     </div>`;
   }

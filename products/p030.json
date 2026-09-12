@@ -1,7 +1,7 @@
 {
   "productId": "p030",
   "name": "Giày chạy bộ nữ",
-  "image": "assets/p030.webp",
+  "image": "assets/p030.png",
   "price": 3200000,
   "currency": "VND",
   "source": "mock",

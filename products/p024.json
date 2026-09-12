@@ -1,7 +1,7 @@
 {
   "productId": "p024",
   "name": "Nhiệt kế hồng ngoại",
-  "image": "assets/p024.webp",
+  "image": "assets/p024.png",
   "price": 480000,
   "currency": "VND",
   "source": "mock",

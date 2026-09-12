@@ -43,6 +43,7 @@ export interface SceneCard {
 export interface SceneData {
   cards?: SceneCard[];
   maskedPrice?: string;
+  resolvedPrice?: string;
   revealType?: RevealImplementation;
   stage?: { width: number; height: number };
 }
