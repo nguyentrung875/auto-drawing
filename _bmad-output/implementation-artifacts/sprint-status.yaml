@@ -29,7 +29,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 09-11-2026 07:42
-last_updated: 09-11-2026 15:00
+last_updated: 09-12-2026 03:10
 project: auto-drawing
 project_key: NOKEY
 tracking_system: file-system
@@ -55,8 +55,8 @@ development_status:
   3-3-html-preview-integration-spike-polish-production: done
   epic-3-retrospective: optional
 
-  epic-4: backlog
-  4-1-local-render-motion-canvas-headless-ffmpeg-mp4: backlog
-  4-2-cli-single-game-render-game-products-list: backlog
-  4-3-batch-50-observability-fail-forward-hands-free: backlog
+  epic-4: done
+  4-1-local-render-motion-canvas-headless-ffmpeg-mp4: done
+  4-2-cli-single-game-render-game-products-list: done
+  4-3-batch-50-observability-fail-forward-hands-free: done
   epic-4-retrospective: optional
