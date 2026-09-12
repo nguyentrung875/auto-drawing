@@ -69,6 +69,18 @@ lỗi → exit 1 + `{"code","field","hint"}`.
       ≥2GB → `INSUFFICIENT_DISK_SPACE`, LLM stub retry 3×, cuối batch
       `export/batch-<ts>/batch_report.json` + summary `passed 49/50` (SM-1 ≥98%)
 
+## Epic 5: High-Fidelity Browser Frame Renderer & Web Studio Integration ✅
+
+- [x] **BrowserFrameRenderer** (`src/render/browserFrameRenderer.ts`):
+  - Tự động phát hiện Google Chrome hoặc Microsoft Edge cài sẵn trên máy (thông qua `puppeteer-core`).
+  - Render template HTML5/CSS3 chuẩn 1080×1920 với hiệu ứng hiện đại: thẻ sản phẩm nổi bật, vòng đếm ngược SVG động, 3D flip card reveal mượt mà, typography sắc nét.
+  - Tối ưu CDP keyframe sampling: kết xuất video 18 giây mượt mà chỉ trong ~45 giây.
+  - Tự động fallback về `software` renderer nếu môi trường không có Chromium (`--renderer browser|software`).
+- [x] **Web Studio UI & API Integration**:
+  - Giao diện trực quan Next.js (`http://localhost:3000/studio`): chọn mechanic, cấu hình sản phẩm, xem trước timeline, bấm **"🎬 Render Video MP4 (1080×1920)"**.
+  - `POST /api/render`: thực thi `bin/game.js render --renderer browser` ngầm.
+  - `GET /api/videos/:filename`: hỗ trợ HTTP 206 Partial Content streaming, phát trực tiếp trên trình phát HTML5 tích hợp và tải file MP4 về máy.
+
 ```bash
 game batch --count 50 --mechanics hi_lo,most_expensive,one_away --result-variant comment
 game batch --count 50 --quiet                 # report vẫn ghi ra disk
