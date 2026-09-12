@@ -13,6 +13,7 @@ import { performance } from 'node:perf_hooks';
 import { Canvas } from './canvas';
 import { encodePng } from './png';
 import { RENDER_ERROR_CODES, RENDER_WARNING_CODES, RenderError } from './errors';
+import { scanLayout } from './layoutScan';
 import { paintFrame, paintOverlay, type PaintContext } from './scenePainter';
 import type {
   FrameRenderContext,
@@ -42,6 +43,20 @@ const KEY_FRACTIONS = [0, 0.25, 0.5, 0.75];
 
 /** Scenes whose overlay changes on every output frame (countdown ring). */
 const ANIMATED_OVERLAY_SCENES = new Set(['countdown']);
+
+/**
+ * Cache identity for a painted frame: the scene plus the data that changes what
+ * is drawn. Frames within one scene are only interchangeable when they paint
+ * the same thing — the countdown's per-tick value is the case that matters.
+ */
+function frameCacheKey(frame: RenderFrame): string {
+  const data = frame.data as Record<string, unknown> | undefined;
+  const tick = data?.tick;
+  const remaining = data?.remaining;
+  const discriminator =
+    tick === undefined && remaining === undefined ? '' : `#${String(tick)}:${String(remaining)}`;
+  return `${frame.scene}${discriminator}`;
+}
 
 interface SceneTimelineEntry {
   frame: RenderFrame;
@@ -97,22 +112,42 @@ export class SoftwareFrameRenderer implements IFrameRenderer {
 
     // 1. Rasterize the animation keys for each scene, plus a reusable base for
     //    scenes whose overlay changes on every frame (only the countdown ring).
+    //
+    // Cache by scene *content*, not scene name. A scene can emit several
+    // distinct frames — the countdown emits one per half-second tick (3.0, 2.5,
+    // 2.0 …) — and keying on the name alone made every tick reuse the first
+    // tick's raster, so the ring animated while the number sat on "3" for the
+    // whole countdown.
     const baseCanvases = new Map<string, Canvas>();
     const totalDuration = input.timeline.totalDuration;
     const keyBuffers = new Map<string, { index: number; png: Buffer }[]>();
     let renderedFrames = 0;
     for (const entry of entries) {
-      const scene = entry.frame.scene;
+      const scene = frameCacheKey(entry.frame);
       if (keyBuffers.has(scene)) continue;
       const length = entry.endFrame - entry.startFrame;
       const keyIndices = [...new Set(KEY_FRACTIONS.map((fraction) =>
         Math.min(entry.endFrame - 1, entry.startFrame + Math.floor(length * fraction)),
       ))].sort((a, b) => a - b);
       const buffers: { index: number; png: Buffer }[] = [];
+      let layoutChecked = false;
       for (const index of keyIndices) {
         const sceneProgress = length > 0 ? (index - entry.startFrame) / length : 0;
         const canvas = new Canvas(width, height);
         paintFrame(canvas, entry.frame, paintContext);
+        // Layout gate: inspect what was actually painted, once per scene. Text
+        // collisions and off-frame text are invisible to scene-data checks —
+        // this is the only place they can be caught on a real job.
+        if (!layoutChecked) {
+          layoutChecked = true;
+          const findings = scanLayout(canvas);
+          if (findings.length > 0 && !paintContext.warnings.some((w) => w.code === 'W_LAYOUT_OVERLAP')) {
+            paintContext.warnings.push({
+              code: 'W_LAYOUT_OVERLAP',
+              hint: `scene '${scene}': ${findings[0]!.hint}`,
+            });
+          }
+        }
         paintOverlay(canvas, {
           time: index / fps,
           totalDuration,
@@ -124,7 +159,7 @@ export class SoftwareFrameRenderer implements IFrameRenderer {
         assertWithinDeadline(context);
       }
       keyBuffers.set(scene, buffers);
-      if (ANIMATED_OVERLAY_SCENES.has(scene)) {
+      if (ANIMATED_OVERLAY_SCENES.has(entry.frame.scene)) {
         const base = new Canvas(width, height);
         paintFrame(base, entry.frame, paintContext);
         baseCanvases.set(scene, base);
@@ -136,7 +171,8 @@ export class SoftwareFrameRenderer implements IFrameRenderer {
     const pattern = 'frame_%05d.png';
     const written = new Set<number>();
     for (const entry of entries) {
-      const keys = keyBuffers.get(entry.frame.scene)!;
+      const cacheKey = frameCacheKey(entry.frame);
+      const keys = keyBuffers.get(cacheKey)!;
       const length = entry.endFrame - entry.startFrame;
       for (let index = entry.startFrame; index < entry.endFrame; index += 1) {
         if (written.has(index)) continue;
@@ -146,7 +182,7 @@ export class SoftwareFrameRenderer implements IFrameRenderer {
         // Reuse the nearest animation key when the overlay is static, otherwise
         // composite the animated overlay onto the cached base canvas.
         let png: Buffer;
-        const base = baseCanvases.get(entry.frame.scene);
+        const base = baseCanvases.get(cacheKey);
         if (!base) {
           const nearest = keys.reduce((best, candidate) =>
             Math.abs(candidate.index - index) < Math.abs(best.index - index) ? candidate : best,

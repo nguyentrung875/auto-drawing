@@ -16,6 +16,8 @@
  * Warnings never block (AD-4): a missing affiliate_link yields
  * `W_AFFILIATE_MISSING` with `ok: true`.
  */
+import { existsSync } from 'node:fs';
+import path from 'node:path';
 import { performance } from 'node:perf_hooks';
 import { ZodError } from 'zod';
 import { gameSchema, MVP_SCENES, REQUIRED_SCENES } from '../game/schema';
@@ -64,6 +66,37 @@ export interface ValidateOptions {
 
 function issue(code: string, field: string, hint: string): ValidationIssue {
   return { code, field, hint };
+}
+
+/** Raised when `assets/` is absent so `E_ASSET_MISSING` cannot be enforced. */
+export const ASSETS_DIR_MISSING_WARNING = 'W_ASSETS_DIR_MISSING';
+
+export interface AssetCheck {
+  enabled: boolean;
+  warning?: ValidationIssue;
+}
+
+/**
+ * Decide whether `E_ASSET_MISSING` can be enforced for this run.
+ *
+ * Product images are not committed, so a missing `assets/` directory relaxes
+ * the check — otherwise every run of a fresh checkout would fail. The relaxed
+ * state is *reported* (`W_ASSETS_DIR_MISSING`) instead of silently skipped,
+ * because a check that disappears exactly when it would fire is indistinguishable
+ * from a passing check. Set `REQUIRE_ASSETS=1` to keep it hard (CI, release).
+ */
+export function resolveAssetCheck(rootDir: string): AssetCheck {
+  const required = process.env.REQUIRE_ASSETS === '1';
+  const present = existsSync(path.resolve(rootDir, 'assets'));
+  if (present || required) return { enabled: true };
+  return {
+    enabled: false,
+    warning: issue(
+      ASSETS_DIR_MISSING_WARNING,
+      'assets',
+      "no 'assets/' directory — product images are unverified and cards render as placeholders; set REQUIRE_ASSETS=1 to enforce E_ASSET_MISSING",
+    ),
+  };
 }
 
 function pct(value: number): string {

@@ -58,11 +58,29 @@ export function parseColor(input: string): Rgb & { a: number } {
   throw new Error(`parseColor: unsupported colour '${input}'`);
 }
 
+/**
+ * A text block as it was actually painted, in canvas pixels.
+ *
+ * Scene data says where text is *supposed* to go; this says where it *went*.
+ * Two shipped blockers (an answer caption drawn over a 3-card grid, a card name
+ * drawn over its own price) were invisible to every scene-data assertion and
+ * only existed here — so the layout gate reads these, not the scene tree.
+ */
+export interface PaintedText {
+  value: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
 export class Canvas {
   readonly width: number;
   readonly height: number;
   readonly data: Buffer;
   readonly text: TextRenderer;
+  /** Every text block painted on this canvas, in draw order. */
+  readonly paintedText: PaintedText[] = [];
 
   constructor(width: number, height: number, text = new TextRenderer()) {
     this.width = width;
@@ -238,6 +256,14 @@ export class Canvas {
       style.color ?? '#ffffff',
       1,
     );
+    // Record the painted bounding box (top-left origin) for the layout gate.
+    this.paintedText.push({
+      value,
+      x: originX + padding,
+      y: originY + padding,
+      width: block.textWidth,
+      height: block.height - padding * 2,
+    });
     return {
       x: style.x,
       y: style.y,

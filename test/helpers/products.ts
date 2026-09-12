@@ -9,7 +9,7 @@ export function product(
   return {
     productId,
     name: `Sản phẩm ${productId}`,
-    image: `assets/${productId}.webp`,
+    image: `assets/${productId}.png`,
     price,
     currency: 'VND',
     source: 'mock',

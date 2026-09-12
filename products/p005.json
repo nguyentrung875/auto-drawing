@@ -1,7 +1,7 @@
 {
   "productId": "p005",
   "name": "Bàn ủi hơi nước cầm tay",
-  "image": "assets/p005.webp",
+  "image": "assets/p005.png",
   "price": 450000,
   "currency": "VND",
   "source": "mock",

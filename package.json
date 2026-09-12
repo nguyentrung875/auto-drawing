@@ -15,7 +15,10 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "eslint src",
-    "products:list": "node bin/game.js products list"
+    "products:list": "node bin/game.js products list",
+    "products:generate": "node scripts/generate-products.mjs",
+    "assets:generate": "node scripts/generate-assets.mjs",
+    "verify": "npm run build && npm run lint && npm test"
   },
   "dependencies": {
     "@types/seedrandom": "^3.0.8",

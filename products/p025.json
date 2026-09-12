@@ -1,7 +1,7 @@
 {
   "productId": "p025",
   "name": "Đồng hồ bấm giờ tập gym",
-  "image": "assets/p025.webp",
+  "image": "assets/p025.png",
   "price": 320000,
   "currency": "VND",
   "source": "mock",

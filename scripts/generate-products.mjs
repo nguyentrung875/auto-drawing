@@ -66,7 +66,7 @@ for (const [productId, name, category, brand, price] of CATALOG) {
   const product = {
     productId,
     name,
-    image: `assets/${productId}.webp`,
+    image: `assets/${productId}.png`,
     price,
     currency: 'VND',
     source: 'mock',

@@ -45,6 +45,7 @@ export const RENDER_WARNING_CODES = {
   ASSET_PLACEHOLDER: 'W_ASSET_PLACEHOLDER',
   MUSIC_MISSING: 'W_MUSIC_MISSING',
   TEXT_DROPPED: 'W_TEXT_GLYPH_DROPPED',
+  LAYOUT_OVERLAP: 'W_LAYOUT_OVERLAP',
 } as const;
 
 export { filterForCode, type JobFilter } from '../observability/filters';

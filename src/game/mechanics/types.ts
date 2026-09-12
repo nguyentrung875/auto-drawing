@@ -18,8 +18,18 @@ export interface ProductCard {
   productId: string;
   name: string;
   image: string;
-  /** Price text — masked (`1,8?0,000`) for ONE_AWAY, plain otherwise. */
+  /**
+   * Price text shown *before* the answer is known — masked (`1,8?0,000`) for
+   * ONE_AWAY, `???` for any price the viewer is being asked to guess.
+   */
   priceLabel: string;
+  /**
+   * Price text shown *at reveal* — always the true price from the
+   * ProductProvider (FR-4/AD-4). The whole point of a price-guessing video is
+   * that the RevealScene finally shows the number, so this must never stay
+   * masked.
+   */
+  revealPriceLabel: string;
   x: number;
   y: number;
   width: number;

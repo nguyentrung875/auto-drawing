@@ -1,7 +1,7 @@
 {
   "productId": "p046",
   "name": "Mô hình xe điều khiển",
-  "image": "assets/p046.webp",
+  "image": "assets/p046.png",
   "price": 480000,
   "currency": "VND",
   "source": "mock",

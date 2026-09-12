@@ -1,7 +1,7 @@
 {
   "productId": "p023",
   "name": "Cân sức khỏe điện tử",
-  "image": "assets/p023.webp",
+  "image": "assets/p023.png",
   "price": 590000,
   "currency": "VND",
   "source": "mock",

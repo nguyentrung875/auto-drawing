@@ -1,7 +1,7 @@
 {
   "productId": "p010",
   "name": "Bàn phím cơ RGB",
-  "image": "assets/p010.webp",
+  "image": "assets/p010.png",
   "price": 1890000,
   "currency": "VND",
   "source": "mock",

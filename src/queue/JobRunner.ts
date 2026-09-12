@@ -17,7 +17,7 @@ import { filterForCode, JobLogger, type JobLog } from '../observability';
 import { ProductProvider } from '../product/ProductProvider';
 import type { Product } from '../product/schema';
 import { SceneSystem } from '../scene';
-import { Validator } from '../validator';
+import { Validator, resolveAssetCheck } from '../validator';
 import type { GameJson, ResultVariant } from '../types/game';
 import { TimeoutError, withTimeout } from '../utils/async';
 import { QueueError, QUEUE_ERROR_CODES } from './errors';
@@ -201,10 +201,12 @@ export class JobRunner {
 
       // 3. Two-layer Validator — a failure here never reaches the renderer.
       progress('validate');
-      const checkAssets = existsSync(path.resolve(this.rootDir, 'assets'));
+      const assetCheck = resolveAssetCheck(this.rootDir);
       const validation = Validator.validate(game, products, {
-        assetExists: (product) => (checkAssets ? this.products.hasAsset(product.productId) : true),
+        assetExists: (product) =>
+          assetCheck.enabled ? this.products.hasAsset(product.productId) : true,
       });
+      if (assetCheck.warning) validation.warnings.push(assetCheck.warning);
       validatorErrors.push(...validation.errors);
       warnings = [...validation.warnings.map((warning) => ({ code: warning.code, hint: warning.hint }))];
       if (!validation.ok) {
@@ -225,6 +227,11 @@ export class JobRunner {
       );
       ttsMs = Number((performance.now() - ttsStart).toFixed(2));
       audioVoiceMs = ttsMs;
+      // A degraded voice (silent Piper stub) is non-blocking but must be
+      // visible in the job log — a mute video is not a healthy render.
+      warnings.push(
+        ...(audio.warnings ?? []).map((warning) => ({ code: warning.code, hint: warning.hint })),
+      );
       if (audio.syncDelta > 0.1) {
         throw new QueueError(
           QUEUE_ERROR_CODES.AUDIO_SYNC_DRIFT,

@@ -48,6 +48,8 @@ export { SoftwareFrameRenderer } from './softwareFrameRenderer';
 export { FFmpegMuxer, probeVideo, type ProbeResult } from './ffmpeg';
 export { buildAudioBed, AUDIO_BED_SAMPLE_RATE, type AudioBedRequest } from './audioBed';
 export { assertNoAffiliateBurn, scanForAffiliateBurn, linkVariants } from './pixelScan';
+export { scanLayout, assertLayoutClean } from './layoutScan';
+export type { LayoutFinding } from './layoutScan';
 export { Canvas, parseColor } from './canvas';
 export { decodePng, encodePng, pngSize } from './png';
 export { ffmpegAvailable, resolveBinary, runProcess } from './process';

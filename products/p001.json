@@ -1,7 +1,7 @@
 {
   "productId": "p001",
   "name": "Nước giặt 3.5kg",
-  "image": "assets/p001.webp",
+  "image": "assets/p001.png",
   "price": 189000,
   "currency": "VND",
   "source": "mock",

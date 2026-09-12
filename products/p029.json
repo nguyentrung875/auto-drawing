@@ -1,7 +1,7 @@
 {
   "productId": "p029",
   "name": "Bóng đá size 5",
-  "image": "assets/p029.webp",
+  "image": "assets/p029.png",
   "price": 620000,
   "currency": "VND",
   "source": "mock",

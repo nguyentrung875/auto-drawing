@@ -86,7 +86,7 @@ export class ProductProvider {
   hasAsset(productId: string): boolean {
     const product = this.get(productId);
     if (!product) return false;
-    // `image` is relative to the project root (e.g. "assets/p001.webp");
+    // `image` is relative to the project root (e.g. "assets/p001.png");
     // products/ sits at the root, so root = dirname(productsDir).
     const assetPath = path.resolve(path.dirname(this.dir), product.image);
     return existsSync(assetPath);

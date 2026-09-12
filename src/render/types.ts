@@ -56,6 +56,7 @@ export interface RenderFrameElement {
   kind: string;
   text?: string;
   value?: string | number;
+  display?: number;
   role?: string;
   [key: string]: unknown;
 }
@@ -92,6 +93,8 @@ export interface RenderCardView {
   name: string;
   image?: string;
   priceLabel: string;
+  /** True price, shown once the RevealScene plays (see `ProductCard`). */
+  revealPriceLabel?: string;
   x: number;
   y: number;
   width: number;
@@ -102,6 +105,7 @@ export interface RenderCardView {
 export interface RenderSceneDataView {
   cards?: RenderCardView[];
   maskedPrice?: string;
+  resolvedPrice?: string;
   revealType?: 'PriceReveal' | 'DigitReveal';
   stage?: { width: number; height: number };
 }
