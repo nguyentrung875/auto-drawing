@@ -1,8 +1,15 @@
+import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { existsSync, mkdirSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import type { GameJson, Timeline } from '../types/game';
+
+/**
+ * Raised when narration falls back to a silent placeholder. Surfaced on the job
+ * log so an operator can tell a voiced render from a mute one.
+ */
+export const VOICE_STUB_WARNING = 'W_VOICE_SILENT_STUB';
 
 export interface VoiceOptions {
   language?: string;
@@ -26,10 +33,17 @@ export interface MusicTrack {
   volume: number;
 }
 
+export interface AudioWarning {
+  code: string;
+  hint: string;
+}
+
 export interface AudioSegment {
   voiceWavPath: string;
   /** Voice duration in seconds. */
   duration: number;
+  /** Non-blocking audio degradations (e.g. `W_VOICE_SILENT_STUB`). */
+  warnings?: AudioWarning[];
   voiceDuration: number;
   voiceStartAt: number;
   revealAt: number;
@@ -116,14 +130,113 @@ function safeScript(script: string): string {
   return script.trim().replace(/\s+/g, ' ');
 }
 
-/** Offline adapter. It produces a valid deterministic WAV when Piper is not installed. */
+/** Duration in seconds of a RIFF/WAVE file, or null when unreadable. */
+function wavDuration(filePath: string): number | null {
+  try {
+    const buffer = readFileSync(filePath);
+    if (buffer.length < 44 || buffer.toString('ascii', 0, 4) !== 'RIFF') return null;
+    const byteRate = buffer.readUInt32LE(28);
+    if (byteRate <= 0) return null;
+    // Walk the chunk list to find `data` (Piper may emit a LIST chunk first).
+    let offset = 12;
+    while (offset + 8 <= buffer.length) {
+      const id = buffer.toString('ascii', offset, offset + 4);
+      const size = buffer.readUInt32LE(offset + 4);
+      if (id === 'data') return size / byteRate;
+      offset += 8 + size + (size % 2);
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Offline Vietnamese TTS adapter (AR-7, FR-9).
+ *
+ * Real synthesis runs the Piper binary (MIT) with a Vietnamese voice model:
+ *   `piper --model <voice.onnx> --output_file <out.wav>`, script on stdin.
+ * Resolution order is `PIPER_PATH` → `piper` on PATH; the voice model comes
+ * from `PIPER_VOICE` or `assets/voices/vi_VN.onnx`.
+ *
+ * When Piper (or its model) is absent the adapter still returns a valid WAV so
+ * the pipeline stays runnable offline — but it is *silent*, so it reports
+ * `W_VOICE_SILENT_STUB`. That warning is the honest signal that a rendered MP4
+ * has no narration; it must never be mistaken for a real voice track.
+ */
+export const PIPER_DEFAULT_VOICE = 'assets/voices/vi_VN.onnx';
+
+export interface ViPiperOptions {
+  /** Explicit Piper binary path (defaults to `PIPER_PATH` then `piper`). */
+  binaryPath?: string;
+  /** Explicit voice model (defaults to `PIPER_VOICE` then the bundled path). */
+  voiceModel?: string;
+  /** Project root used to resolve a relative voice model. */
+  rootDir?: string;
+}
+
 export class ViPiperEngine implements IAudioEngine {
+  /** Warnings raised by the most recent `synthesizeVoice` call. */
+  readonly warnings: Array<{ code: string; hint: string }> = [];
+
+  constructor(private readonly options: ViPiperOptions = {}) {}
+
+  private resolveBinary(): string | null {
+    const candidates = [this.options.binaryPath, process.env.PIPER_PATH, 'piper'].filter(
+      (value): value is string => typeof value === 'string' && value.length > 0,
+    );
+    for (const candidate of candidates) {
+      const probe = spawnSync(candidate, ['--help'], { stdio: 'ignore' });
+      if (!probe.error) return candidate;
+    }
+    return null;
+  }
+
+  private resolveVoiceModel(): string | null {
+    const configured =
+      this.options.voiceModel ?? process.env.PIPER_VOICE ?? PIPER_DEFAULT_VOICE;
+    const resolved = path.isAbsolute(configured)
+      ? configured
+      : path.resolve(this.options.rootDir ?? process.cwd(), configured);
+    return existsSync(resolved) ? resolved : null;
+  }
+
   async synthesizeVoice(script: string): Promise<VoiceResult> {
+    this.warnings.length = 0;
     const normalized = safeScript(script);
     const digest = createHash('sha256').update(normalized, 'utf8').digest('hex').slice(0, 16);
-    const duration = Math.min(1.9, Math.max(0.35, normalized.length / 90));
     const directory = path.join(os.tmpdir(), 'auto-drawing-audio');
     mkdirSync(directory, { recursive: true });
+
+    const binary = this.resolveBinary();
+    const voiceModel = binary ? this.resolveVoiceModel() : null;
+    if (binary && voiceModel) {
+      const voiceWavPath = path.join(directory, `voice-piper-${digest}.wav`);
+      const spoken = spawnSync(
+        binary,
+        ['--model', voiceModel, '--output_file', voiceWavPath],
+        { input: normalized, timeout: 20_000 },
+      );
+      if (!spoken.error && spoken.status === 0 && existsSync(voiceWavPath)) {
+        const duration = wavDuration(voiceWavPath);
+        if (duration !== null && duration > 0) {
+          return { voiceWavPath, duration: Math.min(1.9, duration) };
+        }
+      }
+      this.warnings.push({
+        code: VOICE_STUB_WARNING,
+        hint: `piper at '${binary}' failed to synthesise; a silent placeholder WAV was used — the video has no narration`,
+      });
+    } else {
+      this.warnings.push({
+        code: VOICE_STUB_WARNING,
+        hint: binary
+          ? `piper voice model not found (set PIPER_VOICE or add ${PIPER_DEFAULT_VOICE}); a silent placeholder WAV was used — the video has no narration`
+          : 'piper binary not found (set PIPER_PATH or install piper); a silent placeholder WAV was used — the video has no narration',
+      });
+    }
+
+    const duration = Math.min(1.9, Math.max(0.35, normalized.length / 90));
     const voiceWavPath = path.join(directory, `voice-${digest}.wav`);
     if (!existsSync(voiceWavPath)) {
       writeFileSync(voiceWavPath, wavSilence(duration));
@@ -251,6 +364,9 @@ export class AudioEngine {
         // FR-9 fixes the mix level so music cannot overpower narration.
         volume: 0.18,
       },
+      // Adapters that degraded (e.g. Piper missing → silent WAV) report it here
+      // so the job log tells the operator the render has no narration.
+      warnings: [...((this.adapter as { warnings?: AudioWarning[] }).warnings ?? [])],
     };
   }
 }

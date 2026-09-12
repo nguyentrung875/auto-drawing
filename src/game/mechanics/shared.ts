@@ -73,6 +73,9 @@ export function layoutCards(
       name: product.name,
       image: product.image,
       priceLabel: priceLabels[i] ?? groupDigits(product.price),
+      // The reveal always shows the real price from the ProductProvider, even
+      // when the pre-answer label is masked (`???` / `1,8?0,000`).
+      revealPriceLabel: groupDigits(product.price),
       x: left + col * (width + gutter),
       y: topOffset + row * (height + gutter),
       width,

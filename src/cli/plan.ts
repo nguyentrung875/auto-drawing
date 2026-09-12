@@ -6,10 +6,9 @@
  * and prints the resulting Game JSON + answer + timeline, or a machine-readable
  * `{code, field, hint}` error (exit 1) for Hermes.
  */
-import { existsSync } from 'node:fs';
 import { GameEngine, MechanicRegistry, isGameError } from '../game';
 import { ProductProvider } from '../product/ProductProvider';
-import { Validator } from '../validator';
+import { Validator, resolveAssetCheck } from '../validator';
 import type { Mechanic, ResultVariant } from '../types/game';
 
 export interface PlanArgs {
@@ -96,12 +95,14 @@ export function plan(args: PlanArgs): Record<string, unknown> | PlanFailure {
     throw err;
   }
 
-  // Image assets are not committed to the repo (Epic 3 ships them); only
-  // enforce E_ASSET_MISSING once an `assets/` directory actually exists.
-  const checkAssets = existsSync('assets');
+  // Image assets are not committed to the repo, so a missing `assets/` folder
+  // relaxes E_ASSET_MISSING — but it is reported as W_ASSETS_DIR_MISSING rather
+  // than silently skipped, and `REQUIRE_ASSETS=1` restores the hard check.
+  const assetCheck = resolveAssetCheck(process.cwd());
   const validation = Validator.validate(game, products, {
-    assetExists: (p) => (checkAssets ? provider.hasAsset(p.productId) : true),
+    assetExists: (p) => (assetCheck.enabled ? provider.hasAsset(p.productId) : true),
   });
+  if (assetCheck.warning) validation.warnings.push(assetCheck.warning);
   if (!validation.ok) return { ok: false, errors: validation.errors };
 
   try {

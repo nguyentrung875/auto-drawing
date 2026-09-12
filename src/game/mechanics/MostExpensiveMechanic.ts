@@ -69,7 +69,4 @@ export class MostExpensiveMechanic implements IMechanic {
   }
 }
 
-/** Exposed for the Reveal scene: the winning price label. */
-export function maxPriceLabel(products: Product[]): string {
-  return groupDigits(Math.max(...products.map((p) => p.price)));
-}
+

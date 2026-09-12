@@ -92,6 +92,8 @@ export interface RenderCardView {
   name: string;
   image?: string;
   priceLabel: string;
+  /** True price, shown once the RevealScene plays (see `ProductCard`). */
+  revealPriceLabel?: string;
   x: number;
   y: number;
   width: number;

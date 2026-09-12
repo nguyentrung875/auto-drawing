@@ -39,6 +39,13 @@ const CARD_BORDER = 'rgba(248,250,252,0.16)';
 const ACCENT = '#fbbf24';
 const DANGER = '#fb7185';
 const STAGE_WIDTH = 1080;
+/**
+ * Top of the reveal answer band. Mirrors `REVEAL_TEXT_BAND_TOP` in
+ * `src/scene/scenes.ts` — the Scene System compacts the cards above this line
+ * and the painter never draws the answer above it, so the two agree without
+ * `render` importing `scene` (AD-1 forbids that edge).
+ */
+const REVEAL_TEXT_BAND_TOP = 1240;
 
 function shade(color: string, factor: number): string {
   const { r, g, b } = parseColor(color);
@@ -180,11 +187,17 @@ function drawProductCard(canvas: Canvas, card: RenderCardView, ctx: PaintContext
     });
   }
 
-  const nameY = card.y + imageHeight + 42;
-  canvas.drawText(card.name, {
+  // Card text is laid out proportionally and stacked by measurement: the reveal
+  // may hand us a scaled-down card, and fixed offsets made the name and the
+  // price land on top of each other once the card got shorter.
+  const scale = Math.min(1, card.width / 400, card.height / 560);
+  const nameSize = Math.max(20, Math.round(34 * scale));
+  const priceSize = Math.max(24, Math.round(44 * scale));
+  const nameY = card.y + imageHeight + Math.round(42 * scale);
+  const nameBlock = canvas.drawText(card.name, {
     x: card.x + Math.round(card.width / 2),
     y: nameY,
-    size: 34,
+    size: nameSize,
     weight: 600,
     color: INK,
     align: 'center',
@@ -193,11 +206,12 @@ function drawProductCard(canvas: Canvas, card: RenderCardView, ctx: PaintContext
   });
   canvas.drawText(card.priceLabel, {
     x: card.x + Math.round(card.width / 2),
-    y: card.y + card.height - 96,
-    size: 44,
+    y: nameY + nameBlock.height + Math.round(18 * scale),
+    size: priceSize,
     weight: 700,
     color: card.highlight ? ACCENT : INK,
     align: 'center',
+    maxWidth: card.width - 24,
   });
 }
 
@@ -350,9 +364,17 @@ export function paintFrame(canvas: Canvas, frame: RenderFrame, ctx: PaintContext
         if (cards.length > 0) drawCards(canvas, frame, ctx);
         const rawAnswer = String(priceReveal?.answer ?? '');
         const label = answerLabel(rawAnswer, ctx);
-        canvas.drawText(label, {
+        // The answer caption owns the band below the cards. Start it under the
+        // lowest card so a 3-card layout can never be overpainted, and measure
+        // the block so the sub-caption stacks instead of colliding.
+        const cardsBottom = cards.reduce(
+          (lowest, card) => Math.max(lowest, card.y + card.height),
+          0,
+        );
+        const answerY = Math.max(REVEAL_TEXT_BAND_TOP, cardsBottom + 40);
+        const answerBlock = canvas.drawText(label, {
           x: Math.round(STAGE_WIDTH / 2),
-          y: 1300,
+          y: answerY,
           size: label.length > 14 ? 76 : 108,
           weight: 700,
           color: ACCENT,
@@ -362,7 +384,7 @@ export function paintFrame(canvas: Canvas, frame: RenderFrame, ctx: PaintContext
         });
         canvas.drawText('Đáp án đúng', {
           x: Math.round(STAGE_WIDTH / 2),
-          y: 1480,
+          y: answerY + answerBlock.height + 28,
           size: 38,
           weight: 500,
           color: MUTED,

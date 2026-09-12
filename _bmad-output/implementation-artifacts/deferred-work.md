@@ -31,12 +31,36 @@
   real `@motion-canvas/2d` headless backend is a drop-in `IFrameRenderer` implementation
   (no queue/CLI change) and should be re-measured against the 45s budget when adopted.
 
-- **[DF6] `metadata.mechanic` vs `gameplay.mechanic` (still DF1)** — no Epic 4 change; the
-  CLI derives both from the same `--mechanic` flag, so the mismatch can only be authored
-  by hand in a `--game` JSON file. Revisit with the Hermes error vocabulary (DF2).
+- **[DF6] RESOLVED** — `metadata.mechanic` vs `gameplay.mechanic` (carried from DF1).
+  `Validator.validateSchema` rejects the mismatch with `E_SCHEMA_MISSING_FIELD` at
+  `gameplay.mechanic`, and additionally cross-checks `gameplay.interaction` against the
+  mechanic. Confirmed 2026-09-12 by mutating a computed HI_LO game to
+  `gameplay.mechanic = 'MOST_EXPENSIVE'` and observing the rejection. Only DF2 (a
+  dedicated "invalid value" code) is still open from that thread.
 
 - **[DF7] Batch retry policy** — FR-11 mentions "retry 3×" for the batch. Epic 4 implements
   the LLM-stub retry (3 attempts on malformed JSON, per the 4.3 AC) and records
   `attempts`/`retries` per job; a render-stage retry (e.g. re-run once after
   `E_ENCODE_FAILED`) is deliberately not automatic — a failed job is logged and the batch
   fails forward. Consider a bounded retry when real overnight failure data exists.
+
+## Raised by the party-mode review of all four epics (2026-09-12)
+
+Four defects were found by inspecting rendered frames and audio rather than scene data;
+all four are fixed in this change. The residual, genuinely-deferred work is below.
+
+- **[DF8] No real Vietnamese voice in this environment** — `src/audio/AudioEngine.ts`.
+  `ViPiperEngine` now actually invokes Piper (`PIPER_PATH` → `piper` on PATH, model from
+  `PIPER_VOICE` → `assets/voices/vi_VN.onnx`) and only falls back to a silent placeholder
+  WAV when the binary or the model is absent — reporting `W_VOICE_SILENT_STUB` on the job
+  log when it does. Piper is *not* installed here, so local renders are still mute; that
+  is now visible instead of silent. Installing Piper + a `vi_VN` model turns narration on
+  with no code change. Previously this gap was undocumented, which is why FR-9 looked
+  satisfied while every MP4 had no voice (measured `mean_volume -37.9 dB`, music bed only).
+
+- **[DF9] Product images are still absent** — there is no `assets/` directory and no seed
+  script, so every ProductCard renders the deterministic `P0xx` placeholder and
+  `W_ASSET_PLACEHOLDER` fires on 100% of jobs. The asset *check* no longer disables itself
+  silently (see below), but real imagery is still outstanding. `W_ASSET_PLACEHOLDER` and
+  `W_MUSIC_MISSING` remain always-on until assets land; treat them as environment state,
+  not per-job signal, when reading `batch_report.json`.

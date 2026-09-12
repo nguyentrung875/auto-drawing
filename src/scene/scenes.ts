@@ -89,6 +89,50 @@ function answerLabel(ctx: SceneContext): string {
   return answer === undefined ? '' : String(answer);
 }
 
+/**
+ * Top of the band the RevealScene reserves for the answer caption. Cards must
+ * stay strictly above it, otherwise the answer text is painted over the last
+ * row of cards (which is exactly what a 3-card MOST_EXPENSIVE reveal did).
+ */
+export const REVEAL_TEXT_BAND_TOP = 1240;
+
+/**
+ * Prepare the cards for the reveal: show the true price, and shrink the layout
+ * uniformly when it would otherwise run into the answer band. Uniform scaling
+ * about the stage centre preserves the "no two cards overlap" guarantee and the
+ * ≤400px card-width cap, so `validateProductCards` still holds afterwards.
+ */
+function revealCards(cards: Array<Record<string, unknown>>): Array<Record<string, unknown>> {
+  const priced: Array<Record<string, unknown>> = cards.map((card) => ({
+    ...card,
+    priceLabel: (card.revealPriceLabel as string | undefined) ?? card.priceLabel,
+  }));
+  if (priced.length === 0) return priced;
+
+  const tops = priced.map((card) => Number(card.y));
+  const bottoms = priced.map((card) => Number(card.y) + Number(card.height));
+  if (![...tops, ...bottoms].every(Number.isFinite)) return priced;
+
+  const top = Math.min(...tops);
+  const bottom = Math.max(...bottoms);
+  const limit = REVEAL_TEXT_BAND_TOP - 40;
+  if (bottom <= limit || bottom <= top) return priced;
+
+  const scale = (limit - top) / (bottom - top);
+  const centreX = STAGE_WIDTH / 2;
+  return priced.map((card) => {
+    const x = Number(card.x);
+    const width = Number(card.width);
+    return {
+      ...card,
+      x: Math.round(centreX + (x - centreX) * scale),
+      y: Math.round(top + (Number(card.y) - top) * scale),
+      width: Math.round(width * scale),
+      height: Math.round(Number(card.height) * scale),
+    };
+  });
+}
+
 abstract class BaseScene implements IScene {
   abstract readonly name: SceneName;
   abstract render(ctx: SceneContext): Frame[];
@@ -178,7 +222,10 @@ export class PriceReveal extends RevealImplementation {
   readonly name = 'PriceReveal' as const;
 
   render(ctx: SceneContext): Frame[] {
-    const cards = productCards(ctx);
+    // FR-4/AD-4: the reveal is the moment the real price is shown. Cards carry
+    // a masked `priceLabel` while the viewer is guessing; here we swap in
+    // `revealPriceLabel` so the number the whole video asks about is visible.
+    const cards = revealCards(productCards(ctx));
     const answer = answerLabel(ctx);
     return [frame(ctx, 'reveal', [
       { kind: 'badge', text: 'REVEAL' },

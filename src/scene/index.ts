@@ -17,6 +17,7 @@ export {
   DigitReveal,
   HookScene,
   PriceReveal,
+  REVEAL_TEXT_BAND_TOP,
   ProductScene,
   QuestionScene,
   RevealImplementation,

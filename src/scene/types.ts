@@ -31,6 +31,8 @@ export interface SceneCard {
   name: string;
   image: string;
   priceLabel: string;
+  /** True price, substituted by the RevealScene (see `ProductCard`). */
+  revealPriceLabel?: string;
   x: number;
   y: number;
   width: number;
