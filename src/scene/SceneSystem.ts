@@ -82,6 +82,7 @@ export class SceneSystem {
     const options = normalizeOptions(input);
     validateSceneSequence(game.scenes);
     const timeline = options.timeline ?? buildSceneTimeline(game.scenes as SceneName[]);
+    validateSceneTimeline(game.scenes as SceneName[], timeline);
     const variant = options.variant ?? game.metadata.result_variant ?? 'in_video';
     const context: SceneContext = {
       game,
@@ -170,6 +171,46 @@ export function validateSceneSequence(scenes: string[]): asserts scenes is Scene
       'scenes',
       `scene order must be ${SCENE_NAMES.join(' → ')}`,
     );
+  }
+}
+
+export function validateSceneTimeline(scenes: SceneName[], timeline: Timeline): void {
+  const fail = (hint: string): never => {
+    throw new SceneError('E_TIMELINE_DRIFT', 'timeline', hint);
+  };
+  if (timeline.slots.length !== scenes.length) {
+    fail(`timeline has ${timeline.slots.length} slots; expected ${scenes.length}`);
+  }
+
+  let cursor = 0;
+  timeline.slots.forEach((slot, index) => {
+    const expectedType = scenes[index];
+    const expectedDuration = expectedType ? SCENE_DURATIONS[expectedType] : undefined;
+    if (slot.type !== expectedType) {
+      fail(`timeline slot ${index} is '${slot.type}'; expected '${expectedType}'`);
+    }
+    if (![slot.start, slot.duration, slot.end].every(Number.isFinite) || slot.duration <= 0) {
+      fail(`timeline slot '${slot.type}' must contain finite start/end and a positive duration`);
+    }
+    if (Math.abs(slot.start - cursor) > 0.001) {
+      fail(`timeline slot '${slot.type}' starts at ${slot.start}s; expected ${cursor}s`);
+    }
+    if (expectedDuration === undefined || Math.abs(slot.duration - expectedDuration) > 0.1) {
+      fail(`timeline slot '${slot.type}' duration ${slot.duration}s; expected ${expectedDuration}s ±0.1s`);
+    }
+    const calculatedEnd = Number((slot.start + slot.duration).toFixed(3));
+    if (Math.abs(slot.end - calculatedEnd) > 0.001) {
+      fail(`timeline slot '${slot.type}' ends at ${slot.end}s; expected ${calculatedEnd}s`);
+    }
+    cursor = slot.end;
+  });
+
+  if (!Number.isFinite(timeline.totalDuration) || Math.abs(timeline.totalDuration - cursor) > 0.001) {
+    fail(`timeline total ${timeline.totalDuration}s does not match final slot end ${cursor}s`);
+  }
+  const expectedTotal = scenes.reduce((total, scene) => total + SCENE_DURATIONS[scene], 0);
+  if (Math.abs(timeline.totalDuration - expectedTotal) > 0.05) {
+    fail(`timeline total ${timeline.totalDuration}s; expected ${expectedTotal}s ±0.05s`);
   }
 }
 

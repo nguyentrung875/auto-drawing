@@ -7,6 +7,7 @@ export {
   createScene,
   createSceneSystem,
   validateSceneSequence,
+  validateSceneTimeline,
 } from './SceneSystem';
 export type { SceneRenderInput, SceneRenderOptions } from './SceneSystem';
 

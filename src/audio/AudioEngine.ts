@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, statSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import type { GameJson, Timeline } from '../types/game';
@@ -136,11 +136,28 @@ export class ViPiperEngine implements IAudioEngine {
   }
 }
 
+function sfxAsset(type: string): string {
+  if (/^[a-z0-9_-]+$/i.test(type)) {
+    const bundledPath = path.resolve('assets', 'sfx', `${type}.wav`);
+    if (existsSync(bundledPath) && statSync(bundledPath).isFile()) return bundledPath;
+  }
+
+  // Development fallback: keep every cue playable even when binary assets are
+  // not checked out. The hash also prevents an authored cue type becoming a path.
+  const digest = createHash('sha256').update(type, 'utf8').digest('hex').slice(0, 16);
+  const directory = path.join(os.tmpdir(), 'auto-drawing-audio');
+  mkdirSync(directory, { recursive: true });
+  const stubPath = path.join(directory, `sfx-${digest}.wav`);
+  if (!existsSync(stubPath)) writeFileSync(stubPath, wavSilence(0.1));
+  return stubPath;
+}
+
 function makeCountdownCues(start: number): SfxCue[] {
+  const assetPath = sfxAsset('countdown');
   return Array.from({ length: 6 }, (_, index) => ({
     type: 'countdown',
     at: Number((start + index * 0.5).toFixed(3)),
-    assetPath: 'assets/sfx/countdown.wav',
+    assetPath,
   }));
 }
 
@@ -150,7 +167,7 @@ function configuredCues(game: GameJson): SfxCue[] {
     .map((cue) => ({
       type: cue.type,
       at: cue.at,
-      assetPath: `assets/sfx/${cue.type}.wav`,
+      assetPath: sfxAsset(cue.type),
     }));
 }
 
@@ -183,7 +200,34 @@ export class AudioEngine {
       revealAt,
       targetDuration: 1.9,
     });
-    const duration = Number(Math.max(0, voice.duration).toFixed(3));
+    if (!Number.isFinite(voice.duration) || voice.duration <= 0 || voice.duration >= 2) {
+      throw new AudioError(
+        'E_AUDIO_DURATION_INVALID',
+        'audio.voice',
+        `voice duration must be finite, positive, and <2s; received ${voice.duration}`,
+      );
+    }
+    const duration = Number(voice.duration.toFixed(3));
+    if (duration >= 2) {
+      throw new AudioError(
+        'E_AUDIO_DURATION_INVALID',
+        'audio.voice',
+        `voice duration rounds to ${duration}s and must remain <2s`,
+      );
+    }
+    let outputIsFile = false;
+    try {
+      outputIsFile = Boolean(voice.voiceWavPath) && statSync(voice.voiceWavPath).isFile();
+    } catch {
+      outputIsFile = false;
+    }
+    if (!outputIsFile) {
+      throw new AudioError(
+        'E_AUDIO_OUTPUT_MISSING',
+        'audio.voice',
+        `voice WAV is not a regular file at '${voice.voiceWavPath}'`,
+      );
+    }
     const voiceStartAt = Number((revealAt - duration).toFixed(3));
     const syncDelta = Number(Math.abs(voiceStartAt + duration - revealAt).toFixed(3));
     if (syncDelta > 0.1) {
@@ -204,7 +248,8 @@ export class AudioEngine {
       sfxCues: [...makeCountdownCues(countdownAt), ...configuredCues(game)],
       music: {
         track: game.audio?.music?.track ?? 'tension_01',
-        volume: game.audio?.music?.volume ?? 0.18,
+        // FR-9 fixes the mix level so music cannot overpower narration.
+        volume: 0.18,
       },
     };
   }
