@@ -18,3 +18,11 @@ coverage/
 /assets/
 products/*.tmp.json
 
+# Next.js and temporary patches
+*.patch
+*.tsbuildinfo
+.next/
+ai-game-video-engine/.next/
+ai-game-video-engine/.env*.local
+
+

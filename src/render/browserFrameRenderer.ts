@@ -196,9 +196,9 @@ export class BrowserFrameRenderer implements IFrameRenderer {
         height: context.height,
         fps,
         frameCount: totalFrames,
-        paintedKeys: uniqueCaptures,
+        renderedFrames: uniqueCaptures,
         warnings,
-        durationMs: Date.now() - startMs,
+        backend: this.backend,
       };
     } catch (err) {
       if (err instanceof RenderError) throw err;

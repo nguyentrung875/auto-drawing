@@ -8,7 +8,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import type { RenderInput } from '../types';
-import type { ProductCardData } from '../../scene/types';
+import type { SceneCard } from '../../scene/types';
 
 function formatVnd(amount: number): string {
   return new Intl.NumberFormat('vi-VN', {
@@ -48,9 +48,9 @@ export function generateRenderHtml(input: RenderInput): string {
   const isHiLo = mechanic === 'HI_LO';
 
   // Resolve base64 for all products to guarantee immediate zero-latency rendering
-  const productImages = products.map((p) => resolveImageBase64(p.image, rootDir));
+  const productImages = (products ?? []).map((p) => resolveImageBase64(p.image, rootDir ?? process.cwd()));
 
-  const cards = (sceneData?.cards ?? []) as ProductCardData[];
+  const cards = (sceneData?.cards ?? []) as SceneCard[];
 
   return `<!doctype html>
 <html lang="vi">
@@ -375,7 +375,7 @@ export function generateRenderHtml(input: RenderInput): string {
         </div>
         <div class="card-name">${card.name}</div>
         <div class="card-price-pill" id="card-price-${idx}">
-          ${card.priceLabel || formatVnd(products[idx]?.price ?? 0)}
+          ${card.priceLabel || ((products && products[idx]) ? formatVnd(products[idx].price) : '')}
         </div>
       </div>
       `;

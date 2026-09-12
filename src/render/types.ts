@@ -126,8 +126,8 @@ export interface RenderConfig {
   preset: string;
   /** External ffmpeg binary; falls back to `FFMPEG_PATH` then `PATH`. */
   ffmpegPath?: string;
-  /** Frame renderer backend. `software` is the built-in rasterizer. */
-  frameRenderer?: 'software' | 'motion-canvas';
+  /** Frame renderer backend. `software` is the built-in rasterizer, `browser` is Chromium headless. */
+  frameRenderer?: 'software' | 'motion-canvas' | 'browser';
   /** Soft budget for the render stage (AD-8 / Story 4.1: ≤45s). */
   renderBudgetMs?: number;
   /** Hard timeout for the frame stage (AD-10: Motion Canvas 90s). */

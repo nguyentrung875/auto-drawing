@@ -15,6 +15,7 @@ import { QueueStore } from '../queue/QueueStore';
 import type { QueueJob } from '../queue/schema';
 import type { BatchJobSummary } from '../observability/types';
 import { createRenderStage, runJobWithRenderEngine } from './pipeline';
+import { findBrowserExecutable } from '../render/browserFrameRenderer';
 
 export interface RenderArgs {
   mechanic?: string;
@@ -86,7 +87,7 @@ export function parseRenderArgs(argv: string[], rootDir = process.cwd()): Render
     hiddenIndex: hiddenIndex === undefined ? undefined : Number(hiddenIndex),
     gameFile: flags.get('game'),
     queueDir: flags.get('queue-dir') ?? 'queue',
-    rendererType: flags.get('renderer') === 'software' ? 'software' : flags.get('renderer') === 'browser' ? 'browser' : undefined,
+    rendererType: flags.get('renderer') === 'software' ? 'software' : flags.get('renderer') === 'browser' ? 'browser' : (findBrowserExecutable() ? 'browser' : 'software'),
     rootDir,
   };
 }

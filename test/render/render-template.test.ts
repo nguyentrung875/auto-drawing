@@ -22,8 +22,8 @@ describe('generateRenderHtml', () => {
     expect(html).toContain('1920');
     expect(html).toContain('__SEEK_FRAME__');
     expect(html).toContain(input.game.content.question);
-    expect(html).toContain(input.products[0].name);
-    expect(html).toContain(input.products[1].name);
+    expect(html).toContain(input.products![0]!.name);
+    expect(html).toContain(input.products![1]!.name);
     expect(html).toContain('hook');
     expect(html).toContain('countdown');
     expect(html).toContain('reveal');
@@ -40,7 +40,7 @@ describe('generateRenderHtml', () => {
     const html = generateRenderHtml(input);
 
     expect(html).toContain('__SEEK_FRAME__');
-    expect(html).toContain(input.products[0].name);
+    expect(html).toContain(input.products![0]!.name);
     expect(html).toContain('one-away');
   });
 
@@ -55,8 +55,8 @@ describe('generateRenderHtml', () => {
     const html = generateRenderHtml(input);
 
     expect(html).toContain('__SEEK_FRAME__');
-    expect(html).toContain(input.products[0].name);
-    expect(html).toContain(input.products[1].name);
-    expect(html).toContain(input.products[2].name);
+    expect(html).toContain(input.products![0]!.name);
+    expect(html).toContain(input.products![1]!.name);
+    expect(html).toContain(input.products![2]!.name);
   });
 });
