@@ -47,10 +47,29 @@ export function generateRenderHtml(input: RenderInput): string {
   const isMostExpensive = mechanic === 'MOST_EXPENSIVE';
   const isHiLo = mechanic === 'HI_LO';
 
-  // Resolve base64 for all products to guarantee immediate zero-latency rendering
-  const productImages = (products ?? []).map((p) => resolveImageBase64(p.image, rootDir ?? process.cwd()));
+  // Resolve products list with fallback to game.entities
+  const resolvedProducts = (products && products.length > 0)
+    ? products
+    : (game.entities ?? []).map((e) => ({
+        productId: e.productId,
+        name: e.name,
+        price: e.price,
+        image: e.image ?? `assets/${e.productId}.png`,
+        brand: e.brand,
+      }));
 
-  const cards = (sceneData?.cards ?? []) as SceneCard[];
+  // Resolve base64 for all products to guarantee immediate zero-latency rendering
+  const productImages = resolvedProducts.map((p) => resolveImageBase64(p.image, rootDir ?? process.cwd()));
+
+  const rawCards = (sceneData?.cards ?? []) as SceneCard[];
+  const cards: SceneCard[] = rawCards.length > 0
+    ? rawCards
+    : (game.entities ?? []).map((e, idx) => ({
+        productId: e.productId,
+        name: e.name,
+        priceLabel: isHiLo && idx === 1 ? '❓ GIÁ BÍ MẬT ❓' : formatVnd(e.price),
+        revealPriceLabel: formatVnd(e.price),
+      }));
 
   return `<!doctype html>
 <html lang="vi">
