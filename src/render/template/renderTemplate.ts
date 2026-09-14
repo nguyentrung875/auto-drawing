@@ -21,8 +21,8 @@ function formatVnd(amount: number): string {
 function resolveImageBase64(imagePath: string | undefined, rootDir: string): string | null {
   if (!imagePath) return null;
   const candidates = [
-    path.isAbsolute(imagePath) ? imagePath : path.join(rootDir, imagePath),
-    path.join(rootDir, 'assets', path.basename(imagePath)),
+    path.isAbsolute(imagePath) ? imagePath : path.join(/*turbopackIgnore: true*/ rootDir, imagePath),
+    path.join(/*turbopackIgnore: true*/ rootDir, 'assets', path.basename(imagePath)),
   ];
 
   for (const candidate of candidates) {
@@ -52,8 +52,8 @@ export function generateRenderHtml(input: RenderInput): string {
     ? products
     : (game.entities ?? []).map((e) => ({
         productId: e.productId,
-        name: e.name,
-        price: e.price,
+        name: e.name ?? '',
+        price: e.price ?? 0,
         image: e.image ?? `assets/${e.productId}.png`,
         brand: e.brand,
       }));
@@ -66,9 +66,14 @@ export function generateRenderHtml(input: RenderInput): string {
     ? rawCards
     : (game.entities ?? []).map((e, idx) => ({
         productId: e.productId,
-        name: e.name,
-        priceLabel: isHiLo && idx === 1 ? '❓ GIÁ BÍ MẬT ❓' : formatVnd(e.price),
-        revealPriceLabel: formatVnd(e.price),
+        name: e.name ?? '',
+        image: e.image ?? `assets/${e.productId}.png`,
+        priceLabel: isHiLo && idx === 1 ? '❓ GIÁ BÍ MẬT ❓' : formatVnd(e.price ?? 0),
+        revealPriceLabel: formatVnd(e.price ?? 0),
+        x: 0,
+        y: 0,
+        width: 380,
+        height: 480,
       }));
 
   return `<!doctype html>
