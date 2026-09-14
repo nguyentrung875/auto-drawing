@@ -7,7 +7,7 @@
  * - `update()` rewrites status transitions (`pending → running → done|failed`)
  *   while preserving everything Hermes put in the file.
  */
-import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { parseQueueJob, type JobValidationError, type QueueJob } from './schema';
 
@@ -33,6 +33,7 @@ export interface InvalidQueueEntry {
 }
 
 export class QueueStore {
+  private static tmpSequence = 0;
   readonly dir: string;
 
   constructor(dir = 'queue') {
@@ -59,7 +60,7 @@ export class QueueStore {
       result_variant: input.result_variant ?? 'in_video',
       status: 'pending',
       retries: 0,
-      enqueuedAt: Date.now(),
+      enqueuedAt: (input as { enqueuedAt?: number }).enqueuedAt ?? Date.now(),
       hiddenIndex: input.hiddenIndex,
       batchId: input.batchId,
     };
@@ -137,7 +138,6 @@ export class QueueStore {
     entries.sort(
       (a, b) =>
         (a.job.enqueuedAt ?? 0) - (b.job.enqueuedAt ?? 0) ||
-        (mtimes.get(a.file) ?? 0) - (mtimes.get(b.file) ?? 0) ||
         a.file.localeCompare(b.file),
     );
     return { entries, invalid };
@@ -151,8 +151,26 @@ export class QueueStore {
   }
 
   private writeAtomic(target: string, job: QueueJob): void {
-    const temporary = `${target}.tmp.json`;
-    writeFileSync(temporary, `${JSON.stringify(job, null, 2)}\n`);
-    renameSync(temporary, target);
+    const temporary = `${target}.${process.pid}.${Date.now()}.${(QueueStore.tmpSequence += 1).toString(36)}.${process.hrtime.bigint().toString(36)}.tmp.json`;
+    const content = `${JSON.stringify(job, null, 2)}\n`;
+    writeFileSync(temporary, content);
+    for (let attempt = 0; attempt < 5; attempt++) {
+      try {
+        renameSync(temporary, target);
+        return;
+      } catch (err) {
+        if (attempt === 4 || (err as { code?: string })?.code !== 'EPERM') {
+          try {
+            writeFileSync(target, content);
+            rmSync(temporary, { force: true });
+            return;
+          } catch {
+            throw err;
+          }
+        }
+        const start = Date.now();
+        while (Date.now() - start < 15) {}
+      }
+    }
   }
 }

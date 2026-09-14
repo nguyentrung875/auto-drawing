@@ -21,6 +21,10 @@ export const productSchema = z.object({
   category: z.string().min(1),
   brand: z.string().min(1),
   affiliate_link: z.string().min(1),
+  sizeCategory: z.enum(['tiny', 'small', 'medium', 'large', 'bulky']).optional(),
+  perceivedValue: z.enum(['dirt_cheap', 'budget', 'mid_range', 'premium', 'luxury']).optional(),
+  originalPrice: z.number().int().positive().optional(),
+  discountPercent: z.number().min(0).max(100).optional(),
 });
 
 export type Product = z.infer<typeof productSchema>;

@@ -6,7 +6,7 @@
  * zod schema that is compile-time checked against this type.
  */
 
-export type Mechanic = 'HI_LO' | 'MOST_EXPENSIVE' | 'ONE_AWAY';
+export type Mechanic = 'HI_LO' | 'MOST_EXPENSIVE' | 'ONE_AWAY' | 'ODD_ONE_OUT' | 'GUESS_THE_PRICE' | 'GROCERY_BASKET' | 'DEAL_OR_SCAM';
 export type ResultVariant = 'in_video' | 'comment';
 export type Interaction = 'BOOLEAN' | 'MULTIPLE_CHOICE' | 'DIGIT';
 
@@ -39,6 +39,8 @@ export interface GameGameplay {
   mechanic: Mechanic;
   interaction?: Interaction;
   hidden_index?: number;
+  /** GROCERY_BASKET — total budget in VND (e.g. 300,000). */
+  budget?: number;
   /** Epic 2 — answer computed by the Engine (never by an LLM). */
   answer?: string | number;
   /** ONE_AWAY — the masked digit as a string, e.g. "0". */

@@ -96,10 +96,10 @@ describe('QueueStore (AD-9)', () => {
     const { entries, invalid } = store.list();
     expect(invalid).toHaveLength(0);
     expect(entries.map((entry) => entry.job.jobId)).toEqual(['b', 'a']);
-    // Same-millisecond enqueues still resolve deterministically (mtime → name).
     const sameMs = new QueueStore(path.join(workDir, 'queue-same-ms'));
-    sameMs.enqueue({ jobId: 'z', gameId: 'g_z', mechanic: 'HI_LO', productIds: ['p001', 'p002'], seed: 3 });
-    sameMs.enqueue({ jobId: 'y', gameId: 'g_y', mechanic: 'ONE_AWAY', productIds: ['p001'], seed: 4 });
+    const fixedTime = 1_700_000_000_000;
+    sameMs.enqueue({ jobId: 'z', gameId: 'g_z', mechanic: 'HI_LO', productIds: ['p001', 'p002'], seed: 3, enqueuedAt: fixedTime } as any);
+    sameMs.enqueue({ jobId: 'y', gameId: 'g_y', mechanic: 'ONE_AWAY', productIds: ['p001'], seed: 4, enqueuedAt: fixedTime } as any);
     const sameMsOrder = sameMs.list().entries.map((entry) => entry.job.jobId);
     expect(sameMsOrder).toEqual(['y', 'z']);
     expect(readdirSync(path.join(workDir, 'queue')).some((file) => file.endsWith('.tmp.json'))).toBe(false);

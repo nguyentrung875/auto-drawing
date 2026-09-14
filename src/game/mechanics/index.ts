@@ -10,12 +10,20 @@ import type { Mechanic } from '../../types/game';
 import { HiLoMechanic } from './HiLoMechanic';
 import { MostExpensiveMechanic } from './MostExpensiveMechanic';
 import { OneAwayMechanic } from './OneAwayMechanic';
+import { OddOneOutMechanic } from './OddOneOutMechanic';
+import { GuessThePriceMechanic } from './GuessThePriceMechanic';
+import { GroceryBasketMechanic } from './GroceryBasketMechanic';
+import { DealOrScamMechanic } from './DealOrScamMechanic';
 import type { IMechanic } from './types';
 
 const registry = new Map<Mechanic, IMechanic>([
   ['HI_LO', new HiLoMechanic()],
   ['MOST_EXPENSIVE', new MostExpensiveMechanic()],
   ['ONE_AWAY', new OneAwayMechanic()],
+  ['ODD_ONE_OUT', new OddOneOutMechanic()],
+  ['GUESS_THE_PRICE', new GuessThePriceMechanic()],
+  ['GROCERY_BASKET', new GroceryBasketMechanic()],
+  ['DEAL_OR_SCAM', new DealOrScamMechanic()],
 ]);
 
 export const MechanicRegistry = {
@@ -38,7 +46,15 @@ export const MechanicRegistry = {
   },
 };
 
-export { HiLoMechanic, MostExpensiveMechanic, OneAwayMechanic };
+export {
+  HiLoMechanic,
+  MostExpensiveMechanic,
+  OneAwayMechanic,
+  OddOneOutMechanic,
+  GuessThePriceMechanic,
+  GroceryBasketMechanic,
+  DealOrScamMechanic,
+};
 export * from './types';
 export {
   buildBaseGame,

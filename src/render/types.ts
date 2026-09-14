@@ -22,6 +22,7 @@ export interface RenderGameView {
     title?: string;
     hook?: string;
     question?: string;
+    choices?: Array<{ id: string; label: string } | string>;
     cta?: string;
     caption?: string;
     hashtags?: string[];
@@ -31,8 +32,24 @@ export interface RenderGameView {
     correct_digit?: string;
     hidden_index?: number;
     options?: number[];
-    choices?: Array<{ id: string; label: string }>;
+    choices?: Array<{ id: string; label: string } | string>;
+    priceA?: number;
+    priceB?: number;
+    budget?: number;
+    totalBill?: number;
+    discountPercent?: number;
+    originalPrice?: number;
+    salePrice?: number;
+    correctDigit?: number;
+    hiddenIndex?: number;
   };
+  entities?: Array<{
+    productId: string;
+    name?: string;
+    price?: number;
+    brand?: string;
+    image?: string;
+  }>;
   publishing: {
     caption: string;
     hashtags: string[];

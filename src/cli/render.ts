@@ -23,6 +23,7 @@ export interface RenderArgs {
   seed?: number;
   resultVariant?: 'in_video' | 'comment';
   hiddenIndex?: number;
+  mode?: string;
   /** `--game <file.json>`: render an existing Game JSON instead of a template. */
   gameFile?: string;
   queueDir: string;
@@ -50,6 +51,15 @@ const MECHANIC_ALIASES: Record<string, QueueJob['mechanic']> = {
   hi_lo: 'HI_LO',
   most_expensive: 'MOST_EXPENSIVE',
   one_away: 'ONE_AWAY',
+  odd_one_out: 'ODD_ONE_OUT',
+  guess_the_price: 'GUESS_THE_PRICE',
+  g9: 'GUESS_THE_PRICE',
+  g7: 'GROCERY_BASKET',
+  grocery: 'GROCERY_BASKET',
+  grocery_basket: 'GROCERY_BASKET',
+  g41: 'DEAL_OR_SCAM',
+  deal: 'DEAL_OR_SCAM',
+  deal_or_scam: 'DEAL_OR_SCAM',
 };
 
 export function normalizeMechanic(raw: string | undefined): QueueJob['mechanic'] | undefined {
@@ -76,6 +86,7 @@ export function parseRenderArgs(argv: string[], rootDir = process.cwd()): Render
   const seed = flags.get('seed');
   const hiddenIndex = flags.get('hidden-index');
   const variant = flags.get('result-variant');
+  const mode = flags.get('mode');
   return {
     mechanic: normalizeMechanic(flags.get('mechanic')),
     productIds: (flags.get('products') ?? '')
@@ -85,6 +96,7 @@ export function parseRenderArgs(argv: string[], rootDir = process.cwd()): Render
     seed: seed === undefined ? undefined : Number(seed),
     resultVariant: variant === 'comment' ? 'comment' : variant === 'in_video' ? 'in_video' : undefined,
     hiddenIndex: hiddenIndex === undefined ? undefined : Number(hiddenIndex),
+    mode,
     gameFile: flags.get('game'),
     queueDir: flags.get('queue-dir') ?? 'queue',
     rendererType: flags.get('renderer') === 'software' ? 'software' : flags.get('renderer') === 'browser' ? 'browser' : (findBrowserExecutable() ? 'browser' : 'software'),
@@ -107,14 +119,18 @@ export async function runRenderCommand(args: RenderArgs): Promise<RenderCommandR
     };
   }
   if (args.productIds.length === 0 && !args.gameFile) {
-    return {
-      exitCode: 1,
-      error: {
-        code: 'E_GAME_LOGIC_INVALID',
-        field: 'products',
-        hint: 'pass --products p001,p042',
-      },
-    };
+    const { ProductProvider } = await import('../product/ProductProvider');
+    const provider = new ProductProvider(path.resolve(rootDir, 'products'), { watch: false });
+    const all = provider.getAll();
+    const needed =
+      args.mechanic === 'GROCERY_BASKET'
+        ? 3
+        : args.mechanic === 'MOST_EXPENSIVE' || args.mechanic === 'ODD_ONE_OUT'
+          ? 4
+          : args.mechanic === 'HI_LO'
+            ? 2
+            : 1;
+    args.productIds = all.slice(0, needed).map((p) => p.productId);
   }
 
   const batchId = `single_${Date.now().toString(36)}`;
@@ -134,7 +150,14 @@ export async function runRenderCommand(args: RenderArgs): Promise<RenderCommandR
     };
   } else {
     const mechanic = args.mechanic as QueueJob['mechanic'];
-    const expected = mechanic === 'HI_LO' ? 2 : mechanic === 'ONE_AWAY' ? 1 : undefined;
+    const expected =
+      mechanic === 'GROCERY_BASKET'
+        ? 3
+        : mechanic === 'HI_LO'
+          ? 2
+          : mechanic === 'ONE_AWAY' || mechanic === 'GUESS_THE_PRICE' || mechanic === 'DEAL_OR_SCAM'
+            ? 1
+            : undefined;
     if (expected !== undefined && args.productIds.length !== expected) {
       return {
         exitCode: 1,

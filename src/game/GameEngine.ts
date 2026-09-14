@@ -10,6 +10,9 @@
  */
 import { GameError } from './errors';
 import { createRng, pick } from './rng';
+import { NumericEngine } from '../challenge/engines/NumericEngine';
+import { KnapsackEngine } from '../challenge/engines/KnapsackEngine';
+import { resolveOriginalPrice, classifyDealOrScam } from './mechanics/DealOrScamMechanic';
 import type { Product } from '../product/schema';
 import type {
   ComputedGame,
@@ -137,6 +140,99 @@ export class GameEngine {
       detail = {
         prices: products.map((p) => ({ id: p.productId, price: p.price })),
         maxPrice: max.price,
+      };
+    } else if (mechanic === 'ODD_ONE_OUT') {
+      if (products.length !== 4) {
+        throw new GameError(
+          'E_GAME_LOGIC_INVALID',
+          'entities',
+          `ODD_ONE_OUT needs exactly 4 products, got ${products.length}`,
+        );
+      }
+      const categoryCounts = new Map<string, Product[]>();
+      for (const p of products) {
+        const list = categoryCounts.get(p.category) ?? [];
+        list.push(p);
+        categoryCounts.set(p.category, list);
+      }
+      let oddProduct: Product | undefined;
+      for (const [, list] of categoryCounts.entries()) {
+        if (list.length === 1 && categoryCounts.size === 2) {
+          oddProduct = list[0];
+          break;
+        }
+      }
+      if (!oddProduct) {
+        const brandCounts = new Map<string, Product[]>();
+        for (const p of products) {
+          const list = brandCounts.get(p.brand) ?? [];
+          list.push(p);
+          brandCounts.set(p.brand, list);
+        }
+        for (const [, list] of brandCounts.entries()) {
+          if (list.length === 1 && brandCounts.size === 2) {
+            oddProduct = list[0];
+            break;
+          }
+        }
+      }
+      if (!oddProduct) {
+        const sorted = [...products].sort((a, b) => a.price - b.price);
+        const deltaLow = sorted[1].price - sorted[0].price;
+        const deltaHigh = sorted[3].price - sorted[2].price;
+        oddProduct = deltaHigh > deltaLow ? sorted[3] : sorted[0];
+      }
+      answer = oddProduct.productId;
+      detail = { oddProductId: oddProduct.productId };
+    } else if (mechanic === 'GUESS_THE_PRICE') {
+      if (products.length < 1) {
+        throw new GameError(
+          'E_GAME_LOGIC_INVALID',
+          'entities',
+          `GUESS_THE_PRICE needs at least 1 product, got ${products.length}`,
+        );
+      }
+      const product = products[0] as Product;
+      const engine = new NumericEngine();
+      const brackets = engine.generatePriceBrackets(product.price, 2.5, seed);
+      answer = brackets.correctChoice;
+      detail = { actualPrice: product.price, correctChoice: brackets.correctChoice };
+    } else if (mechanic === 'GROCERY_BASKET') {
+      if (products.length !== 3) {
+        throw new GameError(
+          'E_GAME_LOGIC_INVALID',
+          'entities',
+          `GROCERY_BASKET needs exactly 3 products, got ${products.length}`,
+        );
+      }
+      const budget = (game.gameplay as { budget?: number }).budget ?? 300000;
+      const knapsack = new KnapsackEngine();
+      const evaluation = knapsack.evaluateBasket(products, budget);
+      answer = evaluation.isUnderBudget ? 'under' : 'over';
+      detail = {
+        total: evaluation.total,
+        budget: evaluation.budget,
+        isUnderBudget: evaluation.isUnderBudget,
+        deltaPercent: evaluation.deltaPercent,
+      };
+    } else if (mechanic === 'DEAL_OR_SCAM') {
+      if (products.length !== 1) {
+        throw new GameError(
+          'E_GAME_LOGIC_INVALID',
+          'entities',
+          `DEAL_OR_SCAM needs exactly 1 product, got ${products.length}`,
+        );
+      }
+      const product = products[0] as Product;
+      const originalPrice = resolveOriginalPrice(product, seed);
+      answer = classifyDealOrScam(product, originalPrice);
+      const discount = (originalPrice - product.price) / originalPrice;
+      const discountPercent = Math.round(discount * 100);
+      detail = {
+        price: product.price,
+        originalPrice,
+        discountPercent,
+        verdict: answer,
       };
     } else {
       if (products.length !== 1) {

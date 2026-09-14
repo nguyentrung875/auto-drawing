@@ -26,15 +26,18 @@ describe('gitignore hygiene', () => {
     const files = GUARDED.flatMap((dir) => walk(path.join(ROOT, dir)));
     expect(files.length).toBeGreaterThan(50);
 
-    const ignored: string[] = [];
-    for (const file of files) {
-      try {
-        execFileSync('git', ['check-ignore', '--quiet', file], { cwd: ROOT });
-        ignored.push(path.relative(ROOT, file));
-      } catch {
-        // exit code 1 = not ignored (the expected case)
-      }
+    let stdout = '';
+    try {
+      stdout = execFileSync('git', ['check-ignore', '--stdin'], {
+        input: files.map((f) => path.relative(ROOT, f)).join('\n'),
+        cwd: ROOT,
+        encoding: 'utf8',
+      });
+    } catch (e) {
+      // exit code 1 means none of the files were ignored, or partial matches in stdout
+      stdout = (e as { stdout?: string }).stdout ?? '';
     }
+    const ignored = stdout.split(/\r?\n/).filter(Boolean);
     expect(ignored).toEqual([]);
   });
 });

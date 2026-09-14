@@ -73,6 +73,10 @@ const DEFAULT_PRODUCTS_PER_JOB: Record<QueueJob['mechanic'], number> = {
   HI_LO: 2,
   MOST_EXPENSIVE: 4,
   ONE_AWAY: 1,
+  ODD_ONE_OUT: 4,
+  GUESS_THE_PRICE: 1,
+  GROCERY_BASKET: 3,
+  DEAL_OR_SCAM: 1,
 };
 
 /** Deterministic per-index product/mechanic selection for a batch. */

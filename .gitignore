@@ -1,12 +1,40 @@
+# Python & virtual environments
 image-search/
 __pycache__/
 .venv/
+venv/
 *.pyc
 
-# Node / TypeScript
+# Node & Package Managers
 node_modules/
+studio/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# Build outputs & TypeScript
 dist/
+build/
+out/
+*.tsbuildinfo
+studio/tsconfig.tsbuildinfo
+
+# Next.js & Web Studio
+.next/
+studio/.next/
+.vercel/
+studio/.vercel/
+.cache/
+studio/.cache/
+.turbo/
+studio/.turbo/
+
+# Testing & Coverage
 coverage/
+.nyc_output/
 
 # Runtime output (not committed) — root-anchored: `src/queue/` is source code,
 # `queue/` at the repository root is Hermes' job queue.
@@ -16,13 +44,59 @@ coverage/
 /logs/
 /temp/
 /assets/
+/video_ouput/
+/video_output/
+*.mp4
 products/*.tmp.json
 
-# Next.js and temporary patches
+# Patches
 *.patch
-*.tsbuildinfo
-.next/
 ai-game-video-engine/.next/
 ai-game-video-engine/.env*.local
 
+# Spike outputs & reports
+spike/vision-ingestion/.venv/
+spike/vision-ingestion/__pycache__/
+spike/vision-ingestion/compare_report.html
+spike/vision-ingestion/compare_report.json
+spike/vision-ingestion/compare_report.md
+spike/vision-ingestion/compare_results/
+spike/dsl-generation/results/
+
+# Environment files & secrets
+.env
+.env*.local
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# IDE & tooling artefacts
+.vscode/
+.idea/
+*.swp
+*.swo
+*.sublime-workspace
+*.sublime-project
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+ehthumbs.db
+desktop.ini
+
+# Superpowers & agent ephemeral runtime state
+.superpowers/brainstorm/.last-port
+.superpowers/brainstorm/.last-token
+.superpowers/brainstorm/**/state/
+_bmad/custom/config.user.toml
+
+# BMad module output
+_bmad-output/
+
+# Large generated assets & zip files
+ai-game-video-engine_claude4.6/
+ai-game-video-engine_claude4.6.zip
 

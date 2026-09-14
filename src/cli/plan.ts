@@ -29,6 +29,7 @@ const MECHANIC_ALIASES: Record<string, Mechanic> = {
   hi_lo: 'HI_LO',
   most_expensive: 'MOST_EXPENSIVE',
   one_away: 'ONE_AWAY',
+  odd_one_out: 'ODD_ONE_OUT',
 };
 
 /** Parse `--flag value` pairs from a `game plan` or `game render` argv slice. */

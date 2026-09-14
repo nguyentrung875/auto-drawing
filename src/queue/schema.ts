@@ -12,7 +12,7 @@ export const jobStatusSchema = z.enum(['pending', 'running', 'done', 'failed']);
 export const queueJobSchema = z.object({
   jobId: z.string().min(1),
   gameId: z.string().min(1),
-  mechanic: z.enum(['HI_LO', 'MOST_EXPENSIVE', 'ONE_AWAY']),
+  mechanic: z.enum(['HI_LO', 'MOST_EXPENSIVE', 'ONE_AWAY', 'ODD_ONE_OUT', 'GUESS_THE_PRICE', 'GROCERY_BASKET', 'DEAL_OR_SCAM']),
   productIds: z.array(z.string().min(1)).min(1),
   seed: z.number().int(),
   result_variant: z.enum(['in_video', 'comment']).default('in_video'),

@@ -8,7 +8,7 @@
 import { z } from 'zod';
 import type { GameJson } from '../types/game';
 
-export const MECHANICS = ['HI_LO', 'MOST_EXPENSIVE', 'ONE_AWAY'] as const;
+export const MECHANICS = ['HI_LO', 'MOST_EXPENSIVE', 'ONE_AWAY', 'ODD_ONE_OUT', 'GUESS_THE_PRICE', 'GROCERY_BASKET', 'DEAL_OR_SCAM'] as const;
 export const RESULT_VARIANTS = ['in_video', 'comment'] as const;
 export const INTERACTIONS = ['BOOLEAN', 'MULTIPLE_CHOICE', 'DIGIT'] as const;
 
@@ -53,6 +53,7 @@ export const gameSchema = z.object({
     mechanic: z.enum(MECHANICS),
     interaction: z.enum(INTERACTIONS).optional(),
     hidden_index: z.number().int().optional(),
+    budget: z.number().int().positive().optional(),
     answer: z.union([z.string(), z.number()]).optional(),
     correct_digit: z.string().optional(),
     options: z.array(z.number().int()).optional(),

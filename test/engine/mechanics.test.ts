@@ -158,7 +158,25 @@ describe('Story 2.5 — ONE_AWAY (DIGIT)', () => {
   });
 });
 
-describe('Epic 2 — end-to-end: 3 mechanics validate + compute', () => {
+describe('G3 — ODD_ONE_OUT (MULTIPLE_CHOICE)', () => {
+  const p1 = { ...product('p001', 189000), category: 'Điện tử', brand: 'Xiaomi' };
+  const p2 = { ...product('p002', 249000), category: 'Điện tử', brand: 'Xiaomi' };
+  const p3 = { ...product('p003', 329000), category: 'Điện tử', brand: 'Xiaomi' };
+  const p4 = { ...product('p004', 199000), category: 'Gia dụng', brand: 'Lock&Lock' }; // Odd by category
+
+  it('identifies outlier product by category', () => {
+    const { game, sceneData } = MechanicRegistry.get('ODD_ONE_OUT').create({
+      products: [p1, p2, p3, p4],
+      seed: 839274,
+    });
+    expect(game.gameplay.answer).toBe('p004');
+    expect(game.gameplay.interaction).toBe('MULTIPLE_CHOICE');
+    expect(game.gameplay.choices?.length).toBe(4);
+    expect(sceneData.cards.find((c) => c.productId === 'p004')?.highlight).toBe(true);
+  });
+});
+
+describe('Epic 2 — end-to-end: 4 mechanics validate + compute', () => {
   const cases = [
     { mechanic: 'HI_LO' as const, products: [p001, p042], seed: 839271 },
     {
@@ -167,6 +185,17 @@ describe('Epic 2 — end-to-end: 3 mechanics validate + compute', () => {
       seed: 839272,
     },
     { mechanic: 'ONE_AWAY' as const, products: [p001], seed: 839273, hiddenIndex: 3 },
+    {
+      mechanic: 'ODD_ONE_OUT' as const,
+      products: [
+        { ...product('p001', 189000), category: 'Điện tử', brand: 'Xiaomi' },
+        { ...product('p002', 249000), category: 'Điện tử', brand: 'Xiaomi' },
+        { ...product('p003', 329000), category: 'Điện tử', brand: 'Xiaomi' },
+        { ...product('p004', 199000), category: 'Gia dụng', brand: 'Lock&Lock' },
+      ],
+      seed: 839274,
+    },
+    { mechanic: 'GUESS_THE_PRICE' as const, products: [p001], seed: 839275 },
   ];
 
   it.each(cases)('$mechanic passes the Validator and the Engine', (c) => {

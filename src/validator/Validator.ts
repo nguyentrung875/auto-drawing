@@ -54,6 +54,10 @@ const EXPECTED_INTERACTIONS: Record<Mechanic, Interaction> = {
   HI_LO: 'BOOLEAN',
   MOST_EXPENSIVE: 'MULTIPLE_CHOICE',
   ONE_AWAY: 'DIGIT',
+  ODD_ONE_OUT: 'MULTIPLE_CHOICE',
+  GUESS_THE_PRICE: 'BOOLEAN',
+  GROCERY_BASKET: 'BOOLEAN',
+  DEAL_OR_SCAM: 'BOOLEAN',
 };
 
 export interface ValidateOptions {
@@ -301,6 +305,18 @@ export class Validator {
       }
     }
 
+    if (mechanic === 'ODD_ONE_OUT') {
+      if (products.length !== 4) {
+        errors.push(
+          issue(
+            'E_GAME_LOGIC_INVALID',
+            'entities',
+            `ODD_ONE_OUT needs exactly 4 products, got ${products.length}`,
+          ),
+        );
+      }
+    }
+
     if (mechanic === 'ONE_AWAY') {
       if (products.length !== 1) {
         errors.push(
@@ -333,19 +349,45 @@ export class Validator {
       }
     }
 
-    // Choices must never repeat a price (an ambiguous question has no answer).
-    const priceCounts = new Map<number, number>();
-    for (const p of products) {
-      priceCounts.set(p.price, (priceCounts.get(p.price) ?? 0) + 1);
+    if (mechanic === 'GROCERY_BASKET') {
+      if (products.length !== 3) {
+        errors.push(
+          issue(
+            'E_GAME_LOGIC_INVALID',
+            'entities',
+            `GROCERY_BASKET needs exactly 3 products, got ${products.length}`,
+          ),
+        );
+      }
     }
-    if (products.length > 1 && priceCounts.size !== products.length) {
-      errors.push(
-        issue(
-          'E_GAME_LOGIC_INVALID',
-          'choices',
-          'two choices share the same price — answer would be ambiguous',
-        ),
-      );
+
+    if (mechanic === 'DEAL_OR_SCAM') {
+      if (products.length !== 1) {
+        errors.push(
+          issue(
+            'E_GAME_LOGIC_INVALID',
+            'entities',
+            `DEAL_OR_SCAM needs exactly 1 product, got ${products.length}`,
+          ),
+        );
+      }
+    }
+
+    // Choices must never repeat a price (an ambiguous question has no answer).
+    if (mechanic !== 'GROCERY_BASKET' && mechanic !== 'DEAL_OR_SCAM') {
+      const priceCounts = new Map<number, number>();
+      for (const p of products) {
+        priceCounts.set(p.price, (priceCounts.get(p.price) ?? 0) + 1);
+      }
+      if (products.length > 1 && priceCounts.size !== products.length) {
+        errors.push(
+          issue(
+            'E_GAME_LOGIC_INVALID',
+            'choices',
+            'two choices share the same price — answer would be ambiguous',
+          ),
+        );
+      }
     }
 
     return { errors, warnings };

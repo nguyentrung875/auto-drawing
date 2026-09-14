@@ -55,6 +55,8 @@ export interface MechanicInput {
   /** ONE_AWAY only — index of the masked digit inside the raw price string. */
   hiddenIndex?: number;
   gameId?: string;
+  /** GROCERY_BASKET only — target budget in VND (defaults to 300,000). */
+  budget?: number;
 }
 
 export interface MechanicOutput {
