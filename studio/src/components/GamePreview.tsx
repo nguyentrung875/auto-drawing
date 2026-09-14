@@ -412,10 +412,12 @@ function getChoicesForGame(game: GameJson): {
   }
   if (m === "GUESS_THE_PRICE") {
     const gp = game.gameplay as GuessThePriceGameplay;
-    const choices = (gp.choices || game.content.choices || []).map((c, i) => {
-      const letter = String.fromCharCode(65 + i);
-      const isCorrect = gp.answer === letter || gp.answer === c;
-      return { id: letter, label: c, isCorrect };
+    const rawChoices = (gp.choices || game.content.choices || []) as Array<unknown>;
+    const choices = rawChoices.map((c: any, i) => {
+      const letter = typeof c === 'object' && c && 'id' in c ? String(c.id) : String.fromCharCode(65 + i);
+      const label = typeof c === 'object' && c && 'label' in c ? String(c.label) : String(c);
+      const isCorrect = gp.answer === letter || gp.answer === label;
+      return { id: letter, label, isCorrect };
     });
     return {
       choices: choices.length > 0 ? choices : [
@@ -629,10 +631,10 @@ function SceneRenderer({
             <div className="text-[10px] font-bold text-white truncate mt-1 px-1">{entity.name}</div>
             <div className="text-xs font-black text-amber-400 font-mono mt-0.5">
               {game.metadata.mechanic === "ONE_AWAY"
-                ? maskPrice(entity.price, (game.gameplay as OneAwayGameplay).hiddenIndex)
+                ? (isReveal ? `Giá thật: ${formatVND(entity.price)}` : maskPrice(entity.price, (game.gameplay as OneAwayGameplay).hiddenIndex))
                 : game.metadata.mechanic === "HI_LO"
                 ? `Mốc so sánh: ${formatVND((game.gameplay as HiLoGameplay).priceA || entity.price)}`
-                : formatVND(entity.price)}
+                : (isReveal ? `Giá thật: ${formatVND(entity.price)}` : "Giá: ???")}
             </div>
           </div>
         )}
