@@ -417,7 +417,7 @@ export class AudioEngine {
 
 export async function synthesizeAudio(
   game: GameJson,
-  adapter: IAudioEngine = new ViPiperEngine(),
+  adapter: IAudioEngine = new EdgeTtsEngine(),
   timeline?: Timeline,
 ): Promise<AudioSegment> {
   return new AudioEngine(adapter).synthesize(game, timeline);
