@@ -1,0 +1,63 @@
+[
+  {
+    "id": "8_to_bear",
+    "hook": "8",
+    "subject": "Gấu",
+    "en": "bear",
+    "note": "Vòng trên → đầu. Vòng dưới → thân. Không nét nào dư.",
+    "strokes": [
+      { "role": "hook", "absorbed": true,  "part": "Số 8 · vòng trên → ĐẦU",  "d": "M 270 450 A 70 70 0 1 1 270 310 A 70 70 0 1 1 270 450", "dur": 1.5 },
+      { "role": "hook", "absorbed": true,  "part": "Số 8 · vòng dưới → THÂN", "d": "M 270 445 A 105 105 0 1 0 270 655 A 105 105 0 1 0 270 445", "dur": 1.9 },
+      { "role": "part", "part": "Tai trái",  "d": "M 208 348 A 30 30 0 1 1 208 288 A 30 30 0 1 1 208 348", "dur": 0.8 },
+      { "role": "part", "part": "Tai phải",  "d": "M 332 348 A 30 30 0 1 1 332 288 A 30 30 0 1 1 332 348", "dur": 0.8 },
+      { "role": "part", "part": "Mắt trái", "dot": true, "d": "M 248 368 l 0.01 0", "dur": 0.3 },
+      { "role": "part", "part": "Mắt phải", "dot": true, "d": "M 292 368 l 0.01 0", "dur": 0.3 },
+      { "role": "part", "part": "Mũi",      "d": "M 255 398 A 15 11 0 1 1 285 398 A 15 11 0 1 1 255 398", "dur": 0.6 },
+      { "role": "part", "part": "Miệng", "thin": true, "d": "M 270 411 Q 261 426 247 419 M 270 411 Q 279 426 293 419", "dur": 0.8 },
+      { "role": "part", "part": "Tay trái",  "d": "M 179 500 Q 139 556 173 616", "dur": 0.9 },
+      { "role": "part", "part": "Tay phải",  "d": "M 361 500 Q 401 556 367 616", "dur": 0.9 },
+      { "role": "part", "part": "Chân trái", "d": "M 192 652 A 30 20 0 1 1 252 652 A 30 20 0 1 1 192 652", "dur": 0.7 },
+      { "role": "part", "part": "Chân phải", "d": "M 288 652 A 30 20 0 1 1 348 652 A 30 20 0 1 1 288 652", "dur": 0.7 }
+    ]
+  },
+  {
+    "id": "2_to_swan",
+    "hook": "2",
+    "subject": "Thiên nga",
+    "en": "swan",
+    "note": "Nét cong trên → đầu. Nét chéo → cổ. Nét ngang → đường nước / bụng.",
+    "strokes": [
+      { "role": "hook", "absorbed": true, "part": "Số 2 → ĐẦU + CỔ + MẶT NƯỚC", "d": "M 190 360 C 190 292 288 282 306 336 C 322 384 236 452 196 566 L 372 566", "dur": 2.2 },
+      { "role": "part", "part": "Lưng + thân", "d": "M 196 566 C 214 496 306 474 372 512 C 398 528 396 552 372 566", "dur": 1.7 },
+      { "role": "part", "part": "Cánh", "thin": true, "d": "M 244 546 C 276 512 336 512 362 542 C 330 562 278 564 244 546 Z", "dur": 1.2 },
+      { "role": "part", "part": "Đuôi", "thin": true, "d": "M 368 514 C 402 498 424 474 432 444", "dur": 0.7 },
+      { "role": "part", "part": "Mỏ", "d": "M 302 320 L 344 334 L 300 346 Z", "dur": 0.6 },
+      { "role": "part", "part": "Mắt", "dot": true, "d": "M 286 314 l 0.01 0", "dur": 0.3 },
+      { "role": "part", "part": "Gợn nước", "thin": true, "d": "M 132 600 Q 172 588 212 600 M 300 612 Q 348 600 396 612", "dur": 0.9 }
+    ]
+  },
+  {
+    "id": "99_to_tiger",
+    "hook": "99",
+    "subject": "Hổ",
+    "en": "tiger",
+    "note": "Ví dụ \"đề xuất đại\". Hai vòng → hai tai. Hai ĐUÔI số 9 → không thành gì cả.",
+    "strokes": [
+      { "role": "hook", "absorbed": false, "orphan": "đuôi số 9 bên trái đâm xuyên qua má hổ", "part": "Số 9 trái", "d": "M 240 396 A 60 60 0 1 1 253 340 C 258 420 246 478 232 528", "dur": 1.5 },
+      { "role": "hook", "absorbed": false, "orphan": "đuôi số 9 bên phải thừa ra ngoài đầu hổ", "part": "Số 9 phải", "d": "M 390 396 A 60 60 0 1 1 403 340 C 408 420 396 478 382 528", "dur": 1.5 },
+      { "role": "part", "part": "Đầu", "d": "M 175 450 A 95 95 0 1 1 365 450 A 95 95 0 1 1 175 450", "dur": 1.7 },
+      { "role": "part", "part": "Mắt trái", "dot": true, "d": "M 238 440 l 0.01 0", "dur": 0.3 },
+      { "role": "part", "part": "Mắt phải", "dot": true, "d": "M 302 440 l 0.01 0", "dur": 0.3 },
+      { "role": "part", "part": "Mũi", "d": "M 258 478 L 282 478 L 270 492 Z", "dur": 0.5 },
+      { "role": "part", "part": "Miệng", "thin": true, "d": "M 270 492 Q 258 508 244 500 M 270 492 Q 282 508 296 500", "dur": 0.6 },
+      { "role": "part", "part": "Vằn trán", "thin": true, "d": "M 250 372 L 246 400 M 270 366 L 270 396 M 290 372 L 294 400", "dur": 0.7 },
+      { "role": "part", "part": "Râu trái", "thin": true, "d": "M 214 486 L 178 478 M 214 496 L 176 500", "dur": 0.5 },
+      { "role": "part", "part": "Râu phải", "thin": true, "d": "M 326 486 L 362 478 M 326 496 L 364 500", "dur": 0.5 },
+      { "role": "part", "part": "Thân", "d": "M 200 534 C 172 618 188 700 224 730 L 316 730 C 352 700 368 618 340 534", "dur": 1.8 },
+      { "role": "part", "part": "Vằn thân", "thin": true, "d": "M 206 600 L 240 606 M 334 600 L 300 606 M 200 656 L 236 660 M 340 656 L 304 660", "dur": 0.9 },
+      { "role": "part", "part": "Chân trước trái", "d": "M 208 726 A 28 18 0 1 1 264 726 A 28 18 0 1 1 208 726", "dur": 0.7 },
+      { "role": "part", "part": "Chân trước phải", "d": "M 276 726 A 28 18 0 1 1 332 726 A 28 18 0 1 1 276 726", "dur": 0.7 },
+      { "role": "part", "part": "Đuôi hổ", "d": "M 340 700 C 400 690 424 640 404 596 C 396 578 380 574 372 586", "dur": 1.0 }
+    ]
+  }
+]
