@@ -1,0 +1,4 @@
+results/
+*.dsl.json
+*.error.json
+__pycache__/

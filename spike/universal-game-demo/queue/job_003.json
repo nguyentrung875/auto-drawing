@@ -1,0 +1,25 @@
+{
+  "jobId": "003",
+  "gameId": "one_away_001",
+  "mechanic": "ONE_AWAY",
+  "productIds": [
+    "p001"
+  ],
+  "seed": 839273,
+  "result_variant": "in_video",
+  "status": "done",
+  "result": {
+    "answer": {
+      "answer": 0,
+      "correct_digit": "0",
+      "hidden_index": 3,
+      "price": 189000,
+      "priceStr": "189000",
+      "options": [
+        0,
+        1
+      ],
+      "_randSample": 0.11406827914907437
+    }
+  }
+}

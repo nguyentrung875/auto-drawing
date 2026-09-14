@@ -1,0 +1,21 @@
+{
+  "version": "v1",
+  "workerPoolMax": 3,
+  "video": {
+    "width": 1080,
+    "height": 1920,
+    "fps": 30
+  },
+  "render": {
+    "codec": "libx264",
+    "crf": 18,
+    "preset": "fast"
+  },
+  "paths": {
+    "products": "products",
+    "games": "games",
+    "export": "export",
+    "queue": "queue",
+    "logs": "logs"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "_source": "spike/vision-ingestion run 2026-09-08, easy_giraffe_number1.png, concept mode, score 100%",
+  "subject_name": "giraffe",
+  "subject_name_vi": "con huou cao co",
+  "hook_shape": "number 1",
+  "suggested_hooks": ["number 1", "letter L"],
+  "complexity": "easy",
+  "is_step_tutorial": true,
+  "confidence": 0.97,
+  "steps": [
+    {"step_number": 1, "part_name": "hook_number_1", "description": "Write a large number 1; the vertical stroke becomes the giraffe's long neck",
+     "primitive_hint": "polyline", "stroke_count": 2, "voice_cue": "Viet so 1 that cao"},
+    {"step_number": 2, "part_name": "head", "description": "Draw a rounded rectangle head at the top of the neck, tilted slightly right",
+     "primitive_hint": "rect", "stroke_count": 1, "voice_cue": "Ve cai dau o tren cung"},
+    {"step_number": 3, "part_name": "body", "description": "Draw an oval body at the bottom of the neck, wider than the neck",
+     "primitive_hint": "circle", "stroke_count": 1, "voice_cue": "Them than hinh bau duc"},
+    {"step_number": 4, "part_name": "legs_and_spots", "description": "Add four straight legs below the body and several oval spots on the body and neck",
+     "primitive_hint": "line", "stroke_count": 8, "voice_cue": "Them bon chan va cac dom nau"}
+  ]
+}

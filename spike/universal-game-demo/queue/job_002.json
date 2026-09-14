@@ -1,0 +1,33 @@
+{
+  "jobId": "002",
+  "gameId": "most_exp_001",
+  "mechanic": "MOST_EXPENSIVE",
+  "productIds": [
+    "p001",
+    "p015",
+    "p028"
+  ],
+  "seed": 839272,
+  "result_variant": "comment",
+  "status": "done",
+  "result": {
+    "answer": {
+      "answer": "p015",
+      "prices": [
+        {
+          "id": "p001",
+          "price": 189000
+        },
+        {
+          "id": "p015",
+          "price": 890000
+        },
+        {
+          "id": "p028",
+          "price": 450000
+        }
+      ],
+      "_randSample": 0.5684525808956964
+    }
+  }
+}

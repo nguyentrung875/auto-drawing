@@ -1,0 +1,20 @@
+{
+  "jobId": "001",
+  "gameId": "hi_lo_001",
+  "mechanic": "HI_LO",
+  "productIds": [
+    "p001",
+    "p042"
+  ],
+  "seed": 839271,
+  "result_variant": "in_video",
+  "status": "done",
+  "result": {
+    "answer": {
+      "answer": "higher",
+      "priceA": 189000,
+      "priceB": 2490000,
+      "_randSample": 0.5684447545264333
+    }
+  }
+}

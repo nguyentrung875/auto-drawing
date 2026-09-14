@@ -1,0 +1,40 @@
+image-search/
+__pycache__/
+.venv/
+*.pyc
+
+# Node / TypeScript
+node_modules/
+dist/
+coverage/
+
+# Runtime output (not committed) — root-anchored: `src/queue/` is source code,
+# `queue/` at the repository root is Hermes' job queue.
+/output/
+/export/
+/queue/
+/logs/
+/temp/
+/assets/
+products/*.tmp.json
+
+
+# IDE & tooling artefacts
+.vscode/
+.idea/
+.DS_Store
+
+# Large generated assets & zip files
+ai-game-video-engine_claude4.6/
+ai-game-video-engine_claude4.6.zip
+
+# BMad module output
+_bmad-output/
+
+# Next.js Studio build artefacts
+studio/.next/
+studio/.vercel/
+studio/.cache/
+.next/
+node_modules/
+studio/node_modules/

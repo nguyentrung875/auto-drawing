@@ -1,0 +1,17 @@
+{
+  "jobId": "004",
+  "gameId": "tie_fail",
+  "mechanic": "MOST_EXPENSIVE",
+  "productIds": [
+    "p001",
+    "p028"
+  ],
+  "seed": 999999,
+  "result_variant": "in_video",
+  "status": "failed",
+  "error": {
+    "code": "E_GAME_LOGIC_INVALID",
+    "field": "entities",
+    "hint": "MOST_EXPENSIVE needs 3-4 products"
+  }
+}

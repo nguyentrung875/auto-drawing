@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 540 760" width="540" height="760">
+  <rect width="540" height="760" fill="#0f211d"/>
+  <!-- Title -->
+  <text x="270" y="50" font-family="sans-serif" font-size="22" font-weight="bold" fill="#4ade80" text-anchor="middle">9 ➔ Đại bàng dũng mãnh</text>
+  <text x="270" y="80" font-family="sans-serif" font-size="13" fill="#94a3b8" text-anchor="middle">Vòng tròn số 9 làm GÁY & VÒM ĐẦU, đuôi cong số 9 làm CÁNH LỚN DỌC LƯNG.</text>
+  
+  <!-- Drawing Body -->
+  <g transform="translate(0, 30)">
+  <!-- Step 1: Số 9 · Vòng trên → ĐẦU, Đuôi cong → CÁNH LỚN GẬP DỌC THÂN -->
+  <path d="M 280 360 A 65 65 0 1 1 280 230 A 65 65 0 1 1 280 360 M 345 295 C 345 420 315 540 260 640" fill="none" stroke="#facc15" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Step 2: Mỏ khoằm đại bàng -->
+  <path d="M 215 285 L 140 315 C 160 345 200 335 220 325 Z" fill="none" stroke="#ffffff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Step 3: Mắt sắc sảo và cung mày -->
+  <path d="M 245 285 L 265 280 L 255 295 Z M 235 275 L 275 275" fill="none" stroke="#ffffff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Step 4: Lông vũ xếp lớp trên cánh -->
+  <path d="M 290 400 L 330 420 M 275 470 L 315 490 M 260 540 L 295 560" fill="none" stroke="#ffffff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Step 5: Ngực, móng vuốt và cành cây -->
+  <path d="M 220 350 C 200 440 210 550 240 620 M 120 640 L 380 640 M 225 620 L 220 645 M 245 620 L 250 645 M 260 620 L 270 645" fill="none" stroke="#ffffff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+
+  </g>
+
+  <!-- Footer Info -->
+  <rect x="20" y="690" width="500" height="50" rx="8" fill="#132420" stroke="#24443b"/>
+  <text x="35" y="720" font-family="monospace" font-size="12" fill="#facc15">Vàng: Nét Hook (9)</text>
+  <text x="230" y="720" font-family="monospace" font-size="12" fill="#ffffff">Trắng: Nét thêm vào</text>
+  <text x="440" y="720" font-family="sans-serif" font-size="12" font-weight="bold" fill="#4ade80">PASS GATE</text>
+</svg>

@@ -1,0 +1,12 @@
+{
+  "productId": "p042",
+  "name": "Robot hút bụi X10",
+  "image": "assets/p042.webp",
+  "price": 2490000,
+  "currency": "VND",
+  "source": "mock",
+  "updatedAt": "2026-09-11T00:00:00Z",
+  "category": "gia dụng",
+  "brand": "BrandB",
+  "affiliate_link": "https://shopee.vn/p042?aff=123"
+}

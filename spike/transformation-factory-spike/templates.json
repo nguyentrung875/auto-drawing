@@ -1,0 +1,417 @@
+[
+  {
+    "id": "9_to_cat",
+    "hook": "9",
+    "subject": "Mèo kiêu hãnh",
+    "en": "cat",
+    "hook_role_desc": "Vòng tròn số 9 làm ĐẦU mèo nghiêng, đuôi cong số 9 làm SỐNG LƯNG & ĐUÔI UỐN LƯỢN.",
+    "slots": {
+      "expression": ["eyes_normal", "eyes_happy", "eyes_wink", "eyes_anime"],
+      "accessories": ["none", "bow_collar", "birthday_hat", "sunglasses"],
+      "body_deform": ["normal", "chibi_cute", "chubby", "slender"]
+    },
+    "strokes": [
+      {
+        "step": 1,
+        "role": "hook",
+        "absorbed": true,
+        "part": "Số 9 · Vòng trên → ĐẦU, Đuôi cong → SỐNG LƯNG & ĐUÔI",
+        "d": "M 270 380 A 65 65 0 1 1 270 250 A 65 65 0 1 1 270 380 M 335 315 C 335 450 310 560 260 620 C 220 668 150 640 130 580",
+        "dur": 2.2,
+        "voice_vi": "Đầu tiên, viết một số 9 thật thanh thoát làm khung đầu và sống lưng nhé!"
+      },
+      {
+        "step": 2,
+        "role": "part",
+        "part": "Hai tai mèo nhọn",
+        "d": "M 220 270 L 195 200 L 255 240 M 285 240 L 345 200 L 320 270",
+        "dur": 1.2,
+        "voice_vi": "Vẽ thêm hai chiếc tai tam giác xinh xắn trên đỉnh đầu."
+      },
+      {
+        "step": 3,
+        "role": "part",
+        "part": "Mắt, mũi và râu mèo",
+        "d": "M 240 310 l 0.01 0 M 280 310 l 0.01 0 M 255 330 L 265 330 L 260 338 Z M 230 330 L 175 325 M 230 340 L 175 345 M 290 330 L 345 325 M 290 340 L 345 345",
+        "dur": 1.5,
+        "voice_vi": "Chấm đôi mắt, chiếc mũi nhỏ và ba sợi râu rung rinh hai bên má."
+      },
+      {
+        "step": 4,
+        "role": "part",
+        "part": "Ngực và chân trước",
+        "d": "M 240 375 C 220 440 215 540 215 620 L 255 620",
+        "dur": 1.1,
+        "voice_vi": "Kéo một nét cong nhẹ tạo ngực và bàn chân trước đang ngồi."
+      },
+      {
+        "step": 5,
+        "role": "part",
+        "part": "Chân sau khép nép",
+        "d": "M 260 620 L 310 620",
+        "dur": 0.6,
+        "voice_vi": "Thêm bàn chân sau là chú mèo quý tộc đã hoàn thành rồi!"
+      }
+    ]
+  },
+  {
+    "id": "9_to_dog",
+    "hook": "9",
+    "subject": "Cún con ngây thơ",
+    "en": "dog",
+    "hook_role_desc": "Vòng tròn số 9 làm VÒM ĐẦU & TAI RỦ, đuôi cong số 9 làm SỐNG LƯNG cún.",
+    "slots": {
+      "expression": ["eyes_normal", "eyes_happy", "eyes_wink", "eyes_anime"],
+      "accessories": ["none", "bow_collar", "birthday_hat", "sunglasses"],
+      "body_deform": ["normal", "chibi_cute", "chubby", "slender"]
+    },
+    "strokes": [
+      {
+        "step": 1,
+        "role": "hook",
+        "absorbed": true,
+        "part": "Số 9 · Vòng trên → ĐẦU & TAI, Đuôi cong → LƯNG TRÒN",
+        "d": "M 270 360 A 70 70 0 1 1 270 220 A 70 70 0 1 1 270 360 M 340 290 C 340 430 320 540 270 610",
+        "dur": 2.0,
+        "voice_vi": "Viết số 9 hơi nghiêng, lát nữa sẽ làm lưng và đầu chú cún."
+      },
+      {
+        "step": 2,
+        "role": "part",
+        "part": "Chiếc mõm và mũi cún",
+        "d": "M 200 300 C 140 300 140 360 215 360 M 140 320 A 10 10 0 1 1 140 340 A 10 10 0 1 1 140 320",
+        "dur": 1.4,
+        "voice_vi": "Vẽ chiếc mõm tròn nhô ra phía trước cùng chiếc mũi đen bóng."
+      },
+      {
+        "step": 3,
+        "role": "part",
+        "part": "Tai rủ và mắt cún",
+        "d": "M 310 240 C 370 280 360 380 310 370 M 235 285 l 0.01 0",
+        "dur": 1.1,
+        "voice_vi": "Thêm chiếc tai dài rủ xuống và đôi mắt ngây thơ long lanh."
+      },
+      {
+        "step": 4,
+        "role": "part",
+        "part": "Chân trước và ngực",
+        "d": "M 215 360 C 205 450 195 540 195 620 L 235 620 M 235 480 L 235 620",
+        "dur": 1.2,
+        "voice_vi": "Kéo hai nét thẳng làm hai chân trước ngắn cũn cỡn."
+      },
+      {
+        "step": 5,
+        "role": "part",
+        "part": "Đuôi ngoe nguẩy & lưỡi thè",
+        "d": "M 270 610 C 320 600 340 550 330 520 M 175 360 Q 185 390 195 360",
+        "dur": 0.9,
+        "voice_vi": "Thêm chiếc đuôi ngoe nguẩy và chiếc lưỡi hồng đáng yêu nè!"
+      }
+    ]
+  },
+  {
+    "id": "9_to_eagle",
+    "hook": "9",
+    "subject": "Đại bàng dũng mãnh",
+    "en": "eagle",
+    "hook_role_desc": "Vòng tròn số 9 làm GÁY & VÒM ĐẦU, đuôi cong số 9 làm CÁNH LỚN DỌC LƯNG.",
+    "slots": {
+      "expression": ["eyes_normal", "eyes_happy", "eyes_wink", "eyes_anime"],
+      "accessories": ["none", "crown", "sunglasses"],
+      "body_deform": ["normal", "slender"]
+    },
+    "strokes": [
+      {
+        "step": 1,
+        "role": "hook",
+        "absorbed": true,
+        "part": "Số 9 · Vòng trên → ĐẦU, Đuôi cong → CÁNH LỚN GẬP DỌC THÂN",
+        "d": "M 280 360 A 65 65 0 1 1 280 230 A 65 65 0 1 1 280 360 M 345 295 C 345 420 315 540 260 640",
+        "dur": 2.1,
+        "voice_vi": "Bắt đầu với số 9 uy lực làm sống cánh và đầu chim đại bàng."
+      },
+      {
+        "step": 2,
+        "role": "part",
+        "part": "Mỏ khoằm đại bàng",
+        "d": "M 215 285 L 140 315 C 160 345 200 335 220 325 Z",
+        "dur": 1.3,
+        "voice_vi": "Vẽ chiếc mỏ khoằm sắc bén vươn mạnh mẽ về phía trước."
+      },
+      {
+        "step": 3,
+        "role": "part",
+        "part": "Mắt sắc sảo và cung mày",
+        "d": "M 245 285 L 265 280 L 255 295 Z M 235 275 L 275 275",
+        "dur": 1.0,
+        "voice_vi": "Chấm ánh mắt tinh anh và chân mày sắc lạnh của chúa tể bầu trời."
+      },
+      {
+        "step": 4,
+        "role": "part",
+        "part": "Lông vũ xếp lớp trên cánh",
+        "d": "M 290 400 L 330 420 M 275 470 L 315 490 M 260 540 L 295 560",
+        "dur": 1.2,
+        "voice_vi": "Đi các nét vát chéo tạo lớp lông vũ dày dặn trên cánh."
+      },
+      {
+        "step": 5,
+        "role": "part",
+        "part": "Ngực, móng vuốt và cành cây",
+        "d": "M 220 350 C 200 440 210 550 240 620 M 120 640 L 380 640 M 225 620 L 220 645 M 245 620 L 250 645 M 260 620 L 270 645",
+        "dur": 1.8,
+        "voice_vi": "Vẽ ngực vạm vỡ cùng bộ móng vuốt thép bám chặt trên cành cây!"
+      }
+    ]
+  },
+  {
+    "id": "9_to_pig",
+    "hook": "9",
+    "subject": "Chú heo ủn ỉn",
+    "en": "pig",
+    "hook_role_desc": "Vòng tròn số 9 làm CHIẾC MŨI HEO TO TRÒN, đuôi cong số 9 làm BỤNG MỠ TRÒN VO.",
+    "slots": {
+      "expression": ["eyes_normal", "eyes_happy", "eyes_wink"],
+      "accessories": ["none", "bow_collar", "birthday_hat"],
+      "body_deform": ["normal", "chubby"]
+    },
+    "strokes": [
+      {
+        "step": 1,
+        "role": "hook",
+        "absorbed": true,
+        "part": "Số 9 · Vòng trên → MŨI HEO, Đuôi cong → BỤNG MỠ NỌNG CẰM",
+        "d": "M 220 400 A 50 50 0 1 1 220 300 A 50 50 0 1 1 220 400 M 270 350 C 310 400 330 480 300 560 C 260 640 180 640 150 560",
+        "dur": 2.2,
+        "voice_vi": "Viết số 9 to tròn, vòng tròn này chính là chiếc mũi heo siêu to khổng lồ!"
+      },
+      {
+        "step": 2,
+        "role": "part",
+        "part": "Hai lỗ mũi hạt đỗ",
+        "d": "M 195 350 A 6 10 0 1 1 195 349 M 235 350 A 6 10 0 1 1 235 349",
+        "dur": 0.8,
+        "voice_vi": "Chấm hai lỗ mũi heo hạt đỗ nhìn là nhận ra ngay."
+      },
+      {
+        "step": 3,
+        "role": "part",
+        "part": "Đầu tròn, tai cụp và mắt híp",
+        "d": "M 170 310 C 150 200 310 180 310 310 M 190 240 C 160 210 170 170 210 200 M 270 200 C 310 170 320 210 290 240 M 210 265 l 0.01 0 M 270 265 l 0.01 0",
+        "dur": 1.8,
+        "voice_vi": "Vẽ vòm đầu tròn xoe, đôi tai lá mít cụp xuống và hai mắt híp tít."
+      },
+      {
+        "step": 4,
+        "role": "part",
+        "part": "Đuôi xoắn lò xo & bốn chân ngắn",
+        "d": "M 300 560 C 340 550 350 510 330 500 C 310 490 320 530 350 520 M 170 600 L 170 645 M 210 610 L 210 645 M 250 610 L 250 645 M 280 580 L 280 645",
+        "dur": 1.6,
+        "voice_vi": "Thêm chiếc đuôi xoắn tít lò xo cùng 4 chiếc chân ngắn lon ton."
+      }
+    ]
+  },
+  {
+    "id": "9_to_lion",
+    "hook": "9",
+    "subject": "Sư tử bờm xù",
+    "en": "lion",
+    "hook_role_desc": "Vòng tròn số 9 làm KHUÔN MẶT TRUNG TÂM, đuôi cong số 9 làm BỜ VAI & LƯNG VẠM VỠ.",
+    "slots": {
+      "expression": ["eyes_normal", "eyes_happy", "eyes_anime"],
+      "accessories": ["none", "crown", "sunglasses"],
+      "body_deform": ["normal", "chubby", "slender"]
+    },
+    "strokes": [
+      {
+        "step": 1,
+        "role": "hook",
+        "absorbed": true,
+        "part": "Số 9 · Vòng trên → MẶT SƯ TỬ, Đuôi cong → BỜ VAI & SỐNG LƯNG",
+        "d": "M 270 390 A 60 60 0 1 1 270 270 A 60 60 0 1 1 270 390 M 330 330 C 340 430 320 520 270 610",
+        "dur": 2.0,
+        "voice_vi": "Bắt đầu với số 9 uy nghi làm tâm khuôn mặt và bờ vai sư tử."
+      },
+      {
+        "step": 2,
+        "role": "part",
+        "part": "Bộ bờm xù uy quyền",
+        "d": "M 210 330 C 150 300 160 210 220 200 C 270 150 350 170 360 230 C 410 280 390 370 350 400 C 370 470 300 490 260 450 C 200 480 160 410 210 330",
+        "dur": 2.2,
+        "voice_vi": "Vẽ những đường uốn lượn liên hoàn tạo bộ bờm xù đồ sộ bao quanh."
+      },
+      {
+        "step": 3,
+        "role": "part",
+        "part": "Khuôn mặt dũng mãnh",
+        "d": "M 255 340 L 285 340 L 270 355 Z M 270 355 Q 260 370 250 365 M 270 355 Q 280 370 290 365 M 245 310 L 255 315 L 245 320 M 295 310 L 285 315 L 295 320",
+        "dur": 1.6,
+        "voice_vi": "Vẽ chiếc mũi to bản, khoé miệng và ánh mắt sắc lẹm của chúa sơn lâm."
+      },
+      {
+        "step": 4,
+        "role": "part",
+        "part": "Chân trước và ngực vạm vỡ",
+        "d": "M 220 440 C 210 510 200 570 200 630 L 240 630 M 240 510 L 240 630",
+        "dur": 1.2,
+        "voice_vi": "Đi nét ngực cơ bắp cùng đôi chân trước sừng sững."
+      },
+      {
+        "step": 5,
+        "role": "part",
+        "part": "Đuôi dài túm lông xù",
+        "d": "M 270 610 C 330 610 360 560 350 510 C 360 490 380 490 375 515 C 370 535 345 530 350 510",
+        "dur": 1.2,
+        "voice_vi": "Cuối cùng là chiếc đuôi dài có túm lông xù kiêu hãnh!"
+      }
+    ]
+  },
+  {
+    "id": "8_to_bear",
+    "hook": "8",
+    "subject": "Gấu Teddy tròn xoe",
+    "en": "bear",
+    "hook_role_desc": "Vòng trên số 8 → ĐẦU gấu. Vòng dưới số 8 → BỤNG BÉO.",
+    "slots": {
+      "expression": ["eyes_normal", "eyes_happy", "eyes_wink", "eyes_anime"],
+      "accessories": ["none", "bow_collar", "birthday_hat", "sunglasses"],
+      "body_deform": ["normal", "chibi_cute", "chubby"]
+    },
+    "strokes": [
+      {
+        "step": 1,
+        "role": "hook",
+        "absorbed": true,
+        "part": "Số 8 · Vòng trên → ĐẦU, Vòng dưới → BỤNG",
+        "d": "M 270 450 A 70 70 0 1 1 270 310 A 70 70 0 1 1 270 450 M 270 445 A 105 105 0 1 0 270 655 A 105 105 0 1 0 270 445",
+        "dur": 2.2,
+        "voice_vi": "Viết một số 8 thật tròn trịa làm đầu và chiếc bụng béo."
+      },
+      {
+        "step": 2,
+        "role": "part",
+        "part": "Hai tai tròn",
+        "d": "M 208 348 A 30 30 0 1 1 208 288 A 30 30 0 1 1 208 348 M 332 348 A 30 30 0 1 1 332 288 A 30 30 0 1 1 332 348",
+        "dur": 1.2,
+        "voice_vi": "Vẽ hai chiếc tai tròn xoe ở hai bên đỉnh đầu."
+      },
+      {
+        "step": 3,
+        "role": "part",
+        "part": "Mắt, mũi tròn và miệng xinh",
+        "d": "M 248 368 l 0.01 0 M 292 368 l 0.01 0 M 255 398 A 15 11 0 1 1 285 398 A 15 11 0 1 1 255 398 M 270 411 Q 261 426 247 419 M 270 411 Q 279 426 293 419",
+        "dur": 1.5,
+        "voice_vi": "Chấm đôi mắt hạt cườm, chiếc mõm tròn và nụ cười mỉm đáng yêu."
+      },
+      {
+        "step": 4,
+        "role": "part",
+        "part": "Hai tay ôm bụng",
+        "d": "M 179 500 Q 139 556 173 616 M 361 500 Q 401 556 367 616",
+        "dur": 1.2,
+        "voice_vi": "Thêm hai cánh tay mũm mĩm ôm lấy chiếc bụng tròn."
+      },
+      {
+        "step": 5,
+        "role": "part",
+        "part": "Hai bàn chân béo",
+        "d": "M 192 652 A 30 20 0 1 1 252 652 A 30 20 0 1 1 192 652 M 288 652 A 30 20 0 1 1 348 652 A 30 20 0 1 1 288 652",
+        "dur": 1.0,
+        "voice_vi": "Và hai bàn chân béo tròn là chú gấu Teddy đã sẵn sàng!"
+      }
+    ]
+  },
+  {
+    "id": "2_to_swan",
+    "hook": "2",
+    "subject": "Thiên nga lướt sóng",
+    "en": "swan",
+    "hook_role_desc": "Nét cong trên số 2 → ĐẦU & CỔ. Nét ngang số 2 → MẶT NƯỚC / BỤNG.",
+    "slots": {
+      "expression": ["eyes_normal", "eyes_happy"],
+      "accessories": ["none", "crown"],
+      "body_deform": ["normal", "slender"]
+    },
+    "strokes": [
+      {
+        "step": 1,
+        "role": "hook",
+        "absorbed": true,
+        "part": "Số 2 → ĐẦU, CỔ UỐN LƯỢN & ĐƯỜNG NƯỚC",
+        "d": "M 190 360 C 190 292 288 282 306 336 C 322 384 236 452 196 566 L 372 566",
+        "dur": 2.2,
+        "voice_vi": "Viết số 2 uốn lượn mềm mại tạo dáng đầu, chiếc cổ dài và mặt nước."
+      },
+      {
+        "step": 2,
+        "role": "part",
+        "part": "Lưng và thân thiên nga",
+        "d": "M 196 566 C 214 496 306 474 372 512 C 398 528 396 552 372 566",
+        "dur": 1.4,
+        "voice_vi": "Vẽ đường cong sống lưng và thân mình kiêu sa."
+      },
+      {
+        "step": 3,
+        "role": "part",
+        "part": "Cánh và đuôi vũ nữ",
+        "d": "M 244 546 C 276 512 336 512 362 542 C 330 562 278 564 244 546 Z M 368 514 C 402 498 424 474 432 444",
+        "dur": 1.3,
+        "voice_vi": "Thêm chiếc cánh khép hờ và đuôi lông vũ cong vút."
+      },
+      {
+        "step": 4,
+        "role": "part",
+        "part": "Mỏ, mắt và gợn sóng nước",
+        "d": "M 302 320 L 344 334 L 300 346 Z M 286 314 l 0.01 0 M 132 600 Q 172 588 212 600 M 300 612 Q 348 600 396 612",
+        "dur": 1.5,
+        "voice_vi": "Điểm chiếc mỏ cam, ánh mắt dịu dàng và gợn sóng nước lấp lánh."
+      }
+    ]
+  },
+  {
+    "id": "99_to_tiger_rejected",
+    "hook": "99",
+    "subject": "Hổ (Ví dụ REJECT - Thất bại)",
+    "en": "tiger_rejected",
+    "hook_role_desc": "Đề xuất bậy: 2 vòng số 9 làm tai, nhưng 2 đuôi số 9 đâm xuyên má hổ không thành cái gì.",
+    "slots": {},
+    "strokes": [
+      {
+        "step": 1,
+        "role": "hook",
+        "absorbed": false,
+        "orphan": "đuôi số 9 bên trái đâm xuyên qua má hổ",
+        "part": "Số 9 trái mồ côi",
+        "d": "M 240 396 A 60 60 0 1 1 253 340 C 258 420 246 478 232 528",
+        "dur": 1.5,
+        "voice_vi": "Viết số 9 thứ nhất."
+      },
+      {
+        "step": 2,
+        "role": "hook",
+        "absorbed": false,
+        "orphan": "đuôi số 9 bên phải thừa ra ngoài đầu hổ",
+        "part": "Số 9 phải mồ côi",
+        "d": "M 390 396 A 60 60 0 1 1 403 340 C 408 420 396 478 382 528",
+        "dur": 1.5,
+        "voice_vi": "Viết số 9 thứ hai."
+      },
+      {
+        "step": 3,
+        "role": "part",
+        "part": "Vòng đầu đè lên số 9",
+        "d": "M 175 450 A 95 95 0 1 1 365 450 A 95 95 0 1 1 175 450",
+        "dur": 1.7,
+        "voice_vi": "Vẽ hình tròn đè lên làm đầu."
+      },
+      {
+        "step": 4,
+        "role": "part",
+        "part": "Mắt mũi miệng",
+        "d": "M 238 440 l 0.01 0 M 302 440 l 0.01 0 M 258 478 L 282 478 L 270 492 Z M 270 492 Q 258 508 244 500 M 270 492 Q 282 508 296 500",
+        "dur": 1.4,
+        "voice_vi": "Thêm mặt hổ."
+      }
+    ]
+  }
+]
