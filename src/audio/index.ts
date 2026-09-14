@@ -12,6 +12,12 @@ export {
 } from './AudioEngine';
 export { FormantViEngine } from './FormantViEngine';
 export type { FormantViOptions } from './FormantViEngine';
+export {
+  EdgeTtsEngine,
+  EDGE_DEFAULT_VOICE,
+  EDGE_TTS_FALLBACK_WARNING,
+} from './EdgeTtsEngine';
+export type { EdgeTtsOptions } from './EdgeTtsEngine';
 export type {
   AudioSegment,
   AudioWarning,

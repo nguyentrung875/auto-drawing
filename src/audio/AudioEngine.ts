@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { EdgeTtsEngine } from './EdgeTtsEngine';
 import { FormantViEngine } from './FormantViEngine';
 import type { GameJson, Timeline } from '../types/game';
 
@@ -334,7 +335,7 @@ export class AudioEngine {
     return new AudioEngine().synthesize(game, timeline);
   }
 
-  constructor(adapter: IAudioEngine = new ViPiperEngine()) {
+  constructor(adapter: IAudioEngine = new EdgeTtsEngine()) {
     this.adapter = adapter;
   }
 

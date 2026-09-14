@@ -1,6 +1,6 @@
 import { spawn } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { existsSync, mkdirSync, readFileSync, statSync, unlinkSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, readFileSync, statSync, unlinkSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { MsEdgeTTS, OUTPUT_FORMAT } from 'msedge-tts';
@@ -23,6 +23,8 @@ export interface EdgeTtsOptions {
   cacheDir?: string;
   /** Network timeout in milliseconds. Defaults to 10,000ms. */
   timeoutMs?: number;
+  /** Target duration ceiling in seconds (e.g. 1.9s for Single Round FR-9). */
+  maxDuration?: number;
   /** Fall back to FormantViEngine when Edge TTS fails. Defaults to true. */
   formantFallback?: boolean;
 }
@@ -47,6 +49,21 @@ function wavDuration(filePath: string): number | null {
   }
 }
 
+function buildAtempoFilter(factor: number): string {
+  const filters: string[] = [];
+  let remaining = factor;
+  while (remaining > 2.0) {
+    filters.push('atempo=2.0');
+    remaining /= 2.0;
+  }
+  while (remaining < 0.5) {
+    filters.push('atempo=0.5');
+    remaining /= 0.5;
+  }
+  filters.push(`atempo=${Number(remaining.toFixed(3))}`);
+  return filters.join(',');
+}
+
 function safeScript(script: string): string {
   return script.trim().replace(/\s+/g, ' ');
 }
@@ -59,7 +76,7 @@ export class EdgeTtsEngine implements IAudioEngine {
     this.options = options;
   }
 
-  async synthesizeVoice(script: string, _options?: VoiceOptions): Promise<VoiceResult> {
+  async synthesizeVoice(script: string, voiceOptions?: VoiceOptions): Promise<VoiceResult> {
     this.warnings.length = 0;
     const normalized = safeScript(script);
     const voice = this.options.voice ?? process.env.EDGE_TTS_VOICE ?? EDGE_DEFAULT_VOICE;
@@ -72,8 +89,9 @@ export class EdgeTtsEngine implements IAudioEngine {
       this.options.cacheDir ?? path.join(os.tmpdir(), 'auto-drawing-audio');
     mkdirSync(cacheDir, { recursive: true });
 
+    const maxDur = voiceOptions?.targetDuration ?? this.options.maxDuration;
     const digest = createHash('sha256')
-      .update(`${voice}:${rate}:${pitch}:${volume}:${normalized}`, 'utf8')
+      .update(`${voice}:${rate}:${pitch}:${volume}:${maxDur ?? 'none'}:${normalized}`, 'utf8')
       .digest('hex')
       .slice(0, 16);
 
@@ -86,7 +104,7 @@ export class EdgeTtsEngine implements IAudioEngine {
         if (stats.size > 44) {
           const duration = wavDuration(voiceWavPath);
           if (duration !== null && duration > 0) {
-            return { voiceWavPath, duration };
+            return { voiceWavPath, duration: Number(duration.toFixed(3)) };
           }
         }
       } catch {
@@ -162,9 +180,44 @@ export class EdgeTtsEngine implements IAudioEngine {
       await Promise.race([synthesizePromise, timeoutPromise]);
 
       if (existsSync(voiceWavPath)) {
-        const duration = wavDuration(voiceWavPath);
+        let duration = wavDuration(voiceWavPath);
         if (duration !== null && duration > 0) {
-          return { voiceWavPath, duration };
+          if (typeof maxDur === 'number' && maxDur > 0 && duration > maxDur) {
+            const tempo = (duration / maxDur) * 1.05;
+            if (tempo > 1.0) {
+              const tempoWavPath = `${voiceWavPath}.tempo.wav`;
+              const tempoProcess = spawn('ffmpeg', [
+                '-y',
+                '-v',
+                'error',
+                '-i',
+                voiceWavPath,
+                '-filter:a',
+                buildAtempoFilter(tempo),
+                '-ac',
+                '1',
+                '-ar',
+                '24000',
+                tempoWavPath,
+              ]);
+              await new Promise<void>((resolve, reject) => {
+                tempoProcess.once('close', (code) => {
+                  if (code === 0 && existsSync(tempoWavPath)) {
+                    copyFileSync(tempoWavPath, voiceWavPath);
+                    try {
+                      unlinkSync(tempoWavPath);
+                    } catch {}
+                    resolve();
+                  } else {
+                    reject(new Error(`atempo ffmpeg exited with ${code}`));
+                  }
+                });
+                tempoProcess.once('error', reject);
+              });
+              duration = wavDuration(voiceWavPath) ?? duration;
+            }
+          }
+          return { voiceWavPath, duration: Number(duration.toFixed(3)) };
         }
       }
       throw new Error('Synthesized WAV file is empty or corrupted');

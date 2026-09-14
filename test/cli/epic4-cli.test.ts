@@ -289,7 +289,7 @@ describe('game batch (Story 4.3)', () => {
     });
     expect(sm1.result!.report).toMatchObject({ total: 50, passed: 49, failed: 1 });
     expect(sm1.exitCode).toBe(0);
-  });
+  }, 40000);
 });
 
 describe('game queue status / game logs / game config', () => {

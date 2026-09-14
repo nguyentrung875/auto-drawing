@@ -54,4 +54,13 @@ describe('EdgeTtsEngine', () => {
     expect(result.duration).toBeGreaterThan(0);
     expect(engine.warnings.some((w) => w.code === EDGE_TTS_FALLBACK_WARNING)).toBe(true);
   }, 15000);
+
+  it('auto-scales speech with atempo when duration exceeds maxDuration', async () => {
+    const engine = new EdgeTtsEngine();
+    const longScript = 'Chào mừng các bạn đã đến với kênh thử thách đoán giá đồ uống siêu hấp dẫn ngày hôm nay';
+    const result = await engine.synthesizeVoice(longScript, { targetDuration: 1.9 });
+    expect(result.duration).toBeLessThanOrEqual(1.9);
+    expect(result.duration).toBeGreaterThan(0.5);
+    expect(existsSync(result.voiceWavPath)).toBe(true);
+  }, 15000);
 });
