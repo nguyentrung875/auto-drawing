@@ -1,10 +1,14 @@
 import seedrandom from 'seedrandom';
 import type { Product } from '../../product/schema';
 import type { ChallengeScoreVector } from '../types';
+import type { ViralScorerWeights } from '../../analytics/types';
+import { DEFAULT_VIRAL_WEIGHTS } from '../../analytics/types';
 
 export type TwistType = 'type_a_size_disparity' | 'type_b_reverse_trap' | 'type_c_real_deal';
 
 export class ViralScorer {
+  constructor(private readonly defaultWeights: ViralScorerWeights = DEFAULT_VIRAL_WEIGHTS) {}
+
   computePerceptionConflict(products: Product[]): number {
     let maxConflict = 0.1;
     for (const p of products) {
@@ -48,6 +52,24 @@ export class ViralScorer {
     };
   }
 
+  /**
+   * Section 4.2: PredictedViralScore composite formula using calibrated or default weights.
+   */
+  computePredictedViralScore(
+    scoreVector: ChallengeScoreVector,
+    weights: ViralScorerWeights = this.defaultWeights,
+  ): number {
+    const raw =
+      weights.revealImpact * scoreVector.revealImpact +
+      weights.perceptionConflict * scoreVector.perceptionConflict +
+      weights.curiosity * scoreVector.curiosity +
+      weights.debate * scoreVector.debate +
+      weights.identity * scoreVector.identity +
+      weights.familiarity * scoreVector.familiarity;
+
+    return Math.max(0.0, Math.min(1.0, Math.round(raw * 1000) / 1000));
+  }
+
   getTwistType(seed: number): TwistType {
     const rng = seedrandom(seed.toString());
     const val = rng();
@@ -56,3 +78,4 @@ export class ViralScorer {
     return 'type_c_real_deal';
   }
 }
+

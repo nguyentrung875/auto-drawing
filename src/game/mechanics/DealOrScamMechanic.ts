@@ -10,6 +10,9 @@ import { createRng } from '../rng';
 import { buildBaseGame, groupDigits, layoutCards } from './shared';
 import type { IMechanic, MechanicInput, MechanicOutput } from './types';
 import { STAGE_HEIGHT, STAGE_WIDTH } from './types';
+import { DecisionEngine } from '../../challenge/engines/DecisionEngine';
+
+const decisionEngine = new DecisionEngine();
 
 export const DEAL_OR_SCAM_CHOICES = [
   { id: 'deal', label: 'DEAL HỜI MÚC NGAY' },
@@ -21,21 +24,7 @@ export const DEAL_OR_SCAM_CHOICES = [
  * Uses product.originalPrice if present, otherwise synthesizes deterministically based on seed.
  */
 export function resolveOriginalPrice(product: Product, seed: number): number {
-  if (product.originalPrice && product.originalPrice > 0) {
-    return product.originalPrice;
-  }
-  const rng = createRng(seed, 'deal_or_scam:original_price');
-  const isDeal = rng() < 0.5;
-  if (isDeal) {
-    // 15% to 40% discount
-    const discountRatio = 0.15 + rng() * 0.25;
-    const raw = Math.round(product.price / (1 - discountRatio));
-    return Math.max(product.price + 10000, Math.round(raw / 1000) * 1000);
-  } else {
-    // Impossible discount: 80% to 95% discount (multiplier 5x to 15x)
-    const multiplier = 5 + Math.floor(rng() * 10);
-    return product.price * multiplier;
-  }
+  return decisionEngine.resolveOriginalPrice(product, seed);
 }
 
 /**
@@ -43,42 +32,7 @@ export function resolveOriginalPrice(product: Product, seed: number): number {
  * Rule: discount >= 80% on tech/luxury or price < 50,000 on high-value item => 'scam', otherwise 'deal'.
  */
 export function classifyDealOrScam(product: Product, originalPrice: number): 'deal' | 'scam' {
-  const price = product.price;
-  if (originalPrice <= price) {
-    return 'scam';
-  }
-
-  const discount = (originalPrice - price) / originalPrice;
-  const category = (product.category ?? '').toLowerCase();
-  const perceived = product.perceivedValue;
-  const isTechOrLuxury =
-    category.includes('tech') ||
-    category.includes('elec') ||
-    category.includes('phone') ||
-    category.includes('laptop') ||
-    category.includes('audio') ||
-    category.includes('luxury') ||
-    perceived === 'luxury' ||
-    perceived === 'premium';
-
-  const isHighValue = originalPrice >= 500000 || isTechOrLuxury;
-
-  // discount >= 80% on tech/luxury
-  if (discount >= 0.80 && isTechOrLuxury) {
-    return 'scam';
-  }
-
-  // price < 50,000 on high-value item
-  if (price < 50000 && isHighValue) {
-    return 'scam';
-  }
-
-  // General extreme discount >= 85% is a scam
-  if (discount >= 0.85) {
-    return 'scam';
-  }
-
-  return 'deal';
+  return decisionEngine.classifyDealOrScam(product, originalPrice);
 }
 
 export class DealOrScamMechanic implements IMechanic {

@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { NumericEngine } from '../../src/challenge/engines/NumericEngine';
 import { KnapsackEngine } from '../../src/challenge/engines/KnapsackEngine';
+import { DecisionEngine } from '../../src/challenge/engines/DecisionEngine';
 import type { Product } from '../../src/product/schema';
 
 describe('Primitive Difficulty Engines', () => {
@@ -49,4 +50,30 @@ describe('Primitive Difficulty Engines', () => {
     expect(result.isUnderBudget).toBe(true);
     expect(result.deltaPercent).toBeCloseTo(10000 / 300000, 3);
   });
+
+  it('DecisionEngine resolves original price and classifies deal vs scam', () => {
+    const engine = new DecisionEngine();
+    const techProduct: Product = {
+      ...p1,
+      name: 'Tai nghe Bluetooth Pro',
+      category: 'tech',
+      price: 50000, // cực rẻ cho tech
+      originalPrice: 1000000, // giảm 95% -> scam
+    };
+    const evaluation = engine.evaluateOffer(techProduct, techProduct.originalPrice);
+    expect(evaluation.classification).toBe('scam');
+    expect(evaluation.discountPercent).toBe(95);
+
+    const regularProduct: Product = {
+      ...p1,
+      name: 'Nồi inox 3 đáy',
+      category: 'home',
+      price: 280000,
+      originalPrice: 350000, // giảm 20% -> deal
+    };
+    const eval2 = engine.evaluateOffer(regularProduct, regularProduct.originalPrice);
+    expect(eval2.classification).toBe('deal');
+    expect(eval2.discountPercent).toBe(20);
+  });
 });
+

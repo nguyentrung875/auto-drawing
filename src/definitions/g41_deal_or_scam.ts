@@ -7,7 +7,7 @@ export const g41Definition: GameDefinitionDSL = {
   targetDuration: 38.0,
   inputs: {
     countPerRound: 1,
-    requiredFields: ['productId', 'name', 'price', 'image', 'originalPrice'],
+    requiredFields: ['productId', 'name', 'price', 'image'],
   },
   rounds: [
     {
