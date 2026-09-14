@@ -1,0 +1,458 @@
+[
+  {
+    "id": "v4",
+    "name": "v4 (Champion AM)",
+    "desc": "Bản chuẩn: bilinear + blur nhẹ + gamma 0.7",
+    "turns": 100,
+    "amp": 3.2,
+    "mode": "am",
+    "folder": "output/v4",
+    "inputImg": "input/portrait.png",
+    "isChampion": true,
+    "stats": {
+      "s0_input": {
+        "std": 0.2486,
+        "dark_frac": 0.6098,
+        "edge": 0.0153,
+        "colorful": 0.0042,
+        "pass": true,
+        "reasons": []
+      },
+      "points": 14000,
+      "length_px": 79660.3,
+      "d_chars": 195163,
+      "m_commands": 1,
+      "realtime_s": 318.6,
+      "timelapse_45s": 7.08,
+      "likeness_S2": 0.2659
+    },
+    "group": "rnd"
+  },
+  {
+    "id": "v1",
+    "name": "v1 (Baseline Low-Amp)",
+    "desc": "turns 90, amp 2.2 — mờ nhạt",
+    "turns": 90,
+    "amp": 2.2,
+    "mode": "am",
+    "folder": "output/v1",
+    "inputImg": "input/portrait.png",
+    "stats": {
+      "points": 8100,
+      "length_px": 71353.1,
+      "d_chars": 112916,
+      "m_commands": 1,
+      "realtime_s": 285.4,
+      "timelapse_45s": 6.34,
+      "likeness_S2": 0.2343
+    },
+    "group": "rnd"
+  },
+  {
+    "id": "v2",
+    "name": "v2 (Nearest Sampling)",
+    "desc": "turns 100, amp 4.0, nearest — bậc thang xấu",
+    "turns": 100,
+    "amp": 4,
+    "mode": "am",
+    "folder": "output/v2",
+    "inputImg": "input/portrait.png",
+    "stats": {
+      "points": 9000,
+      "length_px": 79935.3,
+      "d_chars": 125462,
+      "m_commands": 1,
+      "realtime_s": 319.7,
+      "timelapse_45s": 7.11,
+      "likeness_S2": 0.2431
+    },
+    "group": "rnd"
+  },
+  {
+    "id": "v5",
+    "name": "v5 (FM Zigzag - Bẫy Metric)",
+    "desc": "FM 48 vòng/turn — moiré thêu, S2 cao nhưng mắt thấy tệ",
+    "turns": 100,
+    "amp": 0,
+    "mode": "fm",
+    "folder": "output/v5",
+    "inputImg": "input/portrait.png",
+    "stats": {
+      "points": 25920,
+      "length_px": 77759.8,
+      "d_chars": 361337,
+      "m_commands": 1,
+      "realtime_s": 311,
+      "timelapse_45s": 6.91,
+      "likeness_S2": 0.2846
+    },
+    "group": "rnd"
+  },
+  {
+    "id": "val_cat",
+    "name": "Mèo (Cat)",
+    "key": "cat",
+    "desc": "Texture lông mịn — 100 turns thiếu phân giải",
+    "folder": "output/validate/cat",
+    "inputImg": "input/val_cat.png",
+    "stats": {
+      "s0_input": {
+        "std": 0.1788,
+        "dark_frac": 0.7605,
+        "edge": 0.0358,
+        "pass": true,
+        "reasons": []
+      },
+      "points": 14000,
+      "length_px": 79714.7,
+      "d_chars": 195166,
+      "m_commands": 1,
+      "realtime_s": 318.9,
+      "timelapse_45s": 7.09,
+      "likeness_S2": 0.2417
+    },
+    "group": "validation"
+  },
+  {
+    "id": "val_color_man",
+    "name": "Ảnh màu nam (Color Man)",
+    "key": "color_man",
+    "desc": "Test ảnh màu chuyển luminance",
+    "folder": "output/validate/color_man",
+    "inputImg": "input/val_color_man.png",
+    "stats": {
+      "s0_input": {
+        "std": 0.2246,
+        "dark_frac": 0.7684,
+        "edge": 0.0101,
+        "colorful": 0.1714,
+        "pass": true,
+        "reasons": []
+      },
+      "points": 14000,
+      "length_px": 79393.3,
+      "d_chars": 195168,
+      "m_commands": 1,
+      "realtime_s": 317.6,
+      "timelapse_45s": 7.06,
+      "likeness_S2": 0.2461
+    },
+    "group": "validation"
+  },
+  {
+    "id": "val_color_ok",
+    "name": "Ảnh màu chuẩn (Color OK)",
+    "key": "color_ok",
+    "desc": "Ảnh màu contrast tốt",
+    "folder": "output/validate/color_ok",
+    "inputImg": "input/val_color_ok.png",
+    "stats": {
+      "s0_input": {
+        "std": 0.1677,
+        "dark_frac": 0.7672,
+        "edge": 0.0164,
+        "colorful": 0.1704,
+        "pass": true,
+        "reasons": []
+      },
+      "points": 14000,
+      "length_px": 79487.1,
+      "d_chars": 195160,
+      "m_commands": 1,
+      "realtime_s": 317.9,
+      "timelapse_45s": 7.07,
+      "likeness_S2": 0.2305
+    },
+    "group": "validation"
+  },
+  {
+    "id": "val_elder",
+    "name": "Cụ già (Elder)",
+    "key": "elder",
+    "desc": "Chân dung nhiều nếp nhăn — hơi mờ viền",
+    "folder": "output/validate/elder",
+    "inputImg": "input/val_elder.png",
+    "stats": {
+      "s0_input": {
+        "std": 0.2047,
+        "dark_frac": 0.7111,
+        "edge": 0.0224,
+        "pass": true,
+        "reasons": []
+      },
+      "points": 14000,
+      "length_px": 79547.2,
+      "d_chars": 195162,
+      "m_commands": 1,
+      "realtime_s": 318.2,
+      "timelapse_45s": 7.07,
+      "likeness_S2": 0.2527
+    },
+    "group": "validation"
+  },
+  {
+    "id": "val_fog",
+    "name": "Sương mù (Fog)",
+    "key": "fog",
+    "desc": "Bẫy: phẳng, không tương phản (std=0.043)",
+    "folder": "output/validate/fog",
+    "inputImg": "input/val_fog.png",
+    "stats": {
+      "s0_input": {
+        "std": 0.0432,
+        "dark_frac": 0,
+        "edge": 0.0032,
+        "pass": false,
+        "reasons": [
+          "flat(std=0.043)",
+          "no-dark-bg(0%)"
+        ]
+      },
+      "points": 14000,
+      "length_px": 79752.3,
+      "d_chars": 195128,
+      "m_commands": 1,
+      "realtime_s": 319,
+      "timelapse_45s": 7.09,
+      "likeness_S2": 0.0084
+    },
+    "group": "validation"
+  },
+  {
+    "id": "val_group",
+    "name": "Nhóm 4 người (Group)",
+    "key": "group",
+    "desc": "Bẫy: nền sáng 19%, nhiều mặt nhỏ",
+    "folder": "output/validate/group",
+    "inputImg": "input/val_group.png",
+    "stats": {
+      "s0_input": {
+        "std": 0.2981,
+        "dark_frac": 0.1931,
+        "edge": 0.0504,
+        "pass": false,
+        "reasons": [
+          "no-dark-bg(19%)"
+        ]
+      },
+      "points": 14000,
+      "length_px": 79835.9,
+      "d_chars": 195148,
+      "m_commands": 1,
+      "realtime_s": 319.3,
+      "timelapse_45s": 7.1,
+      "likeness_S2": 0.2289
+    },
+    "group": "validation"
+  },
+  {
+    "id": "val_isoluminant",
+    "name": "Đồng mức xám (Isoluminant)",
+    "key": "isoluminant",
+    "desc": "Bẫy màu: đỏ xanh rực rỡ nhưng cùng xám",
+    "folder": "output/validate/isoluminant",
+    "inputImg": "input/val_isoluminant.png",
+    "stats": {
+      "s0_input": {
+        "std": 0.1157,
+        "dark_frac": 0.4817,
+        "edge": 0.0222,
+        "colorful": 0.4211,
+        "pass": false,
+        "reasons": [
+          "no-dark-bg(48%)",
+          "color-loss(color=0.42,luma-std=0.116)"
+        ]
+      },
+      "points": 14000,
+      "length_px": 79597,
+      "d_chars": 195144,
+      "m_commands": 1,
+      "realtime_s": 318.4,
+      "timelapse_45s": 7.08,
+      "likeness_S2": 0.0602
+    },
+    "group": "validation"
+  },
+  {
+    "id": "val_man",
+    "name": "Chân dung nam (Man)",
+    "key": "man",
+    "desc": "Nền tối, độ tương phản chuẩn — rõ nhất",
+    "folder": "output/validate/man",
+    "inputImg": "input/val_man.png",
+    "stats": {
+      "s0_input": {
+        "std": 0.2168,
+        "dark_frac": 0.7463,
+        "edge": 0.0151,
+        "pass": true,
+        "reasons": []
+      },
+      "points": 14000,
+      "length_px": 79491,
+      "d_chars": 195167,
+      "m_commands": 1,
+      "realtime_s": 318,
+      "timelapse_45s": 7.07,
+      "likeness_S2": 0.3145
+    },
+    "group": "validation"
+  },
+  {
+    "id": "val_phone",
+    "name": "Ảnh điện thoại (Phone)",
+    "key": "phone",
+    "desc": "Chụp điện thoại nền lộn xộn",
+    "folder": "output/validate/phone",
+    "inputImg": "input/val_phone.png",
+    "stats": {
+      "s0_input": {
+        "std": 0.2511,
+        "dark_frac": 0.297,
+        "edge": 0.0432,
+        "colorful": 0.2777,
+        "pass": false,
+        "reasons": [
+          "no-dark-bg(30%)"
+        ]
+      },
+      "points": 14000,
+      "length_px": 79927.6,
+      "d_chars": 195131,
+      "m_commands": 1,
+      "realtime_s": 319.7,
+      "timelapse_45s": 7.1,
+      "likeness_S2": 0.2046
+    },
+    "group": "validation"
+  },
+  {
+    "id": "val_phone_nobg",
+    "name": "Điện thoại xóa phông (Phone NoBG)",
+    "key": "phone_nobg",
+    "desc": "Chụp đt tách nền đen",
+    "folder": "output/validate/phone_nobg",
+    "inputImg": "input/val_phone_nobg.png",
+    "stats": {
+      "s0_input": {
+        "std": 0.2408,
+        "dark_frac": 0.6699,
+        "edge": 0.0169,
+        "pass": true,
+        "reasons": []
+      },
+      "points": 14000,
+      "length_px": 79700.1,
+      "d_chars": 195144,
+      "m_commands": 1,
+      "realtime_s": 318.8,
+      "timelapse_45s": 7.08,
+      "likeness_S2": 0.1792
+    },
+    "group": "validation"
+  },
+  {
+    "id": "val_phone_rescue",
+    "name": "Điện thoại căn chỉnh (Phone Rescue)",
+    "key": "phone_rescue",
+    "desc": "Chụp đt cân lại histogram + contrast",
+    "folder": "output/validate/phone_rescue",
+    "inputImg": "input/val_phone_rescue.png",
+    "stats": {
+      "s0_input": {
+        "std": 0.1767,
+        "dark_frac": 0.6553,
+        "edge": 0.0177,
+        "pass": true,
+        "reasons": []
+      },
+      "points": 14000,
+      "length_px": 79805.3,
+      "d_chars": 195141,
+      "m_commands": 1,
+      "realtime_s": 319.2,
+      "timelapse_45s": 7.09,
+      "likeness_S2": 0.2086
+    },
+    "group": "validation"
+  },
+  {
+    "id": "val_profile",
+    "name": "Góc nghiêng tối (Profile)",
+    "key": "profile",
+    "desc": "Bẫy: low-key 85% tối, rim light mỏng",
+    "folder": "output/validate/profile",
+    "inputImg": "input/val_profile.png",
+    "stats": {
+      "s0_input": {
+        "std": 0.1552,
+        "dark_frac": 0.8477,
+        "edge": 0.0123,
+        "pass": true,
+        "reasons": []
+      },
+      "points": 14000,
+      "length_px": 79421.5,
+      "d_chars": 195158,
+      "m_commands": 1,
+      "realtime_s": 317.7,
+      "timelapse_45s": 7.06,
+      "likeness_S2": 0.216
+    },
+    "group": "validation"
+  },
+  {
+    "id": "val_rose",
+    "name": "Hoa hồng (Rose)",
+    "key": "rose",
+    "desc": "Vật thể đơn close-up — rõ hoa",
+    "folder": "output/validate/rose",
+    "inputImg": "input/val_rose.png",
+    "stats": {
+      "s0_input": {
+        "std": 0.2803,
+        "dark_frac": 0.6393,
+        "edge": 0.0211,
+        "pass": true,
+        "reasons": []
+      },
+      "points": 14000,
+      "length_px": 79611.9,
+      "d_chars": 195161,
+      "m_commands": 1,
+      "realtime_s": 318.4,
+      "timelapse_45s": 7.08,
+      "likeness_S2": 0.2664
+    },
+    "group": "validation"
+  },
+  {
+    "id": "val_street",
+    "name": "Phố đông (Street)",
+    "key": "street",
+    "desc": "Bẫy: nền sáng, chi tiết hỗn độn",
+    "folder": "output/validate/street",
+    "inputImg": "input/val_street.png",
+    "stats": {
+      "s0_input": {
+        "std": 0.289,
+        "dark_frac": 0.432,
+        "edge": 0.0722,
+        "pass": false,
+        "reasons": [
+          "no-dark-bg(43%)",
+          "cluttered(edge=0.072)"
+        ]
+      },
+      "points": 14000,
+      "length_px": 79693.2,
+      "d_chars": 195154,
+      "m_commands": 1,
+      "realtime_s": 318.8,
+      "timelapse_45s": 7.08,
+      "likeness_S2": 0.1201
+    },
+    "group": "validation"
+  }
+]

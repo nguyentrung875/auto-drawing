@@ -1,0 +1,1207 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Single-Line Spiral Art — Spike Explorer & Player</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-main: #0c1412;
+    --bg-card: #13221e;
+    --bg-card-header: #182c27;
+    --border-color: #24443b;
+    --border-focus: #3b8266;
+    --accent: #4ade80;
+    --accent-hover: #22c55e;
+    --accent-glow: rgba(74, 222, 128, 0.25);
+    --gold: #facc15;
+    --text-primary: #f1f5f9;
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
+    --danger: #f87171;
+    --warning: #fbbf24;
+    --success: #4ade80;
+    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, Menlo, Consolas, monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg-main);
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    line-height: 1.5;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  header {
+    background: #09100e;
+    border-bottom: 1px solid var(--border-color);
+    padding: 14px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 14px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(8px);
+  }
+
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .brand-icon {
+    width: 36px; height: 36px; border-radius: 10px;
+    background: linear-gradient(135deg, #182c27, #24443b);
+    border: 1px solid var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; color: var(--accent);
+    box-shadow: 0 0 12px var(--accent-glow);
+  }
+  .brand-info h1 { font-size: 16px; font-weight: 700; color: #fff; letter-spacing: -0.01em; }
+  .brand-info p { font-size: 11.5px; color: var(--text-secondary); }
+
+  .header-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .status-badge {
+    background: rgba(74, 222, 128, 0.12);
+    border: 1px solid rgba(74, 222, 128, 0.35);
+    color: var(--accent);
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 20px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .status-badge i { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); display: inline-block; box-shadow: 0 0 8px var(--accent); }
+
+  .btn-link {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    padding: 5px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.15s ease;
+  }
+  .btn-link:hover {
+    color: #fff;
+    border-color: var(--accent);
+    background: var(--bg-card-header);
+  }
+
+  .nav-tabs {
+    display: flex;
+    gap: 4px;
+    background: #09100e;
+    border-bottom: 1px solid var(--border-color);
+    padding: 8px 24px 0 24px;
+  }
+  .tab-btn {
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--text-secondary);
+    padding: 10px 16px;
+    font-size: 13.5px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .tab-btn:hover { color: #fff; }
+  .tab-btn.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+  .tab-badge {
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 10px;
+    background: var(--bg-card-header);
+    color: var(--text-muted);
+  }
+  .tab-btn.active .tab-badge {
+    background: rgba(74, 222, 128, 0.2);
+    color: var(--accent);
+  }
+
+  main { flex: 1; padding: 24px; max-width: 1400px; margin: 0 auto; width: 100%; }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; animation: fadeIn 0.2s ease-in-out; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* --- TAB PLAYER --- */
+  .player-grid {
+    display: grid;
+    grid-template-columns: minmax(360px, 1fr) 340px;
+    gap: 24px;
+  }
+  @media (max-width: 1024px) {
+    .player-grid { grid-template-columns: 1fr; }
+  }
+
+  .player-stage-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .stage-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .selector-group { display: flex; align-items: center; gap: 8px; }
+  .selector-group label { font-size: 12.5px; color: var(--text-secondary); font-weight: 500; }
+  select.sample-select {
+    background: var(--bg-main);
+    border: 1px solid var(--border-color);
+    color: #fff;
+    padding: 7px 14px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-family: inherit;
+    font-weight: 500;
+    outline: none;
+    cursor: pointer;
+  }
+  select.sample-select:focus { border-color: var(--accent); }
+
+  .view-modes { display: flex; gap: 6px; }
+  .btn-mode {
+    background: var(--bg-main);
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .btn-mode.active, .btn-mode:hover {
+    color: #fff;
+    border-color: var(--accent);
+    background: var(--bg-card-header);
+  }
+
+  .stage-viewports {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    min-height: 480px;
+    background: #09120f;
+    border-radius: 10px;
+    padding: 16px;
+    border: 1px dashed #1e3831;
+    position: relative;
+  }
+
+  .canvas-frame {
+    width: 320px;
+    height: 450px;
+    border: 2px solid #24443b;
+    border-radius: 10px;
+    overflow: hidden;
+    background: #0f211d;
+    position: relative;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    display: flex;
+    flex-direction: column;
+  }
+  .canvas-frame svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+    background: #0f211d;
+  }
+  .canvas-frame img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .frame-caption {
+    position: absolute;
+    bottom: 8px;
+    left: 8px;
+    right: 8px;
+    background: rgba(12, 20, 18, 0.85);
+    backdrop-filter: blur(6px);
+    border: 1px solid rgba(36, 68, 59, 0.6);
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 11px;
+    color: var(--text-secondary);
+    text-align: center;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  /* Overlay mode */
+  .canvas-frame.overlay-under {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1;
+    opacity: 0.35;
+    transition: opacity 0.2s;
+  }
+  .canvas-frame.overlay-top {
+    position: relative;
+    z-index: 2;
+    background: transparent !important;
+  }
+  .canvas-frame.overlay-top svg {
+    background: transparent !important;
+  }
+
+  /* Timeline & Controls */
+  .player-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .scrub-container {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .scrub-info {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    font-family: var(--font-mono);
+    color: var(--text-secondary);
+  }
+  .scrub-info .pct { color: var(--accent); font-weight: 600; }
+  .scrub-track {
+    width: 100%;
+    height: 10px;
+    background: #182c27;
+    border-radius: 6px;
+    position: relative;
+    cursor: pointer;
+    overflow: hidden;
+  }
+  .scrub-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #22c55e, #4ade80);
+    border-radius: 6px;
+    box-shadow: 0 0 10px var(--accent-glow);
+    transition: width 0.05s linear;
+  }
+
+  .button-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .btn-cluster { display: flex; align-items: center; gap: 8px; }
+
+  .btn-primary {
+    background: var(--accent);
+    color: #052e16;
+    border: none;
+    padding: 9px 20px;
+    border-radius: 6px;
+    font-weight: 700;
+    cursor: pointer;
+    font-size: 13.5px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.15s ease;
+    box-shadow: 0 2px 10px rgba(74, 222, 128, 0.3);
+  }
+  .btn-primary:hover {
+    background: var(--accent-hover);
+    transform: translateY(-1px);
+  }
+  .btn-primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  .btn-sec {
+    background: var(--bg-card-header);
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    padding: 8px 14px;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 12.5px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.15s;
+  }
+  .btn-sec:hover { color: #fff; border-color: var(--border-focus); }
+
+  .speed-pills { display: flex; gap: 4px; background: var(--bg-main); padding: 3px; border-radius: 6px; border: 1px solid var(--border-color); }
+  .btn-pill {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 11.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-pill.active {
+    background: var(--bg-card-header);
+    color: var(--accent);
+  }
+
+  /* Sidebar HUD */
+  .hud-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .hud-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 10px;
+  }
+  .hud-badge {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-weight: 700;
+  }
+  .hud-badge.pass { background: rgba(74, 222, 128, 0.15); color: var(--accent); border: 1px solid rgba(74, 222, 128, 0.3); }
+  .hud-badge.gray { background: rgba(251, 191, 36, 0.15); color: var(--warning); border: 1px solid rgba(251, 191, 36, 0.3); }
+  .hud-badge.fail { background: rgba(248, 113, 113, 0.15); color: var(--danger); border: 1px solid rgba(248, 113, 113, 0.3); }
+
+  .metric-list { display: flex; flex-direction: column; gap: 10px; }
+  .metric-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12.5px;
+    padding: 6px 10px;
+    background: #0d1a16;
+    border-radius: 6px;
+    border: 1px solid rgba(36, 68, 59, 0.4);
+  }
+  .metric-row .lbl { color: var(--text-secondary); display: flex; align-items: center; gap: 6px; }
+  .metric-row .val { font-family: var(--font-mono); font-weight: 600; color: #fff; }
+
+  .gate-checklist { display: flex; flex-direction: column; gap: 8px; }
+  .gate-item {
+    font-size: 12px;
+    padding: 8px 10px;
+    border-radius: 6px;
+    background: #0f1c18;
+    border-left: 3px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .gate-item.pass { border-left-color: var(--success); }
+  .gate-item.gray { border-left-color: var(--warning); }
+  .gate-item.fail { border-left-color: var(--danger); }
+  .gate-item span.status { font-weight: 700; font-size: 11px; }
+
+  .sample-desc-box {
+    background: rgba(24, 44, 39, 0.5);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 12px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
+  .sample-desc-box strong { color: #fff; }
+
+  /* --- TAB BENCHMARKS --- */
+  .filter-bar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .btn-filter {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-filter.active, .btn-filter:hover {
+    background: var(--bg-card-header);
+    color: #fff;
+    border-color: var(--accent);
+  }
+
+  .samples-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 18px;
+  }
+  .sample-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    overflow: hidden;
+    transition: all 0.2s ease;
+    display: flex;
+    flex-direction: column;
+  }
+  .sample-card:hover {
+    border-color: var(--accent);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+  }
+
+  .card-previews {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2px;
+    background: #000;
+    height: 180px;
+    position: relative;
+  }
+  .card-previews img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .card-previews .card-tag {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 10.5px;
+    font-weight: 700;
+    background: rgba(0,0,0,0.75);
+    backdrop-filter: blur(4px);
+    color: #fff;
+  }
+
+  .card-body {
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    flex: 1;
+  }
+  .card-title-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .card-title { font-size: 14px; font-weight: 700; color: #fff; }
+  .card-desc { font-size: 11.5px; color: var(--text-secondary); line-height: 1.4; }
+
+  .card-metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+    margin-top: auto;
+  }
+  .mini-stat {
+    background: #0d1a16;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    display: flex;
+    justify-content: space-between;
+  }
+  .mini-stat .l { color: var(--text-muted); }
+  .mini-stat .v { font-family: var(--font-mono); font-weight: 600; }
+
+  .card-action-btn {
+    background: var(--bg-card-header);
+    border: 1px solid var(--border-color);
+    color: var(--accent);
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 12px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.15s;
+    margin-top: 8px;
+  }
+  .card-action-btn:hover {
+    background: var(--accent);
+    color: #052e16;
+  }
+
+  /* --- TAB FINDINGS --- */
+  .findings-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  .finding-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 20px;
+  }
+  .finding-card h3 {
+    font-size: 16px;
+    color: var(--accent);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .finding-card p {
+    font-size: 13.5px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin-bottom: 12px;
+  }
+  .finding-card pre {
+    background: #09120f;
+    border: 1px solid var(--border-color);
+    padding: 12px;
+    border-radius: 6px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: #a7f3d0;
+    overflow-x: auto;
+  }
+
+  footer {
+    border-top: 1px solid var(--border-color);
+    padding: 16px 24px;
+    background: #09100e;
+    text-align: center;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="brand-icon">🌀</div>
+    <div class="brand-info">
+      <h1>Single-Line Spiral Art Spike</h1>
+      <p>1 nét xoắn ốc liên tục duy nhất · Archimedes AM/FM · Không nhấc bút</p>
+    </div>
+  </div>
+  <div class="header-actions">
+    <div class="status-badge">
+      <i></i> Verdict: GO có điều kiện ✅⚠️ (Port 8077)
+    </div>
+    <a href="/player.html" target="_blank" class="btn-link">⚡ Standalone v4 Player</a>
+    <a href="/SPIKE-REPORT.md" target="_blank" class="btn-link">📄 Spike Report</a>
+    <a href="/VALIDATION-REPORT.md" target="_blank" class="btn-link">📑 Validation Report</a>
+  </div>
+</header>
+
+<nav class="nav-tabs">
+  <button class="tab-btn active" onclick="switchTab('player', this)">
+    🎯 Trình chiếu Nét vẽ (Interactive Player)
+    <span class="tab-badge">Live</span>
+  </button>
+  <button class="tab-btn" onclick="switchTab('benchmarks', this)">
+    📊 Bộ mẫu & Thẩm định Gates (18 mẫu)
+    <span class="tab-badge" id="samplesCountBadge">18</span>
+  </button>
+  <button class="tab-btn" onclick="switchTab('findings', this)">
+    🔬 Báo cáo & Quyết định Kỹ thuật (F1..F3)
+    <span class="tab-badge">S0..S4</span>
+  </button>
+</nav>
+
+<main>
+  <!-- TAB 1: PLAYER -->
+  <section id="tab-player" class="tab-content active">
+    <div class="player-grid">
+      <!-- Player Main Stage -->
+      <div class="player-stage-card">
+        <div class="stage-header">
+          <div class="selector-group">
+            <label for="sampleSelector">Chọn mẫu hiển thị:</label>
+            <select id="sampleSelector" class="sample-select" onchange="onSampleChange()">
+              <!-- Options populated dynamically -->
+            </select>
+          </div>
+          <div class="view-modes">
+            <button id="btnSideBySide" class="btn-mode active" onclick="setViewMode('side')">Song song</button>
+            <button id="btnOverlay" class="btn-mode" onclick="setViewMode('overlay')">Xếp chồng (Ghost)</button>
+          </div>
+        </div>
+
+        <div id="stageViewports" class="stage-viewports">
+          <!-- Canvas 1: Animated Spiral SVG -->
+          <div id="spiralFrame" class="canvas-frame">
+            <svg viewBox="0 0 540 760" id="svgContainer">
+              <path id="spiralPath" d="" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            <div class="frame-caption">
+              <span>Nét vẽ xoắn ốc (1 stroke liên tục)</span>
+              <span id="canvasPoints">14,000 pts</span>
+            </div>
+          </div>
+
+          <!-- Canvas 2: Source Image -->
+          <div id="sourceFrame" class="canvas-frame">
+            <img id="sourceImage" src="" alt="Ảnh gốc đối chiếu" style="filter: grayscale(1);">
+            <div class="frame-caption">
+              <span>Ảnh gốc đối chiếu (Reveal)</span>
+              <label style="display:flex;align-items:center;gap:4px;cursor:pointer;">
+                <input type="checkbox" id="chkGrayscale" checked onchange="toggleGrayscale()"> Grayscale
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Controls & Timeline -->
+        <div class="player-controls">
+          <div class="scrub-container">
+            <div class="scrub-info">
+              <span id="playStatusText">Sẵn sàng — bấm ▶ để vẽ</span>
+              <span class="pct" id="playPct">0.0%</span>
+            </div>
+            <div class="scrub-track" id="scrubTrack" onclick="seekTrack(event)">
+              <div class="scrub-fill" id="scrubFill"></div>
+            </div>
+          </div>
+
+          <div class="button-bar">
+            <div class="btn-cluster">
+              <button id="btnPlay" class="btn-primary" onclick="togglePlay()">
+                <span id="playIcon">▶</span> <span id="playBtnText">Vẽ (24s)</span>
+              </button>
+              <button id="btnReset" class="btn-sec" onclick="resetPlay()">↺ Vẽ lại</button>
+            </div>
+
+            <div class="btn-cluster">
+              <span style="font-size:12px;color:var(--text-secondary)">Thời lượng:</span>
+              <div class="speed-pills">
+                <button class="btn-pill" onclick="setDuration(10000, this)">10s (Hook)</button>
+                <button class="btn-pill active" onclick="setDuration(24000, this)">24s (Chuẩn)</button>
+                <button class="btn-pill" onclick="setDuration(45000, this)">45s (Target)</button>
+                <button class="btn-pill" onclick="setDuration('realtime', this)">Realtime</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Player Sidebar HUD -->
+      <div class="hud-card">
+        <div class="hud-title">
+          <span>Thông số Mẫu</span>
+          <span id="hudBadge" class="hud-badge pass">PASS</span>
+        </div>
+
+        <div class="sample-desc-box" id="sampleDescBox">
+          <strong id="hudSampleTitle">v4 (Champion AM)</strong>
+          <p id="hudSampleDesc" style="margin-top:4px;">Bản chuẩn: bilinear + blur nhẹ + gamma 0.7</p>
+        </div>
+
+        <div class="metric-list">
+          <div class="metric-row">
+            <span class="lbl">S2 Likeness (Mắt người)</span>
+            <span class="val" id="hudS2" style="color:var(--accent);">0.2659</span>
+          </div>
+          <div class="metric-row">
+            <span class="lbl">S1 Số stroke / Pen-down</span>
+            <span class="val" id="hudStroke">1 stroke (1 M)</span>
+          </div>
+          <div class="metric-row">
+            <span class="lbl">Số điểm (Path Points)</span>
+            <span class="val" id="hudPoints">14,000 pts</span>
+          </div>
+          <div class="metric-row">
+            <span class="lbl">Chiều dài nét vẽ</span>
+            <span class="val" id="hudLength">79.7k px</span>
+          </div>
+          <div class="metric-row">
+            <span class="lbl">Thời gian vẽ thực tế</span>
+            <span class="val" id="hudRealtime">5.3 phút</span>
+          </div>
+          <div class="metric-row">
+            <span class="lbl">Tỷ lệ Timelapse 45s</span>
+            <span class="val" id="hudTimelapse">7.1x</span>
+          </div>
+          <div class="metric-row">
+            <span class="lbl">Dung lượng SVG / Path</span>
+            <span class="val" id="hudSize">191 KB</span>
+          </div>
+        </div>
+
+        <div class="gate-checklist">
+          <div class="gate-item pass" id="gateS0Item">
+            <span>S0 Gate Input</span>
+            <span class="status" id="gateS0Status">PASS</span>
+          </div>
+          <div class="gate-item pass" id="gateS1Item">
+            <span>S1 Không nhấc bút (1 stroke)</span>
+            <span class="status">PASS</span>
+          </div>
+          <div class="gate-item pass" id="gateS2Item">
+            <span>S2 Likeness correlation</span>
+            <span class="status" id="gateS2Status">PASS</span>
+          </div>
+          <div class="gate-item pass" id="gateS3Item">
+            <span>S3 Timelapse ≤ 12x</span>
+            <span class="status">PASS</span>
+          </div>
+          <div class="gate-item pass" id="gateS4Item">
+            <span>S4 Dung lượng ≤ 500KB</span>
+            <span class="status">PASS</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TAB 2: BENCHMARKS & GATES -->
+  <section id="tab-benchmarks" class="tab-content">
+    <div class="filter-bar">
+      <button class="btn-filter active" onclick="filterSamples('all', this)">Tất cả (18)</button>
+      <button class="btn-filter" onclick="filterSamples('rnd', this)">Bản R&D (4)</button>
+      <button class="btn-filter" onclick="filterSamples('validation', this)">Validation Testset (14)</button>
+      <button class="btn-filter" onclick="filterSamples('pass', this)">✅ Đạt Gate (PASS)</button>
+      <button class="btn-filter" onclick="filterSamples('gray', this)">⚠️ Vùng Xám (Cần mắt duyệt)</button>
+      <button class="btn-filter" onclick="filterSamples('fail', this)">❌ Bị Loại (FAIL)</button>
+    </div>
+
+    <div class="samples-grid" id="samplesGrid">
+      <!-- Dynamically generated sample cards -->
+    </div>
+  </section>
+
+  <!-- TAB 3: TECHNICAL FINDINGS -->
+  <section id="tab-findings" class="tab-content">
+    <div class="findings-container">
+      <div class="finding-card">
+        <h3>💡 F1. Spiral AM là "Edge-Emphasis", không phải "Tone-Mapping"</h3>
+        <p>
+          Công thức Archimedes: <code>r = r0 + amp * brightness</code>. Nét dồn ở <strong>vùng biên độ tương phản cao</strong> sáng–tối (mắt, sống mũi, môi, tóc), còn vùng phẳng (trán phẳng, nền) bị giãn thưa đều. Do đó với ảnh chân dung có khối tương phản tốt, mắt người đọc ra hình rất tự nhiên, nhưng không nên kỳ vọng tái tạo tone da mịn như vẽ khối halftone.
+        </p>
+      </div>
+
+      <div class="finding-card">
+        <h3>🎯 F2. Hiệu chuẩn Metric S2: Từ MAE Pixel sang Pearson Gradient Cạnh</h3>
+        <p>
+          Qua quá trình thẩm định 18 ảnh:
+        </p>
+        <ul style="padding-left:20px;color:var(--text-secondary);font-size:13px;line-height:1.6;margin-bottom:12px;">
+          <li><strong>MAE pixel:</strong> Hoàn toàn sai lệch do méo khung hình / lệch vị trí (mis-registration).</li>
+          <li><strong>Tone Pearson thông thường:</strong> Ra điểm ÂM kể cả trên bản rất đẹp vì vùng da sáng bị rút nét.</li>
+          <li><strong>Pearson trên gradient cạnh (Edge-Pearson):</strong> Khớp 9/9 so với mắt người! Ngưỡng S2 = 0.25 được xác lập làm chuẩn CI.</li>
+          <li><strong>Lưu ý bẫy texture (v5 FM):</strong> Mẫu zigzag đạt S2=0.285 nhưng mắt thấy xấu vì moiré. Do đó: <em>Metric tự động là điều kiện cần, mắt người duyệt cuối là điều kiện đủ!</em></li>
+        </ul>
+        <pre>S2 &lt; 0.23         → REJECT tự động
+0.23 ≤ S2 &lt; 0.27  → VÙNG XÁM: PASS có điều kiện, bắt buộc duyệt mắt
+S2 ≥ 0.27         → PASS (Champion v4: 0.266, Man: 0.315)</pre>
+      </div>
+
+      <div class="finding-card">
+        <h3>⚙️ F3. Lấy mẫu & Tiền xử lý quyết định 80% chất lượng nét</h3>
+        <p>
+          - Bản v2/v3 dùng nearest-sampling sinh ra bậc thang hình khối đứt đoạn.<br>
+          - Bản v4 giải quyết triệt để bằng: <strong>Bilinear interpolation + Gaussian blur nhẹ (r=1.2) + Gamma 0.7</strong>.<br>
+          - Chi phí tính toán cực thấp: &lt; 1 giây cho 14,000 điểm trên CPU bình thường.
+        </p>
+      </div>
+
+      <div class="finding-card">
+        <h3>🛡️ Bộ Lọc S0 Input — Loại sớm ảnh không hợp</h3>
+        <pre>std &lt; 0.10     → Quá phẳng / sương mù (Bắt mẫu fog: 0.043)
+dark% &lt; 50%    → Nền sáng, chủ thể không nổi bật (Bắt mẫu street: 43%, group: 19%)
+edge &gt; 0.06    → Quá rối rắm (Bắt mẫu street: 0.072)
+color-loss     → Ảnh rực rỡ nhưng cùng mức xám (Bắt mẫu isoluminant: S2=0.06)</pre>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  Single-Line Spiral Art Spike · Auto Drawing Automation · Port 8077
+</footer>
+
+<script>
+let manifest = [];
+let currentSample = null;
+let currentDuration = 24000;
+let currentPathLen = 0;
+let isPlaying = false;
+let rafId = null;
+let animStartTime = 0;
+let animProgress = 0; // 0..1
+let viewMode = 'side'; // 'side' | 'overlay'
+
+async function init() {
+  try {
+    const res = await fetch('/manifest.json');
+    manifest = await res.json();
+    populateSelector();
+    renderBenchmarksGrid(manifest);
+    // Select champion (v4) initially
+    const champion = manifest.find(s => s.id === 'v4') || manifest[0];
+    loadSample(champion);
+  } catch (err) {
+    console.error("Lỗi tải manifest:", err);
+  }
+}
+
+function switchTab(tabId, btn) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-' + tabId).classList.add('active');
+}
+
+function populateSelector() {
+  const sel = document.getElementById('sampleSelector');
+  sel.innerHTML = '';
+
+  const optRnd = document.createElement('optgroup');
+  optRnd.label = "Bản R&D & Champion";
+  const optVal = document.createElement('optgroup');
+  optVal.label = "Validation Testset (14 mẫu)";
+
+  manifest.forEach(s => {
+    const opt = document.createElement('option');
+    opt.value = s.id;
+    opt.textContent = `${s.name} ${s.stats.likeness_S2 ? `(S2: ${s.stats.likeness_S2.toFixed(3)})` : ''}`;
+    if (s.group === 'rnd') optRnd.appendChild(opt);
+    else optVal.appendChild(opt);
+  });
+
+  sel.appendChild(optRnd);
+  sel.appendChild(optVal);
+}
+
+async function loadSample(sample) {
+  currentSample = sample;
+  document.getElementById('sampleSelector').value = sample.id;
+  updateHUD(sample);
+
+  // Update source image
+  const srcImg = document.getElementById('sourceImage');
+  srcImg.src = '/' + sample.inputImg;
+
+  // Load SVG path
+  try {
+    const res = await fetch('/' + sample.folder + '/oneline.json');
+    const tpl = await res.json();
+    const d = tpl[0]?.strokes[0]?.d || '';
+    const pathEl = document.getElementById('spiralPath');
+    pathEl.setAttribute('d', d);
+
+    // Calculate length
+    currentPathLen = pathEl.getTotalLength();
+    pathEl.style.strokeDasharray = currentPathLen;
+    pathEl.style.strokeDashoffset = currentPathLen;
+
+    resetPlay();
+    document.getElementById('canvasPoints').textContent = (sample.stats.points || 14000).toLocaleString() + ' pts';
+  } catch (e) {
+    console.error("Lỗi load oneline.json:", e);
+  }
+}
+
+function onSampleChange() {
+  const id = document.getElementById('sampleSelector').value;
+  const s = manifest.find(x => x.id === id);
+  if (s) loadSample(s);
+}
+
+function updateHUD(s) {
+  const s2 = s.stats.likeness_S2;
+  const s0 = s.stats.s0_input;
+  const hudBadge = document.getElementById('hudBadge');
+  const gateS0 = document.getElementById('gateS0Item');
+  const gateS2 = document.getElementById('gateS2Item');
+  const gateS0Status = document.getElementById('gateS0Status');
+  const gateS2Status = document.getElementById('gateS2Status');
+
+  document.getElementById('hudSampleTitle').textContent = s.name;
+  document.getElementById('hudSampleDesc').textContent = s.desc || '';
+  document.getElementById('hudS2').textContent = s2 !== undefined ? s2.toFixed(4) : 'N/A';
+  document.getElementById('hudStroke').textContent = (s.stats.m_commands === 1 ? '1 stroke (1 M lệnh)' : s.stats.m_commands + ' strokes');
+  document.getElementById('hudPoints').textContent = (s.stats.points || 0).toLocaleString() + ' pts';
+  document.getElementById('hudLength').textContent = ((s.stats.length_px || 0) / 1000).toFixed(1) + 'k px';
+  document.getElementById('hudRealtime').textContent = ((s.stats.realtime_s || 0) / 60).toFixed(1) + ' phút';
+  document.getElementById('hudTimelapse').textContent = (s.stats.timelapse_45s || 0).toFixed(1) + 'x';
+  document.getElementById('hudSize').textContent = Math.round((s.stats.d_chars || 0) / 1024) + ' KB';
+
+  // S0 Gate
+  if (s0 && s0.pass === false) {
+    gateS0.className = 'gate-item fail';
+    gateS0Status.textContent = 'LOẠI SỚM';
+  } else {
+    gateS0.className = 'gate-item pass';
+    gateS0Status.textContent = 'PASS';
+  }
+
+  // S2 Gate
+  if (s2 >= 0.27) {
+    gateS2.className = 'gate-item pass';
+    gateS2Status.textContent = 'PASS (Rõ nét)';
+  } else if (s2 >= 0.23) {
+    gateS2.className = 'gate-item gray';
+    gateS2Status.textContent = 'VÙNG XÁM (Duyệt mắt)';
+  } else {
+    gateS2.className = 'gate-item fail';
+    gateS2Status.textContent = 'FAIL (Kém)';
+  }
+
+  // Overall badge
+  if (s0 && s0.pass === false) {
+    hudBadge.className = 'hud-badge fail';
+    hudBadge.textContent = 'S0 REJECT';
+  } else if (s2 >= 0.25) {
+    hudBadge.className = 'hud-badge pass';
+    hudBadge.textContent = s2 >= 0.27 ? 'PASS ✅' : 'PASS ⚠️xám';
+  } else {
+    hudBadge.className = 'hud-badge fail';
+    hudBadge.textContent = 'FAIL ❌';
+  }
+}
+
+function setViewMode(mode) {
+  viewMode = mode;
+  document.getElementById('btnSideBySide').classList.toggle('active', mode === 'side');
+  document.getElementById('btnOverlay').classList.toggle('active', mode === 'overlay');
+
+  const vps = document.getElementById('stageViewports');
+  const spFrame = document.getElementById('spiralFrame');
+  const srcFrame = document.getElementById('sourceFrame');
+
+  if (mode === 'overlay') {
+    spFrame.className = 'canvas-frame overlay-top';
+    srcFrame.className = 'canvas-frame overlay-under';
+  } else {
+    spFrame.className = 'canvas-frame';
+    srcFrame.className = 'canvas-frame';
+  }
+}
+
+function toggleGrayscale() {
+  const chk = document.getElementById('chkGrayscale');
+  document.getElementById('sourceImage').style.filter = chk.checked ? 'grayscale(1)' : 'none';
+}
+
+function setDuration(dur, btn) {
+  document.querySelectorAll('.speed-pills .btn-pill').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+
+  if (dur === 'realtime') {
+    currentDuration = (currentSample?.stats?.realtime_s || 300) * 1000;
+  } else {
+    currentDuration = dur;
+  }
+  document.getElementById('playBtnText').textContent = `Vẽ (${Math.round(currentDuration/1000)}s)`;
+  if (isPlaying) {
+    pausePlay();
+    startPlay();
+  }
+}
+
+function togglePlay() {
+  if (isPlaying) pausePlay();
+  else startPlay();
+}
+
+function startPlay() {
+  if (animProgress >= 1) animProgress = 0;
+  isPlaying = true;
+  document.getElementById('playIcon').textContent = '⏸';
+  document.getElementById('playBtnText').textContent = 'Tạm dừng';
+  animStartTime = performance.now() - (animProgress * currentDuration);
+
+  function step(t) {
+    const elapsed = t - animStartTime;
+    animProgress = Math.min(elapsed / currentDuration, 1);
+    applyProgress(animProgress);
+
+    if (animProgress < 1) {
+      rafId = requestAnimationFrame(step);
+    } else {
+      finishPlay();
+    }
+  }
+  rafId = requestAnimationFrame(step);
+}
+
+function pausePlay() {
+  isPlaying = false;
+  cancelAnimationFrame(rafId);
+  document.getElementById('playIcon').textContent = '▶';
+  document.getElementById('playBtnText').textContent = `Tiếp tục (${Math.round(currentDuration/1000)}s)`;
+  document.getElementById('playStatusText').textContent = 'Đã tạm dừng';
+}
+
+function resetPlay() {
+  pausePlay();
+  animProgress = 0;
+  applyProgress(0);
+  document.getElementById('playIcon').textContent = '▶';
+  document.getElementById('playBtnText').textContent = `Vẽ (${Math.round(currentDuration/1000)}s)`;
+  document.getElementById('playStatusText').textContent = 'Sẵn sàng — 1 stroke liên tục';
+}
+
+function finishPlay() {
+  isPlaying = false;
+  document.getElementById('playIcon').textContent = '↺';
+  document.getElementById('playBtnText').textContent = 'Vẽ lại';
+  document.getElementById('playStatusText').textContent = '🎉 Hoàn tất nét vẽ 100%! Đối chiếu với ảnh gốc →';
+}
+
+function applyProgress(k) {
+  const pathEl = document.getElementById('spiralPath');
+  if (currentPathLen > 0) {
+    pathEl.style.strokeDashoffset = currentPathLen * (1 - k);
+  }
+  document.getElementById('scrubFill').style.width = (k * 100).toFixed(1) + '%';
+  document.getElementById('playPct').textContent = (k * 100).toFixed(1) + '%';
+  if (isPlaying) {
+    document.getElementById('playStatusText').textContent = `Đang vẽ… ${(k * 100).toFixed(0)}% (không nhấc bút)`;
+  }
+}
+
+function seekTrack(e) {
+  const rect = e.currentTarget.getBoundingClientRect();
+  const clickX = e.clientX - rect.left;
+  animProgress = Math.max(0, Math.min(clickX / rect.width, 1));
+  applyProgress(animProgress);
+  if (isPlaying) {
+    animStartTime = performance.now() - (animProgress * currentDuration);
+  }
+}
+
+// Render Benchmark Cards
+function renderBenchmarksGrid(items) {
+  const grid = document.getElementById('samplesGrid');
+  grid.innerHTML = '';
+
+  items.forEach(s => {
+    const s2 = s.stats.likeness_S2;
+    const s0 = s.stats.s0_input;
+    let badgeClass = 'pass';
+    let badgeText = 'PASS';
+
+    if (s0 && s0.pass === false) {
+      badgeClass = 'fail';
+      badgeText = 'S0 REJECT';
+    } else if (s2 >= 0.27) {
+      badgeClass = 'pass';
+      badgeText = 'S2 PASS';
+    } else if (s2 >= 0.23) {
+      badgeClass = 'gray';
+      badgeText = 'VÙNG XÁM';
+    } else {
+      badgeClass = 'fail';
+      badgeText = 'S2 FAIL';
+    }
+
+    const card = document.createElement('div');
+    card.className = 'sample-card';
+    card.dataset.id = s.id;
+    card.dataset.group = s.group;
+    card.dataset.badge = badgeClass;
+
+    card.innerHTML = `
+      <div class="card-previews">
+        <img src="/${s.folder}/render.png" alt="Render">
+        <img src="/${s.inputImg}" alt="Source" style="filter:grayscale(1);">
+        <div class="card-tag ${badgeClass}">${badgeText} · S2: ${s2 !== undefined ? s2.toFixed(3) : 'N/A'}</div>
+      </div>
+      <div class="card-body">
+        <div class="card-title-row">
+          <div class="card-title">${s.name}</div>
+        </div>
+        <div class="card-desc">${s.desc || ''}</div>
+        <div class="card-metrics-grid">
+          <div class="mini-stat"><span class="l">Points:</span><span class="v">${(s.stats.points || 0).toLocaleString()}</span></div>
+          <div class="mini-stat"><span class="l">Length:</span><span class="v">${((s.stats.length_px || 0)/1000).toFixed(1)}k px</span></div>
+          <div class="mini-stat"><span class="l">Timelapse:</span><span class="v">${(s.stats.timelapse_45s || 0).toFixed(1)}x</span></div>
+          <div class="mini-stat"><span class="l">Dung lượng:</span><span class="v">${Math.round((s.stats.d_chars || 0)/1024)} KB</span></div>
+        </div>
+        <button class="card-action-btn" onclick="selectFromCard('${s.id}')">🎬 Tải & Xem Nét Vẽ</button>
+      </div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+function selectFromCard(sampleId) {
+  const s = manifest.find(x => x.id === sampleId);
+  if (s) {
+    loadSample(s);
+    switchTab('player', document.querySelector('.nav-tabs .tab-btn:first-child'));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setTimeout(startPlay, 400);
+  }
+}
+
+function filterSamples(category, btn) {
+  document.querySelectorAll('.filter-bar .btn-filter').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+
+  const cards = document.querySelectorAll('#samplesGrid .sample-card');
+  cards.forEach(c => {
+    if (category === 'all') c.style.display = 'flex';
+    else if (category === 'rnd') c.style.display = c.dataset.group === 'rnd' ? 'flex' : 'none';
+    else if (category === 'validation') c.style.display = c.dataset.group === 'validation' ? 'flex' : 'none';
+    else if (category === 'pass') c.style.display = c.dataset.badge === 'pass' ? 'flex' : 'none';
+    else if (category === 'gray') c.style.display = c.dataset.badge === 'gray' ? 'flex' : 'none';
+    else if (category === 'fail') c.style.display = c.dataset.badge === 'fail' ? 'flex' : 'none';
+  });
+}
+
+window.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>

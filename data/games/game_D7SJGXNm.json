@@ -1,0 +1,299 @@
+{
+  "gameId": "game_D7SJGXNm",
+  "mechanic": "GROCERY_BASKET",
+  "seed": 863304,
+  "resultVariant": "in_video",
+  "status": "created",
+  "gameJson": {
+    "metadata": {
+      "gameId": "game_D7SJGXNm",
+      "mechanic": "GROCERY_BASKET",
+      "language": "vi-VN",
+      "difficulty": "medium",
+      "seed": 863304,
+      "resultVariant": "in_video"
+    },
+    "content": {
+      "title": "Quiz Giá — Nước Giặt Downy 3kg",
+      "hook": "💸 3 món này liệu có vượt ngân sách không?",
+      "question": "Tổng bill 3 món này ĐỦ TIỀN hay CHÁY TÚI với ngân sách 300.000₫?",
+      "choices": [
+        "ĐỦ TIỀN (DƯỚI BUDGET)",
+        "CHÁY TÚI (TRÊN BUDGET)"
+      ],
+      "cta": "📌 Save để mua ngay hôm nay!",
+      "caption": "💸 3 món này liệu có vượt ngân sách không? Tổng bill 3 món này ĐỦ TIỀN hay CHÁY TÚI với ngân sách 300.000₫?\n💬 Comment đáp án của bạn bên dưới!",
+      "hashtags": [
+        "#đoángiá",
+        "#tiktokviral",
+        "#dealhot",
+        "#mua_sắm",
+        "#affiliate",
+        "#game_giá",
+        "#Gia_dụng",
+        "#Downy"
+      ],
+      "voiceScript": "Tổng bill 3 món này là 1.228.000 ₫, ngân sách 300.000 ₫. Đáp án là CHÁY TÚI!"
+    },
+    "entities": [
+      {
+        "productId": "p016",
+        "name": "Nước Giặt Downy 3kg",
+        "image": "/assets/products/p016.webp",
+        "price": 189000,
+        "currency": "VND",
+        "source": "mock",
+        "updatedAt": "2026-09-11T00:00:00Z",
+        "category": "Gia dụng",
+        "brand": "Downy",
+        "affiliateLink": "https://shopee.vn/product/p016"
+      },
+      {
+        "productId": "p033",
+        "name": "Áo Thun Uniqlo Airism Nam",
+        "image": "/assets/products/p033.webp",
+        "price": 249000,
+        "currency": "VND",
+        "source": "mock",
+        "updatedAt": "2026-09-11T00:00:00Z",
+        "category": "Thời trang",
+        "brand": "Uniqlo",
+        "affiliateLink": "https://shopee.vn/product/p033"
+      },
+      {
+        "productId": "p040",
+        "name": "Mũ Snapback New Era 59Fifty",
+        "image": "/assets/products/p040.webp",
+        "price": 790000,
+        "currency": "VND",
+        "source": "mock",
+        "updatedAt": "2026-09-11T00:00:00Z",
+        "category": "Thời trang",
+        "brand": "New Era",
+        "affiliateLink": "https://shopee.vn/product/p040"
+      }
+    ],
+    "gameplay": {
+      "mechanic": "GROCERY_BASKET",
+      "productIds": [
+        "p016",
+        "p033",
+        "p040"
+      ],
+      "budget": 300000,
+      "totalBill": 1228000,
+      "answer": "over",
+      "choices": [
+        "ĐỦ TIỀN (DƯỚI BUDGET)",
+        "CHÁY TÚI (TRÊN BUDGET)"
+      ]
+    },
+    "scenes": [
+      {
+        "type": "hook",
+        "duration": 3
+      },
+      {
+        "type": "question",
+        "duration": 5
+      },
+      {
+        "type": "countdown",
+        "duration": 3
+      },
+      {
+        "type": "reveal",
+        "duration": 2.5
+      },
+      {
+        "type": "product",
+        "duration": 6
+      },
+      {
+        "type": "countdown",
+        "duration": 3
+      },
+      {
+        "type": "reveal",
+        "duration": 2.5
+      },
+      {
+        "type": "question",
+        "duration": 5
+      },
+      {
+        "type": "countdown",
+        "duration": 3
+      },
+      {
+        "type": "result",
+        "duration": 2.5,
+        "variant": "in_video",
+        "answerVisible": true
+      },
+      {
+        "type": "cta",
+        "duration": 2.5
+      }
+    ],
+    "timeline": {
+      "totalDuration": 38,
+      "sceneTimings": [
+        {
+          "type": "hook",
+          "startAt": 0,
+          "endAt": 3,
+          "duration": 3
+        },
+        {
+          "type": "question",
+          "startAt": 3,
+          "endAt": 8,
+          "duration": 5
+        },
+        {
+          "type": "countdown",
+          "startAt": 8,
+          "endAt": 11,
+          "duration": 3
+        },
+        {
+          "type": "reveal",
+          "startAt": 11,
+          "endAt": 13.5,
+          "duration": 2.5
+        },
+        {
+          "type": "product",
+          "startAt": 13.5,
+          "endAt": 19.5,
+          "duration": 6
+        },
+        {
+          "type": "countdown",
+          "startAt": 19.5,
+          "endAt": 22.5,
+          "duration": 3
+        },
+        {
+          "type": "reveal",
+          "startAt": 22.5,
+          "endAt": 25,
+          "duration": 2.5
+        },
+        {
+          "type": "question",
+          "startAt": 25,
+          "endAt": 30,
+          "duration": 5
+        },
+        {
+          "type": "countdown",
+          "startAt": 30,
+          "endAt": 33,
+          "duration": 3
+        },
+        {
+          "type": "result",
+          "startAt": 33,
+          "endAt": 35.5,
+          "duration": 2.5
+        },
+        {
+          "type": "cta",
+          "startAt": 35.5,
+          "endAt": 38,
+          "duration": 2.5
+        }
+      ]
+    },
+    "audio": {
+      "voice": {
+        "script": "Tổng bill 3 món này là 1.228.000 ₫, ngân sách 300.000 ₫. Đáp án là CHÁY TÚI!",
+        "wavPath": "temp/game_D7SJGXNm/voice.wav",
+        "duration": 2
+      },
+      "music": {
+        "track": "tension_01",
+        "volume": 0.18
+      },
+      "sfx": [
+        {
+          "type": "transition",
+          "at": 1.8
+        },
+        {
+          "type": "tick",
+          "at": 8
+        },
+        {
+          "type": "countdown",
+          "at": 8
+        },
+        {
+          "type": "tick",
+          "at": 8.5
+        },
+        {
+          "type": "tick",
+          "at": 9
+        },
+        {
+          "type": "tick",
+          "at": 9.5
+        },
+        {
+          "type": "tick",
+          "at": 10
+        },
+        {
+          "type": "tick",
+          "at": 10.5
+        },
+        {
+          "type": "reveal",
+          "at": 11
+        },
+        {
+          "type": "correct",
+          "at": 11.5
+        }
+      ]
+    },
+    "publishing": {
+      "caption": "💸 3 món này liệu có vượt ngân sách không? Tổng bill 3 món này ĐỦ TIỀN hay CHÁY TÚI với ngân sách 300.000₫?\n💬 Comment đáp án của bạn bên dưới!",
+      "hashtags": [
+        "#đoángiá",
+        "#tiktokviral",
+        "#dealhot",
+        "#mua_sắm",
+        "#affiliate",
+        "#game_giá",
+        "#Gia_dụng",
+        "#Downy"
+      ],
+      "affiliateLink": "https://shopee.vn/product/p016",
+      "outputPath": "export/game_D7SJGXNm_863304.mp4"
+    }
+  },
+  "outputPath": "export/game_D7SJGXNm_863304.mp4",
+  "captionJson": {
+    "caption": "💸 3 món này liệu có vượt ngân sách không? Tổng bill 3 món này ĐỦ TIỀN hay CHÁY TÚI với ngân sách 300.000₫?\n💬 Comment đáp án của bạn bên dưới!",
+    "hashtags": [
+      "#đoángiá",
+      "#tiktokviral",
+      "#dealhot",
+      "#mua_sắm",
+      "#affiliate",
+      "#game_giá",
+      "#Gia_dụng",
+      "#Downy"
+    ],
+    "affiliateLink": "https://shopee.vn/product/p016"
+  },
+  "validatorErrors": [],
+  "planningMs": 3,
+  "renderMs": 7,
+  "createdAt": "2026-09-14T15:01:54.925Z",
+  "updatedAt": "2026-09-14T15:01:54.925Z"
+}

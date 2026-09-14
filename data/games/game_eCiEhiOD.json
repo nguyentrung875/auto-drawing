@@ -1,0 +1,238 @@
+{
+  "gameId": "game_eCiEhiOD",
+  "mechanic": "HI_LO",
+  "seed": 239722,
+  "resultVariant": "in_video",
+  "status": "created",
+  "gameJson": {
+    "metadata": {
+      "gameId": "game_eCiEhiOD",
+      "mechanic": "HI_LO",
+      "language": "vi-VN",
+      "difficulty": "medium",
+      "seed": 239722,
+      "resultVariant": "in_video"
+    },
+    "content": {
+      "title": "Quiz Giá — Robot Hút Bụi Xiaomi G1",
+      "hook": "💸 Ai biết giá thật sự?",
+      "question": "Sản phẩm B CAO HƠN hay THẤP HƠN Sản phẩm A?",
+      "choices": [
+        "CAO HƠN ⬆️",
+        "THẤP HƠN ⬇️"
+      ],
+      "cta": "💬 Comment đáp án của bạn bên dưới!",
+      "caption": "💸 Ai biết giá thật sự? Sản phẩm B CAO HƠN hay THẤP HƠN Sản phẩm A?\n💬 Comment đáp án của bạn bên dưới!",
+      "hashtags": [
+        "#đoángiá",
+        "#tiktokviral",
+        "#dealhot",
+        "#mua_sắm",
+        "#affiliate",
+        "#game_giá",
+        "#Điện_tử",
+        "#Xiaomi"
+      ],
+      "voiceScript": "Sản phẩm B cao hơn sản phẩm A! Đáp án là 3.3M₫!"
+    },
+    "entities": [
+      {
+        "productId": "p001",
+        "name": "Robot Hút Bụi Xiaomi G1",
+        "image": "/assets/products/p001.webp",
+        "price": 2490000,
+        "currency": "VND",
+        "source": "mock",
+        "updatedAt": "2026-09-11T00:00:00Z",
+        "category": "Điện tử",
+        "brand": "Xiaomi",
+        "affiliateLink": "https://shopee.vn/product/p001"
+      },
+      {
+        "productId": "p003",
+        "name": "Loa Bluetooth JBL Charge 5",
+        "image": "/assets/products/p003.webp",
+        "price": 3290000,
+        "currency": "VND",
+        "source": "mock",
+        "updatedAt": "2026-09-11T00:00:00Z",
+        "category": "Điện tử",
+        "brand": "JBL",
+        "affiliateLink": "https://shopee.vn/product/p003"
+      }
+    ],
+    "gameplay": {
+      "mechanic": "HI_LO",
+      "priceA": 2490000,
+      "priceB": 3290000,
+      "answer": "higher"
+    },
+    "scenes": [
+      {
+        "type": "hook",
+        "duration": 2
+      },
+      {
+        "type": "product",
+        "duration": 3
+      },
+      {
+        "type": "question",
+        "duration": 3
+      },
+      {
+        "type": "countdown",
+        "duration": 3
+      },
+      {
+        "type": "reveal",
+        "duration": 2
+      },
+      {
+        "type": "result",
+        "duration": 2.5,
+        "variant": "in_video",
+        "answerVisible": true
+      },
+      {
+        "type": "cta",
+        "duration": 2.5
+      }
+    ],
+    "timeline": {
+      "totalDuration": 18,
+      "sceneTimings": [
+        {
+          "type": "hook",
+          "startAt": 0,
+          "endAt": 2,
+          "duration": 2
+        },
+        {
+          "type": "product",
+          "startAt": 2,
+          "endAt": 5,
+          "duration": 3
+        },
+        {
+          "type": "question",
+          "startAt": 5,
+          "endAt": 8,
+          "duration": 3
+        },
+        {
+          "type": "countdown",
+          "startAt": 8,
+          "endAt": 11,
+          "duration": 3
+        },
+        {
+          "type": "reveal",
+          "startAt": 11,
+          "endAt": 13,
+          "duration": 2
+        },
+        {
+          "type": "result",
+          "startAt": 13,
+          "endAt": 15.5,
+          "duration": 2.5
+        },
+        {
+          "type": "cta",
+          "startAt": 15.5,
+          "endAt": 18,
+          "duration": 2.5
+        }
+      ]
+    },
+    "audio": {
+      "voice": {
+        "script": "Sản phẩm B cao hơn sản phẩm A! Đáp án là 3.3M₫!",
+        "wavPath": "temp/game_eCiEhiOD/voice.wav",
+        "duration": 2
+      },
+      "music": {
+        "track": "tension_01",
+        "volume": 0.18
+      },
+      "sfx": [
+        {
+          "type": "transition",
+          "at": 1.8
+        },
+        {
+          "type": "tick",
+          "at": 8
+        },
+        {
+          "type": "countdown",
+          "at": 8
+        },
+        {
+          "type": "tick",
+          "at": 8.5
+        },
+        {
+          "type": "tick",
+          "at": 9
+        },
+        {
+          "type": "tick",
+          "at": 9.5
+        },
+        {
+          "type": "tick",
+          "at": 10
+        },
+        {
+          "type": "tick",
+          "at": 10.5
+        },
+        {
+          "type": "reveal",
+          "at": 11
+        },
+        {
+          "type": "correct",
+          "at": 11.5
+        }
+      ]
+    },
+    "publishing": {
+      "caption": "💸 Ai biết giá thật sự? Sản phẩm B CAO HƠN hay THẤP HƠN Sản phẩm A?\n💬 Comment đáp án của bạn bên dưới!",
+      "hashtags": [
+        "#đoángiá",
+        "#tiktokviral",
+        "#dealhot",
+        "#mua_sắm",
+        "#affiliate",
+        "#game_giá",
+        "#Điện_tử",
+        "#Xiaomi"
+      ],
+      "affiliateLink": "https://shopee.vn/product/p001",
+      "outputPath": "export/game_eCiEhiOD_239722.mp4"
+    }
+  },
+  "outputPath": "export/game_eCiEhiOD_239722.mp4",
+  "captionJson": {
+    "caption": "💸 Ai biết giá thật sự? Sản phẩm B CAO HƠN hay THẤP HƠN Sản phẩm A?\n💬 Comment đáp án của bạn bên dưới!",
+    "hashtags": [
+      "#đoángiá",
+      "#tiktokviral",
+      "#dealhot",
+      "#mua_sắm",
+      "#affiliate",
+      "#game_giá",
+      "#Điện_tử",
+      "#Xiaomi"
+    ],
+    "affiliateLink": "https://shopee.vn/product/p001"
+  },
+  "validatorErrors": [],
+  "planningMs": 15,
+  "renderMs": 19,
+  "createdAt": "2026-09-14T15:40:50.160Z",
+  "updatedAt": "2026-09-14T15:40:50.160Z"
+}

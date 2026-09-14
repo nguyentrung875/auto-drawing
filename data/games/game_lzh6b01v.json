@@ -1,0 +1,270 @@
+{
+  "gameId": "game_lzh6b01v",
+  "mechanic": "GUESS_THE_PRICE",
+  "seed": 863304,
+  "resultVariant": "in_video",
+  "status": "created",
+  "gameJson": {
+    "metadata": {
+      "gameId": "game_lzh6b01v",
+      "mechanic": "GUESS_THE_PRICE",
+      "language": "vi-VN",
+      "difficulty": "medium",
+      "seed": 863304,
+      "resultVariant": "in_video"
+    },
+    "content": {
+      "title": "Quiz Giá — Balo Laptop Samsonite Openroad 15.6\"",
+      "hook": "⚡ Thử thách độ nhạy giá: Liệu bạn đoán đúng?",
+      "question": "Giá của sản phẩm này nằm trong khoảng nào?",
+      "choices": [
+        "[A] 1.7M₫ - 4.2M₫",
+        "[B] 676K₫ - 1.7M₫"
+      ],
+      "cta": "🔔 Follow để không bỏ lỡ deal hot!",
+      "caption": "🎯 5 Giây Đoán Giá! Đoán trúng nhận deal hời! Giá của sản phẩm này nằm trong khoảng nào?\n🔔 Follow để không bỏ lỡ deal hot!",
+      "hashtags": [
+        "#đoángiá",
+        "#tiktokviral",
+        "#dealhot",
+        "#mua_sắm",
+        "#affiliate",
+        "#game_giá",
+        "#Thời_trang",
+        "#Samsonite"
+      ],
+      "voiceScript": "Giá sản phẩm này là bao nhiêu? [A] 1.7M₫ - 4.2M₫ hay [B] 676K₫ - 1.7M₫? Đáp án là B!"
+    },
+    "entities": [
+      {
+        "productId": "p032",
+        "name": "Balo Laptop Samsonite Openroad 15.6\"",
+        "image": "/assets/products/p032.webp",
+        "price": 1690000,
+        "currency": "VND",
+        "source": "mock",
+        "updatedAt": "2026-09-11T00:00:00Z",
+        "category": "Thời trang",
+        "brand": "Samsonite",
+        "affiliateLink": "https://shopee.vn/product/p032"
+      }
+    ],
+    "gameplay": {
+      "mechanic": "GUESS_THE_PRICE",
+      "productId": "p032",
+      "price": 1690000,
+      "answer": "B",
+      "choices": [
+        "[A] 1.7M₫ - 4.2M₫",
+        "[B] 676K₫ - 1.7M₫"
+      ]
+    },
+    "scenes": [
+      {
+        "type": "hook",
+        "duration": 3
+      },
+      {
+        "type": "question",
+        "duration": 5
+      },
+      {
+        "type": "countdown",
+        "duration": 3
+      },
+      {
+        "type": "reveal",
+        "duration": 2.5
+      },
+      {
+        "type": "product",
+        "duration": 6
+      },
+      {
+        "type": "countdown",
+        "duration": 3
+      },
+      {
+        "type": "reveal",
+        "duration": 2.5
+      },
+      {
+        "type": "question",
+        "duration": 5
+      },
+      {
+        "type": "countdown",
+        "duration": 3
+      },
+      {
+        "type": "result",
+        "duration": 2.5,
+        "variant": "in_video",
+        "answerVisible": true
+      },
+      {
+        "type": "cta",
+        "duration": 2.5
+      }
+    ],
+    "timeline": {
+      "totalDuration": 38,
+      "sceneTimings": [
+        {
+          "type": "hook",
+          "startAt": 0,
+          "endAt": 3,
+          "duration": 3
+        },
+        {
+          "type": "question",
+          "startAt": 3,
+          "endAt": 8,
+          "duration": 5
+        },
+        {
+          "type": "countdown",
+          "startAt": 8,
+          "endAt": 11,
+          "duration": 3
+        },
+        {
+          "type": "reveal",
+          "startAt": 11,
+          "endAt": 13.5,
+          "duration": 2.5
+        },
+        {
+          "type": "product",
+          "startAt": 13.5,
+          "endAt": 19.5,
+          "duration": 6
+        },
+        {
+          "type": "countdown",
+          "startAt": 19.5,
+          "endAt": 22.5,
+          "duration": 3
+        },
+        {
+          "type": "reveal",
+          "startAt": 22.5,
+          "endAt": 25,
+          "duration": 2.5
+        },
+        {
+          "type": "question",
+          "startAt": 25,
+          "endAt": 30,
+          "duration": 5
+        },
+        {
+          "type": "countdown",
+          "startAt": 30,
+          "endAt": 33,
+          "duration": 3
+        },
+        {
+          "type": "result",
+          "startAt": 33,
+          "endAt": 35.5,
+          "duration": 2.5
+        },
+        {
+          "type": "cta",
+          "startAt": 35.5,
+          "endAt": 38,
+          "duration": 2.5
+        }
+      ]
+    },
+    "audio": {
+      "voice": {
+        "script": "Giá sản phẩm này là bao nhiêu? [A] 1.7M₫ - 4.2M₫ hay [B] 676K₫ - 1.7M₫? Đáp án là B!",
+        "wavPath": "temp/game_lzh6b01v/voice.wav",
+        "duration": 2
+      },
+      "music": {
+        "track": "tension_01",
+        "volume": 0.18
+      },
+      "sfx": [
+        {
+          "type": "transition",
+          "at": 1.8
+        },
+        {
+          "type": "tick",
+          "at": 8
+        },
+        {
+          "type": "countdown",
+          "at": 8
+        },
+        {
+          "type": "tick",
+          "at": 8.5
+        },
+        {
+          "type": "tick",
+          "at": 9
+        },
+        {
+          "type": "tick",
+          "at": 9.5
+        },
+        {
+          "type": "tick",
+          "at": 10
+        },
+        {
+          "type": "tick",
+          "at": 10.5
+        },
+        {
+          "type": "reveal",
+          "at": 11
+        },
+        {
+          "type": "correct",
+          "at": 11.5
+        }
+      ]
+    },
+    "publishing": {
+      "caption": "🎯 5 Giây Đoán Giá! Đoán trúng nhận deal hời! Giá của sản phẩm này nằm trong khoảng nào?\n🔔 Follow để không bỏ lỡ deal hot!",
+      "hashtags": [
+        "#đoángiá",
+        "#tiktokviral",
+        "#dealhot",
+        "#mua_sắm",
+        "#affiliate",
+        "#game_giá",
+        "#Thời_trang",
+        "#Samsonite"
+      ],
+      "affiliateLink": "https://shopee.vn/product/p032",
+      "outputPath": "export/game_lzh6b01v_863304.mp4"
+    }
+  },
+  "outputPath": "export/game_lzh6b01v_863304.mp4",
+  "captionJson": {
+    "caption": "🎯 5 Giây Đoán Giá! Đoán trúng nhận deal hời! Giá của sản phẩm này nằm trong khoảng nào?\n🔔 Follow để không bỏ lỡ deal hot!",
+    "hashtags": [
+      "#đoángiá",
+      "#tiktokviral",
+      "#dealhot",
+      "#mua_sắm",
+      "#affiliate",
+      "#game_giá",
+      "#Thời_trang",
+      "#Samsonite"
+    ],
+    "affiliateLink": "https://shopee.vn/product/p032"
+  },
+  "validatorErrors": [],
+  "planningMs": 1,
+  "renderMs": 4,
+  "createdAt": "2026-09-14T15:04:30.353Z",
+  "updatedAt": "2026-09-14T15:04:30.353Z"
+}

@@ -1,0 +1,270 @@
+{
+  "gameId": "game_0UCMjl8s",
+  "mechanic": "GUESS_THE_PRICE",
+  "seed": 696283,
+  "resultVariant": "in_video",
+  "status": "created",
+  "gameJson": {
+    "metadata": {
+      "gameId": "game_0UCMjl8s",
+      "mechanic": "GUESS_THE_PRICE",
+      "language": "vi-VN",
+      "difficulty": "medium",
+      "seed": 696283,
+      "resultVariant": "in_video"
+    },
+    "content": {
+      "title": "Quiz Giá — Đồng Hồ Thông Minh Samsung Galaxy Watch 6",
+      "hook": "💸 29K hay 299K? Đoán trúng ngay trong 3 giây!",
+      "question": "Giá của sản phẩm này nằm trong khoảng nào?",
+      "choices": [
+        "[A] 2.6M₫ - 6.5M₫",
+        "[B] 6.5M₫ - 16.2M₫"
+      ],
+      "cta": "💬 Comment đáp án của bạn bên dưới!",
+      "caption": "💸 29K hay 299K? Đoán trúng ngay trong 3 giây! Giá của sản phẩm này nằm trong khoảng nào?\n❤️ Like nếu bạn đoán đúng!",
+      "hashtags": [
+        "#đoángiá",
+        "#tiktokviral",
+        "#dealhot",
+        "#mua_sắm",
+        "#affiliate",
+        "#game_giá",
+        "#Điện_tử",
+        "#Samsung"
+      ],
+      "voiceScript": "Giá sản phẩm này là bao nhiêu? [A] 2.6M₫ - 6.5M₫ hay [B] 6.5M₫ - 16.2M₫? Đáp án là A!"
+    },
+    "entities": [
+      {
+        "productId": "p009",
+        "name": "Đồng Hồ Thông Minh Samsung Galaxy Watch 6",
+        "image": "/assets/products/p009.webp",
+        "price": 6490000,
+        "currency": "VND",
+        "source": "mock",
+        "updatedAt": "2026-09-11T00:00:00Z",
+        "category": "Điện tử",
+        "brand": "Samsung",
+        "affiliateLink": "https://shopee.vn/product/p009"
+      }
+    ],
+    "gameplay": {
+      "mechanic": "GUESS_THE_PRICE",
+      "productId": "p009",
+      "price": 6490000,
+      "answer": "A",
+      "choices": [
+        "[A] 2.6M₫ - 6.5M₫",
+        "[B] 6.5M₫ - 16.2M₫"
+      ]
+    },
+    "scenes": [
+      {
+        "type": "hook",
+        "duration": 3
+      },
+      {
+        "type": "question",
+        "duration": 5
+      },
+      {
+        "type": "countdown",
+        "duration": 3
+      },
+      {
+        "type": "reveal",
+        "duration": 2.5
+      },
+      {
+        "type": "product",
+        "duration": 6
+      },
+      {
+        "type": "countdown",
+        "duration": 3
+      },
+      {
+        "type": "reveal",
+        "duration": 2.5
+      },
+      {
+        "type": "question",
+        "duration": 5
+      },
+      {
+        "type": "countdown",
+        "duration": 3
+      },
+      {
+        "type": "result",
+        "duration": 2.5,
+        "variant": "in_video",
+        "answerVisible": true
+      },
+      {
+        "type": "cta",
+        "duration": 2.5
+      }
+    ],
+    "timeline": {
+      "totalDuration": 38,
+      "sceneTimings": [
+        {
+          "type": "hook",
+          "startAt": 0,
+          "endAt": 3,
+          "duration": 3
+        },
+        {
+          "type": "question",
+          "startAt": 3,
+          "endAt": 8,
+          "duration": 5
+        },
+        {
+          "type": "countdown",
+          "startAt": 8,
+          "endAt": 11,
+          "duration": 3
+        },
+        {
+          "type": "reveal",
+          "startAt": 11,
+          "endAt": 13.5,
+          "duration": 2.5
+        },
+        {
+          "type": "product",
+          "startAt": 13.5,
+          "endAt": 19.5,
+          "duration": 6
+        },
+        {
+          "type": "countdown",
+          "startAt": 19.5,
+          "endAt": 22.5,
+          "duration": 3
+        },
+        {
+          "type": "reveal",
+          "startAt": 22.5,
+          "endAt": 25,
+          "duration": 2.5
+        },
+        {
+          "type": "question",
+          "startAt": 25,
+          "endAt": 30,
+          "duration": 5
+        },
+        {
+          "type": "countdown",
+          "startAt": 30,
+          "endAt": 33,
+          "duration": 3
+        },
+        {
+          "type": "result",
+          "startAt": 33,
+          "endAt": 35.5,
+          "duration": 2.5
+        },
+        {
+          "type": "cta",
+          "startAt": 35.5,
+          "endAt": 38,
+          "duration": 2.5
+        }
+      ]
+    },
+    "audio": {
+      "voice": {
+        "script": "Giá sản phẩm này là bao nhiêu? [A] 2.6M₫ - 6.5M₫ hay [B] 6.5M₫ - 16.2M₫? Đáp án là A!",
+        "wavPath": "temp/game_0UCMjl8s/voice.wav",
+        "duration": 2
+      },
+      "music": {
+        "track": "tension_01",
+        "volume": 0.18
+      },
+      "sfx": [
+        {
+          "type": "transition",
+          "at": 1.8
+        },
+        {
+          "type": "tick",
+          "at": 8
+        },
+        {
+          "type": "countdown",
+          "at": 8
+        },
+        {
+          "type": "tick",
+          "at": 8.5
+        },
+        {
+          "type": "tick",
+          "at": 9
+        },
+        {
+          "type": "tick",
+          "at": 9.5
+        },
+        {
+          "type": "tick",
+          "at": 10
+        },
+        {
+          "type": "tick",
+          "at": 10.5
+        },
+        {
+          "type": "reveal",
+          "at": 11
+        },
+        {
+          "type": "correct",
+          "at": 11.5
+        }
+      ]
+    },
+    "publishing": {
+      "caption": "💸 29K hay 299K? Đoán trúng ngay trong 3 giây! Giá của sản phẩm này nằm trong khoảng nào?\n❤️ Like nếu bạn đoán đúng!",
+      "hashtags": [
+        "#đoángiá",
+        "#tiktokviral",
+        "#dealhot",
+        "#mua_sắm",
+        "#affiliate",
+        "#game_giá",
+        "#Điện_tử",
+        "#Samsung"
+      ],
+      "affiliateLink": "https://shopee.vn/product/p009",
+      "outputPath": "export/game_0UCMjl8s_696283.mp4"
+    }
+  },
+  "outputPath": "export/game_0UCMjl8s_696283.mp4",
+  "captionJson": {
+    "caption": "💸 29K hay 299K? Đoán trúng ngay trong 3 giây! Giá của sản phẩm này nằm trong khoảng nào?\n❤️ Like nếu bạn đoán đúng!",
+    "hashtags": [
+      "#đoángiá",
+      "#tiktokviral",
+      "#dealhot",
+      "#mua_sắm",
+      "#affiliate",
+      "#game_giá",
+      "#Điện_tử",
+      "#Samsung"
+    ],
+    "affiliateLink": "https://shopee.vn/product/p009"
+  },
+  "validatorErrors": [],
+  "planningMs": 1,
+  "renderMs": 2,
+  "createdAt": "2026-09-14T14:44:32.526Z",
+  "updatedAt": "2026-09-14T14:44:32.526Z"
+}
