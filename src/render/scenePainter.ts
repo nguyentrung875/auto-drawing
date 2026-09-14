@@ -603,37 +603,79 @@ export function drawChoiceDeck(
   choices: Array<{ id: string; label: string; isCorrect?: boolean }>,
   isRevealed: boolean,
   revealedCorrectId?: string,
-): void {
-  const deckY = 1220;
-  const btnWidth = 430;
-  const btnHeight = 110;
-  const gap = 36;
-  const totalW = btnWidth * choices.length + gap * (choices.length - 1);
-  const startX = Math.round((STAGE_WIDTH - totalW) / 2);
+  startY = 1200,
+): { bottomY: number } {
+  const isGrid = choices.length > 2;
+  const btnWidth = 440;
+  const gap = 24;
+  const btnHeight = isGrid ? 85 : 110;
 
-  choices.forEach((choice, idx) => {
-    const x = startX + idx * (btnWidth + gap);
-    const isWinner = isRevealed && (choice.id === revealedCorrectId || choice.isCorrect);
-    const borderColor = isWinner ? '#22c55e' : ACCENT;
-    const bgColor = isWinner ? 'rgba(34,197,94,0.28)' : 'rgba(22,29,46,0.85)';
+  if (!isGrid) {
+    const totalW = btnWidth * choices.length + gap * (choices.length - 1);
+    const startX = Math.round((STAGE_WIDTH - totalW) / 2);
 
-    canvas.fillRoundRect(x, deckY, btnWidth, btnHeight, 28, bgColor, 1);
-    canvas.strokeRoundRect(x, deckY, btnWidth, btnHeight, 28, borderColor, isWinner ? 5 : 3, 0.9);
+    choices.forEach((choice, idx) => {
+      const x = startX + idx * (btnWidth + gap);
+      const isWinner = isRevealed && (choice.id === revealedCorrectId || choice.isCorrect);
+      const borderColor = isWinner ? '#22c55e' : isRevealed ? 'rgba(248,250,252,0.15)' : ACCENT;
+      const bgColor = isWinner ? 'rgba(34,197,94,0.32)' : isRevealed ? 'rgba(15,23,42,0.5)' : '#0f172a';
 
-    const labelText = `[ ${choice.id} ]  ${choice.label}`;
-    const measured = canvas.text.layout(labelText, { size: 38, weight: 800 });
-    canvas.drawText(labelText, {
-      x: Math.round(x + (btnWidth - measured.textWidth) / 2),
-      y: deckY + Math.round((btnHeight - 38 * 1.2) / 2),
-      color: INK,
-      size: 38,
-      weight: 800,
+      canvas.fillRoundRect(x, startY, btnWidth, btnHeight, 28, bgColor, 1);
+      canvas.strokeRoundRect(x, startY, btnWidth, btnHeight, 28, borderColor, isWinner ? 5 : 3, 0.95);
+
+      const labelText = `[ ${choice.id} ]  ${choice.label}`;
+      const measured = canvas.text.layout(labelText, { size: 36, weight: 800 });
+      canvas.drawText(labelText, {
+        x: Math.round(x + (btnWidth - measured.textWidth) / 2),
+        y: startY + Math.round((btnHeight - 36 * 1.2) / 2),
+        color: isWinner ? '#4ade80' : isRevealed ? 'rgba(248,250,252,0.45)' : INK,
+        size: 36,
+        weight: 800,
+      });
     });
-  });
+
+    return { bottomY: startY + btnHeight };
+  } else {
+    // 2x2 grid for 4 choices
+    const cols = 2;
+    const totalW = btnWidth * cols + gap * (cols - 1);
+    const startX = Math.round((STAGE_WIDTH - totalW) / 2);
+
+    choices.forEach((choice, idx) => {
+      const col = idx % cols;
+      const row = Math.floor(idx / cols);
+      const x = startX + col * (btnWidth + gap);
+      const y = startY + row * (btnHeight + gap);
+
+      const isWinner = isRevealed && (choice.id === revealedCorrectId || choice.isCorrect);
+      const borderColor = isWinner ? '#22c55e' : isRevealed ? 'rgba(248,250,252,0.15)' : ACCENT;
+      const bgColor = isWinner ? 'rgba(34,197,94,0.32)' : isRevealed ? 'rgba(15,23,42,0.5)' : '#0f172a';
+
+      canvas.fillRoundRect(x, y, btnWidth, btnHeight, 20, bgColor, 1);
+      canvas.strokeRoundRect(x, y, btnWidth, btnHeight, 20, borderColor, isWinner ? 4 : 2, 0.95);
+
+      const labelText = `[ ${choice.id} ]  ${choice.label}`;
+      const measured = canvas.text.layout(labelText, { size: 30, weight: 800 });
+      canvas.drawText(labelText, {
+        x: Math.round(x + (btnWidth - measured.textWidth) / 2),
+        y: y + Math.round((btnHeight - 30 * 1.2) / 2),
+        color: isWinner ? '#4ade80' : isRevealed ? 'rgba(248,250,252,0.45)' : INK,
+        size: 30,
+        weight: 800,
+      });
+    });
+
+    const totalRows = Math.ceil(choices.length / cols);
+    return { bottomY: startY + totalRows * btnHeight + (totalRows - 1) * gap };
+  }
 }
 
-export function drawPillCountdown(canvas: Canvas, secondsRemaining: number, maxSeconds = 5): void {
-  const barY = 1380;
+export function drawPillCountdown(
+  canvas: Canvas,
+  secondsRemaining: number,
+  maxSeconds = 5,
+  barY = 1350,
+): void {
   const barW = 900;
   const barH = 26;
   const x = Math.round((STAGE_WIDTH - barW) / 2);
@@ -656,11 +698,11 @@ export function drawPillCountdown(canvas: Canvas, secondsRemaining: number, maxS
   canvas.fillRoundRect(x, barY, currentW, barH, 13, color, 1);
 
   // Timer label
-  const timerLabel = `⏱️ Còn ${Math.ceil(secondsRemaining)}s...`;
+  const timerLabel = `⏱️ Còn ${secondsRemaining.toFixed(1)}s...`;
   const m = canvas.text.layout(timerLabel, { size: 28, weight: 700 });
   canvas.drawText(timerLabel, {
     x: Math.round((STAGE_WIDTH - m.textWidth) / 2),
-    y: barY + 40,
+    y: barY + 38,
     color: MUTED,
     size: 28,
     weight: 700,
@@ -758,13 +800,13 @@ export function paintMultiRoundFrame(
       maxWidth: boxWidth - 40,
     });
 
-    // Product card at y=450 (700x700)
-    const cardX = Math.round((STAGE_WIDTH - 700) / 2);
-    const cardY = 450;
-    const cardW = 700;
-    const cardH = 700;
+    // Product card at y=440 (720x720)
+    const cardX = Math.round((STAGE_WIDTH - 720) / 2);
+    const cardY = 440;
+    const cardW = 720;
+    const cardH = 720;
 
-    canvas.fillRoundRect(cardX, cardY, cardW, cardH, 36, '#161d2e', 1);
+    canvas.fillRoundRect(cardX, cardY, cardW, cardH, 36, '#0f172a', 1);
     canvas.strokeRoundRect(
       cardX,
       cardY,
@@ -778,7 +820,7 @@ export function paintMultiRoundFrame(
     const firstProduct = round.products[0];
     const pad = 24;
     const imageW = cardW - pad * 2;
-    const imageH = 500;
+    const imageH = 480;
     const imageX = cardX + pad;
     const imageY = cardY + pad;
 
@@ -807,10 +849,26 @@ export function paintMultiRoundFrame(
       });
     }
 
+    // Brand / Official badge on product image if brand exists
+    if (firstProduct?.brand) {
+      const badgeW = 220;
+      const badgeH = 44;
+      canvas.fillRoundRect(imageX + 16, imageY + 16, badgeW, badgeH, 12, 'rgba(15,23,42,0.85)', 1);
+      canvas.drawText(firstProduct.brand.toUpperCase(), {
+        x: imageX + 16 + Math.round(badgeW / 2),
+        y: imageY + 16 + Math.round((badgeH - 22 * 1.2) / 2),
+        size: 22,
+        weight: 800,
+        color: ACCENT,
+        align: 'center',
+        maxWidth: badgeW - 20,
+      });
+    }
+
     if (firstProduct?.name) {
       canvas.drawText(firstProduct.name, {
         x: Math.round(STAGE_WIDTH / 2),
-        y: cardY + 545,
+        y: cardY + 530,
         size: 34,
         weight: 700,
         color: INK,
@@ -820,23 +878,42 @@ export function paintMultiRoundFrame(
       });
     }
 
-    // Choice deck at y=1220
-    drawChoiceDeck(
+    // Benchmark Price / Deal Tag
+    const benchmarkLabel = firstProduct?.price
+      ? `Mốc so sánh: ${firstProduct.price.toLocaleString('vi-VN')}đ`
+      : undefined;
+    if (benchmarkLabel) {
+      canvas.drawText(benchmarkLabel, {
+        x: Math.round(STAGE_WIDTH / 2),
+        y: cardY + 630,
+        size: 32,
+        weight: 800,
+        color: ACCENT,
+        align: 'center',
+        maxWidth: cardW - 60,
+      });
+    }
+
+    // Choice deck starting at y=1200
+    const deckResult = drawChoiceDeck(
       canvas,
       round.choices,
       phase === 'reveal',
       String(round.correctAnswer),
+      1200,
     );
+
+    const countdownY = deckResult.bottomY + 30;
 
     // If play phase: draw pill countdown bar with remaining seconds
     if (phase === 'play') {
       const secondsRemaining = Math.max(0, Math.min(round.timerSeconds, slot.end - timeSeconds));
-      drawPillCountdown(canvas, secondsRemaining, round.timerSeconds);
+      drawPillCountdown(canvas, secondsRemaining, round.timerSeconds, countdownY);
     }
 
     // If reveal phase: highlight winning choice with green border and show reveal text / actual price
     if (phase === 'reveal') {
-      const revealBannerY = 1370;
+      const revealBannerY = countdownY;
       const revealBannerW = 900;
       const revealBannerH = 100;
       const revealX = Math.round((STAGE_WIDTH - revealBannerW) / 2);

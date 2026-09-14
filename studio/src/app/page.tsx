@@ -52,7 +52,13 @@ export default async function HomePage() {
               Universal AI Game Video Engine
             </span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
+            <Link
+              href="/layout-mockup"
+              className="px-3.5 py-2 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-sm font-semibold transition-colors flex items-center gap-1.5"
+            >
+              <span>📐</span> Layout Mockup
+            </Link>
             <Link
               href="/studio"
               className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold transition-colors"

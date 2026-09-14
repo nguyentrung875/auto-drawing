@@ -161,4 +161,29 @@ describe('paintMultiRoundFrame', () => {
     expect(scoreCanvas.paintedText.some((t) => t.value.includes('BẠN ĐÚNG MẤY CÂU?'))).toBe(true);
     expect(scoreCanvas.paintedText.some((t) => t.value.includes('Ai đúng 3/3 giơ tay!'))).toBe(true);
   });
+
+  it('correctly paints 4 choices in 2x2 grid without throwing', () => {
+    const fourChoiceChallenge = {
+      ...mockChallenge,
+      rounds: [
+        {
+          ...mockChallenge.rounds[0]!,
+          choices: [
+            { id: 'A', label: '10K - 20K', isCorrect: false },
+            { id: 'B', label: '21K - 30K', isCorrect: true },
+            { id: 'C', label: '31K - 40K', isCorrect: false },
+            { id: 'D', label: 'Trên 40K', isCorrect: false },
+          ],
+        },
+      ],
+    };
+
+    const scene = new AllInOneScene(fourChoiceChallenge);
+    const canvas = new Canvas(1080, 1920);
+
+    expect(() => paintMultiRoundFrame(canvas, scene, 4.0)).not.toThrow();
+    expect(canvas.paintedText.some((t) => t.value.includes('[ A ]'))).toBe(true);
+    expect(canvas.paintedText.some((t) => t.value.includes('[ D ]'))).toBe(true);
+    expect(canvas.paintedText.some((t) => t.value.includes('Còn'))).toBe(true);
+  });
 });
