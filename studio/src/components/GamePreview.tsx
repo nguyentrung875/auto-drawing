@@ -23,8 +23,23 @@ function formatDuration(s: number) {
 }
 
 export function GamePreview({ game, planningMs }: GamePreviewProps) {
-  const [activeTab, setActiveTab] = useState<"preview" | "json" | "timeline" | "audio">("preview");
+  const [activeTab, setActiveTab] = useState<"preview" | "video" | "json" | "timeline" | "audio">("preview");
   const [copied, setCopied] = useState(false);
+  const [isRendering, setIsRendering] = useState(false);
+  const [renderProgress, setRenderProgress] = useState<{
+    stage: string;
+    message: string;
+    percent: number;
+  } | null>(null);
+  const [renderedVideo, setRenderedVideo] = useState<{
+    url: string;
+    filename: string;
+    caption?: string;
+    hashtags?: string[];
+    renderMs?: number;
+  } | null>(null);
+  const [renderError, setRenderError] = useState<string | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const theme = getGameTheme(game.metadata.seed);
   const { mechanic, seed, resultVariant } = game.metadata;
@@ -35,13 +50,120 @@ export function GamePreview({ game, planningMs }: GamePreviewProps) {
     setTimeout(() => setCopied(false), 2000);
   }
 
+  async function handleStartRender() {
+    if (isRendering) return;
+    setIsRendering(true);
+    setRenderError(null);
+    setRenderProgress({ stage: "init", message: "Bắt đầu gửi lệnh render...", percent: 5 });
+
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
+    try {
+      const res = await fetch("/api/render", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          gameId: game.metadata.gameId,
+          gameJson: game,
+          mechanic: game.metadata.mechanic,
+          seed: game.metadata.seed,
+          resultVariant: game.metadata.resultVariant,
+        }),
+        signal: controller.signal,
+      });
+
+      if (!res.ok) {
+        const errJson = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(errJson.error || `HTTP error ${res.status}`);
+      }
+
+      if (!res.body) {
+        throw new Error("Không thể đọc luồng dữ liệu phản hồi từ server");
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const parts = buffer.split("\n\n");
+        buffer = parts.pop() || "";
+
+        for (const part of parts) {
+          const lines = part.split("\n");
+          let eventType = "message";
+          let eventData = "";
+
+          for (const line of lines) {
+            if (line.startsWith("event: ")) {
+              eventType = line.slice(7).trim();
+            } else if (line.startsWith("data: ")) {
+              eventData = line.slice(6).trim();
+            }
+          }
+
+          if (eventData) {
+            try {
+              const parsed = JSON.parse(eventData);
+              if (eventType === "progress") {
+                setRenderProgress({
+                  stage: parsed.stage || "render",
+                  message: parsed.message || "Đang xử lý...",
+                  percent: parsed.percent || 0,
+                });
+              } else if (eventType === "done") {
+                setRenderedVideo({
+                  url: parsed.videoUrl,
+                  filename: parsed.videoFilename,
+                  caption: parsed.caption,
+                  hashtags: parsed.hashtags,
+                  renderMs: parsed.renderMs,
+                });
+                setActiveTab("video");
+                setIsRendering(false);
+                setRenderProgress(null);
+              } else if (eventType === "error") {
+                setRenderError(parsed.error || "Render failed");
+                setIsRendering(false);
+                setRenderProgress(null);
+              }
+            } catch {
+              // ignore partial chunk json parse errors
+            }
+          }
+        }
+      }
+    } catch (err) {
+      if ((err as Error).name !== "AbortError") {
+        setRenderError(err instanceof Error ? err.message : String(err));
+      }
+    } finally {
+      setIsRendering(false);
+      abortControllerRef.current = null;
+    }
+  }
+
+  function handleCancelRender() {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    setIsRendering(false);
+    setRenderProgress(null);
+  }
+
   return (
     <div className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden">
       {/* Header */}
-      <div className="border-b border-gray-800 p-4 flex items-center justify-between">
+      <div className="border-b border-gray-800 p-4 flex items-center justify-between flex-wrap gap-3">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-green-400 text-xs font-medium">✅ Game Rendered</span>
+            <span className="text-green-400 text-xs font-medium">✅ Game Ready</span>
             <span className="text-gray-600 text-xs">·</span>
             <span className="text-gray-500 text-xs font-mono">{game.metadata.gameId}</span>
           </div>
@@ -58,31 +180,105 @@ export function GamePreview({ game, planningMs }: GamePreviewProps) {
             )}
           </div>
         </div>
-        <button
-          onClick={copyJson}
-          className="text-xs px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white transition-colors border border-gray-700"
-        >
-          {copied ? "✅ Copied!" : "Copy JSON"}
-        </button>
+
+        <div className="flex items-center gap-2">
+          {/* Render MP4 Button */}
+          {isRendering ? (
+            <button
+              type="button"
+              disabled
+              className="text-xs px-3.5 py-1.5 rounded-lg bg-indigo-950 border border-indigo-500/50 text-indigo-200 flex items-center gap-2 cursor-wait"
+            >
+              <span className="w-2 h-2 rounded-full bg-indigo-400 animate-ping" />
+              <span>Đang render ({renderProgress?.percent ?? 0}%)</span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={handleStartRender}
+              className="text-xs px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-500 hover:to-pink-500 text-white font-semibold shadow-md shadow-indigo-950 transition-all hover:scale-105 flex items-center gap-1.5"
+            >
+              <span>🎬</span>
+              <span>{renderedVideo ? "Render Lại MP4" : "Render MP4 Thật"}</span>
+            </button>
+          )}
+
+          <button
+            onClick={copyJson}
+            className="text-xs px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white transition-colors border border-gray-700"
+          >
+            {copied ? "✅ Copied!" : "Copy JSON"}
+          </button>
+        </div>
       </div>
 
+      {/* Live Render Progress Banner */}
+      {isRendering && renderProgress && (
+        <div className="mx-4 mt-4 p-4 rounded-xl bg-indigo-950/60 border border-indigo-500/40 text-sm space-y-2">
+          <div className="flex items-center justify-between text-xs">
+            <span className="font-semibold text-indigo-300 flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse" />
+              {renderProgress.message}
+            </span>
+            <div className="flex items-center gap-3">
+              <span className="font-mono font-bold text-indigo-400">{renderProgress.percent}%</span>
+              <button
+                type="button"
+                onClick={handleCancelRender}
+                className="px-2 py-0.5 rounded bg-gray-800 hover:bg-red-950 text-gray-400 hover:text-red-300 text-xs border border-gray-700 transition-colors"
+              >
+                Hủy
+              </button>
+            </div>
+          </div>
+          <div className="w-full bg-gray-800 rounded-full h-2 overflow-hidden">
+            <div
+              className="bg-gradient-to-r from-indigo-500 to-pink-500 h-2 rounded-full transition-all duration-300"
+              style={{ width: `${renderProgress.percent}%` }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Error Alert */}
+      {renderError && (
+        <div className="mx-4 mt-4 p-3 rounded-xl bg-red-950/60 border border-red-500/50 text-xs text-red-300 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span>⚠️</span>
+            <span>Lỗi render: {renderError}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setRenderError(null)}
+            className="text-gray-400 hover:text-white text-xs underline"
+          >
+            Đóng
+          </button>
+        </div>
+      )}
+
       {/* Tabs */}
-      <div className="border-b border-gray-800 flex">
-        {(["preview", "json", "timeline", "audio"] as const).map((tab) => (
+      <div className="border-b border-gray-800 flex mt-2">
+        {(["preview", "video", "json", "timeline", "audio"] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
             className={`flex-1 py-2.5 text-xs font-medium capitalize transition-colors ${
               activeTab === tab
-                ? "text-white border-b-2 border-indigo-500"
+                ? "text-white border-b-2 border-indigo-500 font-semibold"
                 : "text-gray-500 hover:text-gray-300"
             }`}
           >
-            {tab === "preview" && "🎮 "}
-            {tab === "json" && "📄 "}
-            {tab === "timeline" && "⏱️ "}
-            {tab === "audio" && "🎵 "}
-            {tab}
+            {tab === "preview" && "🎮 Mô phỏng"}
+            {tab === "video" && (
+              <span className="flex items-center justify-center gap-1">
+                <span>🎥 Video Thật</span>
+                {renderedVideo && <span className="w-1.5 h-1.5 rounded-full bg-green-400" />}
+              </span>
+            )}
+            {tab === "json" && "📄 JSON"}
+            {tab === "timeline" && "⏱️ Timeline"}
+            {tab === "audio" && "🎵 Audio"}
           </button>
         ))}
       </div>
@@ -91,6 +287,81 @@ export function GamePreview({ game, planningMs }: GamePreviewProps) {
       <div className="p-4">
         {activeTab === "preview" && (
           <VideoPreview game={game} theme={theme} />
+        )}
+
+        {activeTab === "video" && (
+          renderedVideo ? (
+            <div className="flex flex-col items-center gap-4 py-2">
+              {/* 9:16 Video Player mockup */}
+              <div
+                className="relative rounded-[36px] border-4 border-slate-700 overflow-hidden shadow-2xl ring-1 ring-slate-600/40 bg-black flex items-center justify-center"
+                style={{ width: 280, height: 498 }}
+              >
+                <video
+                  src={renderedVideo.url}
+                  controls
+                  autoPlay
+                  loop
+                  playsInline
+                  className="w-full h-full object-contain"
+                />
+              </div>
+
+              {/* Video Action controls & Stats */}
+              <div className="w-full max-w-sm flex flex-col gap-2.5">
+                <div className="flex items-center gap-2">
+                  <a
+                    href={renderedVideo.url}
+                    download={renderedVideo.filename}
+                    className="flex-1 py-2 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold text-center transition-colors flex items-center justify-center gap-1.5 shadow"
+                  >
+                    <span>⬇️</span> Tải Video MP4
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(window.location.origin + renderedVideo.url);
+                      alert("Đã sao chép link video!");
+                    }}
+                    className="py-2 px-3 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs font-semibold transition-colors border border-gray-700 flex items-center gap-1.5"
+                  >
+                    <span>🔗</span> Copy Link
+                  </button>
+                </div>
+
+                <div className="bg-gray-950 p-3 rounded-xl border border-gray-800 text-xs space-y-1">
+                  <div className="flex justify-between text-gray-400">
+                    <span>Thời gian render:</span>
+                    <span className="font-mono text-indigo-400 font-semibold">
+                      {renderedVideo.renderMs ? `${(renderedVideo.renderMs / 1000).toFixed(1)}s` : "N/A"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-gray-400">
+                    <span>File MP4 xuất:</span>
+                    <span className="font-mono text-gray-300 truncate max-w-[180px]">
+                      {renderedVideo.filename}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="py-12 flex flex-col items-center justify-center text-center gap-3">
+              <div className="text-4xl">🎬</div>
+              <h4 className="text-white font-semibold text-sm">Chưa có video MP4</h4>
+              <p className="text-gray-500 text-xs max-w-xs leading-relaxed">
+                Bấm nút &quot;Render MP4 Thật&quot; ở trên để chạy pipeline Core Engine xuất video 1080×1920 hoàn chỉnh kèm giọng đọc tiếng Việt.
+              </p>
+              <button
+                type="button"
+                onClick={handleStartRender}
+                disabled={isRendering}
+                className="mt-2 px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-pink-600 hover:from-indigo-500 hover:to-pink-500 text-white text-xs font-semibold shadow transition-all"
+              >
+                🎬 Bắt Đầu Render Ngay
+              </button>
+            </div>
+          )
         )}
 
         {activeTab === "json" && (
