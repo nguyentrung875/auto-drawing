@@ -28,3 +28,20 @@ export type {
   VoiceOptions,
   VoiceResult,
 } from './AudioEngine';
+
+export { VOICE_RULEBOOK } from './voiceRulebook';
+export type { MechanicVoiceRule } from './voiceRulebook';
+export { VoiceHistoryStore } from './voiceHistoryStore';
+export type { VoiceHistoryRecord, VoiceHistoryStoreOptions } from './voiceHistoryStore';
+export { selectVoiceScript, calculateScriptQualityScore } from './voiceSelector';
+export type { SelectVoiceOptions } from './voiceSelector';
+export type {
+  VoiceMode,
+  VoiceIntent,
+  VisualDependency,
+  VoiceCandidate,
+  VoiceMetadata,
+  VoiceTimingConfig,
+  ScriptQualityScore,
+  AudioRuntimeScore,
+} from './types';
