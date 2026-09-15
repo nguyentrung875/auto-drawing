@@ -128,6 +128,23 @@ describe('game render (Story 4.2)', () => {
     expect(result.summary).toContain('passed 1/1');
   });
 
+  it('renders a 38s multi-round challenge show when --mode multi is specified', async () => {
+    const result = await runRenderCommand({
+      mechanic: 'GUESS_THE_PRICE',
+      mode: 'multi',
+      seed: 839271,
+      queueDir: path.join(workDir, 'queue'),
+      rootDir: ROOT,
+      exportDir: path.join(workDir, 'export'),
+      logsDir: path.join(workDir, 'logs'),
+      renderer: createFakeRenderStage(),
+      productIds: [],
+    });
+
+    expect(result.exitCode).toBe(0);
+    expect(result.videoPath).toBeDefined();
+  });
+
   it('exits 1 with {code,field,hint} when the Game JSON cannot satisfy the validator', async () => {
     // MOST_EXPENSIVE with a single product: the mechanic rule fails in the
     // game-logic layer, which is exactly the {"code","field","hint"} contract.

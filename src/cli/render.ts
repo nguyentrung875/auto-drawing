@@ -7,7 +7,9 @@
  * `batch_report` on stdout. A bad Game JSON exits 1 with `{code, field, hint}`.
  */
 import { randomUUID } from 'node:crypto';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
+import { performance } from 'node:perf_hooks';
 import { BatchReporter } from '../observability';
 import { JobRunner } from '../queue/JobRunner';
 import type { RenderStagePort } from '../queue/ports';
@@ -137,6 +139,126 @@ export async function runRenderCommand(args: RenderArgs): Promise<RenderCommandR
             ? 2
             : 1;
     args.productIds = all.slice(0, needed).map((p) => p.productId);
+  }
+
+  if (args.mode === 'multi') {
+    const seed = Number.isFinite(args.seed) ? (args.seed as number) : 839271;
+    const { ProductProvider } = await import('../product/ProductProvider');
+    const { ChallengeCurator } = await import('../challenge/ChallengeCurator');
+    const { AllInOneScene } = await import('../scene/AllInOneScene');
+    const { g9Definition } = await import('../definitions/g9_guess_the_price');
+    const { g7Definition } = await import('../definitions/g7_grocery_basket');
+    const { Canvas } = await import('../render/canvas');
+    const { encodePng } = await import('../render/png');
+    const { paintMultiRoundFrame } = await import('../render/scenePainter');
+    const { FFmpegMuxer } = await import('../render/ffmpeg');
+    const { synthesizeMusicBed, writeWav } = await import('../render/wav');
+    const { DEFAULT_RENDER_CONFIG } = await import('../render/types');
+
+    const provider = new ProductProvider(path.resolve(rootDir, 'products'), { watch: false });
+    const products = provider.getAll();
+    const curator = new ChallengeCurator();
+    const dsl = args.mechanic === 'GROCERY_BASKET' ? g7Definition : g9Definition;
+    const challenge = curator.curate(dsl, products, seed);
+    const scene = new AllInOneScene(challenge);
+    const timeline = scene.getTimeline();
+
+    const jobId = `job_multi_${randomUUID()}`;
+    const gameId = challenge.gameId;
+    const exportDir = path.resolve(rootDir, args.exportDir ?? 'export');
+    const tempDir = path.resolve(rootDir, 'temp', jobId);
+    const framesDir = path.join(tempDir, 'frames');
+    mkdirSync(framesDir, { recursive: true });
+    mkdirSync(exportDir, { recursive: true });
+
+    const fps = 30;
+    const frameCount = Math.round(timeline.totalDuration * fps);
+
+    if (args.renderer) {
+      const outcome = await args.renderer.render({
+        jobId,
+        game: {
+          metadata: { gameId, mechanic: (args.mechanic ?? 'GUESS_THE_PRICE') as any, seed },
+          content: { title: challenge.title },
+          gameplay: {},
+          entities: challenge.rounds.flatMap((r) => r.products),
+          publishing: { caption: challenge.title, hashtags: ['#game', '#multi'] },
+        },
+        timeline: { slots: timeline.slots, totalDuration: timeline.totalDuration },
+        frames: [],
+        audio: {
+          voiceWavPath: '',
+          voiceStartAt: 0,
+          voiceDuration: 0,
+          duration: timeline.totalDuration,
+          revealAt: 0,
+          syncDelta: 0,
+          sfxCues: [],
+          music: { track: 'music.mp3', volume: 0.18 },
+        },
+        seed,
+        exportDir: args.exportDir,
+        rootDir,
+      } as any);
+
+      return {
+        exitCode: outcome.warnings?.some((w) => w.code.startsWith('E_')) ? 1 : 0,
+        jobId,
+        videoPath: outcome.videoPath,
+        captionPath: outcome.captionPath,
+        renderMs: outcome.timings.renderMs,
+      };
+    }
+
+    const startMs = performance.now();
+    for (let i = 0; i < frameCount; i += 1) {
+      const timeSeconds = i / fps;
+      const canvas = new Canvas(1080, 1920);
+      paintMultiRoundFrame(canvas, scene, timeSeconds);
+      const png = encodePng({ width: 1080, height: 1920, data: canvas.data });
+      writeFileSync(path.join(framesDir, `frame_${String(i + 1).padStart(5, '0')}.png`), png);
+    }
+
+    const audioPath = path.join(tempDir, 'audio.wav');
+    const samples = synthesizeMusicBed(timeline.totalDuration + 0.4, 44100, 'tension_01', 0.18);
+    writeFileSync(audioPath, writeWav(samples, 44100));
+
+    const videoPath = path.join(exportDir, `${gameId}_${seed}.mp4`);
+    const muxer = new FFmpegMuxer();
+    await muxer.mux({
+      framesPattern: path.join(framesDir, 'frame_%05d.png'),
+      fps,
+      audioWavPath: audioPath,
+      outputPath: videoPath,
+      cc: DEFAULT_RENDER_CONFIG,
+      timeoutMs: 120000,
+    });
+
+    const captionPath = path.join(exportDir, `${gameId}_${seed}.caption.json`);
+    writeFileSync(
+      captionPath,
+      JSON.stringify(
+        {
+          caption: `${challenge.title} 🔥 3 vòng chơi đỉnh cao!`,
+          hashtags: ['#guesstheprice', '#multiround', '#viral'],
+          affiliate_link: challenge.rounds[0]?.products[0]?.affiliate_link ?? '',
+        },
+        null,
+        2,
+      ) + '\n',
+    );
+
+    rmSync(tempDir, { recursive: true, force: true });
+    const renderMs = Math.round(performance.now() - startMs);
+
+    return {
+      exitCode: 0,
+      jobId,
+      videoPath,
+      captionPath,
+      renderMs,
+      summary: `Successfully rendered 38s multi-round video to ${videoPath}`,
+    };
   }
 
   const batchId = `single_${Date.now().toString(36)}`;
