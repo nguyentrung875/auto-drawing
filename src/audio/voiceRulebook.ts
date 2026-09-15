@@ -58,7 +58,7 @@ export const VOICE_RULEBOOK: Record<string, MechanicVoiceRule> = {
       defaultGapMs: 90,
       minGapMs: 70,
       maxGapMs: 120,
-      maxDurationSec: 1.8,
+      maxDurationSec: 2.0,
     },
     visualDependency: 'HIGH',
     staticForbiddenPatterns: [

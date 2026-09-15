@@ -5,6 +5,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { EdgeTtsEngine } from './EdgeTtsEngine';
 import { FormantViEngine } from './FormantViEngine';
+import { VOICE_RULEBOOK } from './voiceRulebook';
+import type { AudioRuntimeScore } from './types';
 import type { GameJson, Timeline } from '../types/game';
 
 /**
@@ -62,6 +64,7 @@ export interface AudioSegment {
   voiceStartAt: number;
   revealAt: number;
   syncDelta: number;
+  runtimeScore?: import('./types').AudioRuntimeScore;
   sfxCues: SfxCue[];
   music: MusicTrack;
 }
@@ -351,25 +354,34 @@ export class AudioEngine {
 
     const revealAt = revealStart(game, timeline);
     const countdownAt = countdownStart(game, timeline);
+    const mechanic = game.metadata?.mechanic;
+    const rule = mechanic ? VOICE_RULEBOOK[mechanic] : undefined;
+    const targetGapMs =
+      (game.audio?.voice as { revealGapMs?: number })?.revealGapMs ??
+      rule?.timing.defaultGapMs ??
+      100;
+    const targetGapSec = Number((targetGapMs / 1000).toFixed(3));
+    const maxDurationSec = rule?.timing.maxDurationSec ?? 2.0;
+
     const script = game.audio?.voice?.script || game.content.voice_script;
     const voice = await this.adapter.synthesizeVoice(script, {
       language: game.metadata.language ?? 'vi-VN',
       revealAt,
-      targetDuration: 1.9,
+      targetDuration: Math.min(1.9, maxDurationSec - 0.1),
     });
-    if (!Number.isFinite(voice.duration) || voice.duration <= 0 || voice.duration >= 2) {
+    if (!Number.isFinite(voice.duration) || voice.duration <= 0 || voice.duration >= maxDurationSec) {
       throw new AudioError(
         'E_AUDIO_DURATION_INVALID',
         'audio.voice',
-        `voice duration must be finite, positive, and <2s; received ${voice.duration}`,
+        `voice duration must be finite, positive, and <${maxDurationSec}s; received ${voice.duration}`,
       );
     }
     const duration = Number(voice.duration.toFixed(3));
-    if (duration >= 2) {
+    if (duration >= maxDurationSec) {
       throw new AudioError(
         'E_AUDIO_DURATION_INVALID',
         'audio.voice',
-        `voice duration rounds to ${duration}s and must remain <2s`,
+        `voice duration rounds to ${duration}s and must remain <${maxDurationSec}s`,
       );
     }
     let outputIsFile = false;
@@ -385,8 +397,20 @@ export class AudioEngine {
         `voice WAV is not a regular file at '${voice.voiceWavPath}'`,
       );
     }
-    const voiceStartAt = Number((revealAt - duration).toFixed(3));
-    const syncDelta = Number(Math.abs(voiceStartAt + duration - revealAt).toFixed(3));
+
+    const voiceEndAt = Number((revealAt - targetGapSec).toFixed(3));
+    const voiceStartAt = Number((voiceEndAt - duration).toFixed(3));
+    if (voiceStartAt < countdownAt) {
+      throw new AudioError(
+        'E_AUDIO_DURATION_INVALID',
+        'audio.voice',
+        `voice start time ${voiceStartAt}s precedes countdown start ${countdownAt}s`,
+      );
+    }
+
+    const actualRevealGap = Number((revealAt - (voiceStartAt + duration)).toFixed(3));
+    const gapErrorMs = Math.round(Math.abs(actualRevealGap - targetGapSec) * 1000);
+    const syncDelta = Number((gapErrorMs / 1000).toFixed(3));
     if (syncDelta > 0.1) {
       throw new AudioError(
         'E_AUDIO_SYNC_DRIFT',
@@ -395,6 +419,17 @@ export class AudioEngine {
       );
     }
 
+    const minGapMs = rule?.timing.minGapMs ?? 50;
+    const collisionDetected = actualRevealGap < minGapMs / 1000 || voiceStartAt < countdownAt;
+    const runtimeScore: AudioRuntimeScore = {
+      score: collisionDetected ? 0 : Math.max(0, 100 - gapErrorMs * 2),
+      actualDuration: duration,
+      actualRevealGapMs: Math.round(actualRevealGap * 1000),
+      gapErrorMs,
+      collisionDetected,
+      pass: !collisionDetected && gapErrorMs <= 15,
+    };
+
     return {
       voiceWavPath: voice.voiceWavPath,
       duration,
@@ -402,6 +437,7 @@ export class AudioEngine {
       voiceStartAt,
       revealAt,
       syncDelta,
+      runtimeScore,
       sfxCues: [...makeCountdownCues(countdownAt), ...configuredCues(game)],
       music: {
         track: game.audio?.music?.track ?? 'tension_01',
