@@ -63,7 +63,14 @@ export const gameSchema = z.object({
   }),
   scenes: z.array(z.string()).min(1),
   audio: z.object({
-    voice: z.object({ script: z.string(), enabled: z.boolean() }),
+    voice: z.object({
+      script: z.string(),
+      enabled: z.boolean(),
+      intent: z.string().optional(),
+      templateId: z.string().optional(),
+      visualDependency: z.string().optional(),
+      revealGapMs: z.number().optional(),
+    }),
     music: z.object({ track: z.string(), volume: z.number() }).optional(),
     sfx: z.array(z.object({ type: z.string(), at: z.number() })),
   }),

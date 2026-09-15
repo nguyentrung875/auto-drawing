@@ -52,7 +52,14 @@ export interface GameGameplay {
 }
 
 export interface GameAudio {
-  voice: { script: string; enabled: boolean };
+  voice: {
+    script: string;
+    enabled: boolean;
+    intent?: string;
+    templateId?: string;
+    visualDependency?: string;
+    revealGapMs?: number;
+  };
   music?: { track: string; volume: number };
   sfx: Array<{ type: string; at: number }>;
 }
