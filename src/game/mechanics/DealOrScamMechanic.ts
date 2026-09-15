@@ -11,6 +11,7 @@ import { buildBaseGame, groupDigits, layoutCards } from './shared';
 import type { IMechanic, MechanicInput, MechanicOutput } from './types';
 import { STAGE_HEIGHT, STAGE_WIDTH } from './types';
 import { DecisionEngine } from '../../challenge/engines/DecisionEngine';
+import { selectVoiceScript } from '../../audio/voiceSelector';
 
 const decisionEngine = new DecisionEngine();
 
@@ -63,6 +64,13 @@ export class DealOrScamMechanic implements IMechanic {
     const gameId = input.gameId ?? `g41_${seed}`;
     const question = `${product.name} sale sốc -${discountStr} (từ ${origStr} còn ${saleStr}): KÈO THƠM hay CÚ LỪA?`;
 
+    const voiceMeta = selectVoiceScript({
+      mechanic: this.id,
+      seed,
+      history: input.history,
+      customCandidates: input.voiceCandidates,
+    });
+
     const game = buildBaseGame({
       gameId,
       mechanic: this.id,
@@ -73,7 +81,8 @@ export class DealOrScamMechanic implements IMechanic {
       hook: `Giảm tới ${discountStr}! Deal hời hay bẫy sale ảo?`,
       question,
       cta: 'Comment đáp án của bạn: Kèo thơm hay Cú lừa?',
-      voiceScript: `${product.name} giá gốc ${origStr} đang sale sốc còn ${saleStr}, giảm ${discountStr}. Liệu đây là deal hời múc ngay hay bẫy sale lừa đảo?`,
+      voiceScript: voiceMeta.script,
+      voiceMetadata: voiceMeta,
       products: [product],
     });
 

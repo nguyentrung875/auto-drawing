@@ -1,5 +1,6 @@
 export type { AudioSegment, IAudioEngine, MusicTrack, SfxCue, VoiceOptions, VoiceResult } from './AudioEngine';
 export { AudioError } from './AudioEngine';
+export type { MechanicVoiceRule } from './voiceRulebook';
 
 export type VoiceMode = 'SPOKEN' | 'SILENT';
 

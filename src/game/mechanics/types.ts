@@ -48,6 +48,9 @@ export interface SceneData {
   stage: { width: number; height: number };
 }
 
+import type { VoiceCandidate } from '../../audio/types';
+import type { VoiceHistoryStore } from '../../audio/voiceHistoryStore';
+
 export interface MechanicInput {
   products: Product[];
   seed: number;
@@ -57,6 +60,8 @@ export interface MechanicInput {
   gameId?: string;
   /** GROCERY_BASKET only — target budget in VND (defaults to 300,000). */
   budget?: number;
+  history?: VoiceHistoryStore;
+  voiceCandidates?: VoiceCandidate[];
 }
 
 export interface MechanicOutput {

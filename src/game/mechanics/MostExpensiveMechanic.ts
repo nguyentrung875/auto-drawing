@@ -11,6 +11,8 @@ import { buildBaseGame, groupDigits, layoutCards } from './shared';
 import type { IMechanic, MechanicInput, MechanicOutput } from './types';
 import { STAGE_HEIGHT, STAGE_WIDTH } from './types';
 
+import { selectVoiceScript } from '../../audio/voiceSelector';
+
 const LABELS = ['A', 'B', 'C', 'D'];
 
 export class MostExpensiveMechanic implements IMechanic {
@@ -32,6 +34,14 @@ export class MostExpensiveMechanic implements IMechanic {
 
     const gameId = input.gameId ?? `most_expensive_${seed}`;
     const question = 'Món nào ĐẮT NHẤT?';
+
+    const voiceMeta = selectVoiceScript({
+      mechanic: this.id,
+      seed,
+      history: input.history,
+      customCandidates: input.voiceCandidates,
+    });
+
     const game = buildBaseGame({
       gameId,
       mechanic: this.id,
@@ -42,7 +52,8 @@ export class MostExpensiveMechanic implements IMechanic {
       hook: 'Món nào đắt nhất? Bạn có 3 giây!',
       question,
       cta: 'Comment đáp án của bạn!',
-      voiceScript: `Trong ${products.length} món này, món nào đắt nhất?`,
+      voiceScript: voiceMeta.script,
+      voiceMetadata: voiceMeta,
       products,
     });
     game.gameplay.answer = max.productId;

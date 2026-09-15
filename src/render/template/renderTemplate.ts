@@ -7,8 +7,7 @@
  */
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
-import type { RenderInput } from '../types';
-import type { SceneCard } from '../../scene/types';
+import type { RenderCardView, RenderInput } from '../types';
 
 function formatVnd(amount: number): string {
   return new Intl.NumberFormat('vi-VN', {
@@ -61,8 +60,8 @@ export function generateRenderHtml(input: RenderInput): string {
   // Resolve base64 for all products to guarantee immediate zero-latency rendering
   const productImages = resolvedProducts.map((p) => resolveImageBase64(p.image, rootDir ?? process.cwd()));
 
-  const rawCards = (sceneData?.cards ?? []) as SceneCard[];
-  const cards: SceneCard[] = rawCards.length > 0
+  const rawCards = (sceneData?.cards ?? []) as RenderCardView[];
+  const cards: RenderCardView[] = rawCards.length > 0
     ? rawCards
     : (game.entities ?? []).map((e, idx) => ({
         productId: e.productId,

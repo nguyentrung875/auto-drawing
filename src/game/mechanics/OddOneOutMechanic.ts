@@ -9,6 +9,7 @@ import type { Product } from '../../product/schema';
 import { buildBaseGame, layoutCards } from './shared';
 import type { IMechanic, MechanicInput, MechanicOutput } from './types';
 import { STAGE_HEIGHT, STAGE_WIDTH } from './types';
+import { selectVoiceScript } from '../../audio/voiceSelector';
 
 const LABELS = ['A', 'B', 'C', 'D'];
 
@@ -71,6 +72,14 @@ export class OddOneOutMechanic implements IMechanic {
 
     const gameId = input.gameId ?? `odd_one_out_${seed}`;
     const question = 'Món nào là "KẺ LẠ" trong 4 món này?';
+
+    const voiceMeta = selectVoiceScript({
+      mechanic: this.id,
+      seed,
+      history: input.history,
+      customCandidates: input.voiceCandidates,
+    });
+
     const game = buildBaseGame({
       gameId,
       mechanic: this.id,
@@ -81,7 +90,8 @@ export class OddOneOutMechanic implements IMechanic {
       hook: 'Tìm ra KẺ LẠ trong 3 giây!',
       question,
       cta: 'Bạn đoán đúng không? Comment nhé!',
-      voiceScript: `Trong 4 món này, có một kẻ lạc loài! Bạn tìm ra không?`,
+      voiceScript: voiceMeta.script,
+      voiceMetadata: voiceMeta,
       products,
     });
 

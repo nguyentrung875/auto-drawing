@@ -211,3 +211,55 @@ describe('Epic 2 — end-to-end: 4 mechanics validate + compute', () => {
     expect(computed.timeline.totalDuration).toBeCloseTo(18.0, 2);
   });
 });
+
+describe('Task 5 — Voice script length & VoiceSelector integration across all 7 mechanics', () => {
+  const cases = [
+    { mechanic: 'HI_LO' as const, products: [p001, p042], seed: 839271 },
+    {
+      mechanic: 'MOST_EXPENSIVE' as const,
+      products: [product('p001', 189000), product('p015', 890000), product('p028', 450000)],
+      seed: 839272,
+    },
+    { mechanic: 'ONE_AWAY' as const, products: [p001], seed: 839273, hiddenIndex: 3 },
+    {
+      mechanic: 'ODD_ONE_OUT' as const,
+      products: [
+        { ...product('p001', 189000), category: 'Điện tử', brand: 'Xiaomi' },
+        { ...product('p002', 249000), category: 'Điện tử', brand: 'Xiaomi' },
+        { ...product('p003', 329000), category: 'Điện tử', brand: 'Xiaomi' },
+        { ...product('p004', 199000), category: 'Gia dụng', brand: 'Lock&Lock' },
+      ],
+      seed: 839274,
+    },
+    { mechanic: 'GUESS_THE_PRICE' as const, products: [p001], seed: 839275 },
+    {
+      mechanic: 'GROCERY_BASKET' as const,
+      products: [product('p001', 100000), product('p002', 50000), product('p003', 50000)],
+      seed: 839276,
+    },
+    {
+      mechanic: 'DEAL_OR_SCAM' as const,
+      products: [{ ...product('p001', 50000), originalPrice: 100000 }],
+      seed: 839277,
+    },
+  ];
+
+  it.each(cases)(
+    '$mechanic produces punchy voice script (<= 8 words) matching game.audio.voice',
+    (c) => {
+      const { game } = MechanicRegistry.get(c.mechanic).create({
+        products: c.products,
+        seed: c.seed,
+        hiddenIndex: 'hiddenIndex' in c ? c.hiddenIndex : undefined,
+      });
+      const script = game.content.voice_script;
+      const wordCount = script.trim().split(/\s+/).length;
+      expect(wordCount).toBeLessThanOrEqual(8);
+      expect(game.audio.voice.script).toBe(script);
+      expect(game.audio.voice.intent).toBeDefined();
+      expect(game.audio.voice.templateId).toBeDefined();
+      expect(game.audio.voice.visualDependency).toBeDefined();
+    },
+  );
+});
+

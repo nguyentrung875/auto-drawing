@@ -10,6 +10,7 @@ import { buildBaseGame, groupDigits, layoutCards } from './shared';
 import type { IMechanic, MechanicInput, MechanicOutput } from './types';
 import { STAGE_HEIGHT, STAGE_WIDTH } from './types';
 import { KnapsackEngine } from '../../challenge/engines/KnapsackEngine';
+import { selectVoiceScript } from '../../audio/voiceSelector';
 
 export const GROCERY_BASKET_CHOICES = [
   { id: 'under', label: 'ĐỦ TIỀN (DƯỚI BUDGET)' },
@@ -46,6 +47,13 @@ export class GroceryBasketMechanic implements IMechanic {
     const gameId = input.gameId ?? `g7_${seed}`;
     const question = `Tổng giá trị giỏ hàng 3 món này ĐỦ TIỀN hay CHÁY TÚI với ngân sách ${budgetStr}?`;
 
+    const voiceMeta = selectVoiceScript({
+      mechanic: this.id,
+      seed,
+      history: input.history,
+      customCandidates: input.voiceCandidates,
+    });
+
     const game = buildBaseGame({
       gameId,
       mechanic: this.id,
@@ -56,7 +64,8 @@ export class GroceryBasketMechanic implements IMechanic {
       hook: `3 món này có dưới ${budgetStr} không? Đoán trúng ngay!`,
       question,
       cta: 'Comment đáp án của bạn: Đủ tiền hay Cháy túi?',
-      voiceScript: `Giỏ hàng gồm 3 món: ${products.map((p) => p.name).join(', ')}. Liệu tổng tiền có dưới ${budgetStr} không?`,
+      voiceScript: voiceMeta.script,
+      voiceMetadata: voiceMeta,
       products,
     });
 

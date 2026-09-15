@@ -101,6 +101,8 @@ export function cardsOverlap(cards: ProductCard[]): boolean {
   return false;
 }
 
+import type { VoiceMetadata } from '../../audio/types';
+
 export interface BaseGameInput {
   gameId: string;
   mechanic: Mechanic;
@@ -113,6 +115,7 @@ export interface BaseGameInput {
   title: string;
   voiceScript: string;
   products: Product[];
+  voiceMetadata?: VoiceMetadata;
 }
 
 /** Build the Game JSON skeleton every mechanic shares (7 scenes, audio, publishing). */
@@ -144,7 +147,13 @@ export function buildBaseGame(input: BaseGameInput): GameJson {
     },
     scenes: [...DEFAULT_SCENES],
     audio: {
-      voice: { script: input.voiceScript, enabled: true },
+      voice: {
+        script: input.voiceScript,
+        enabled: true,
+        intent: input.voiceMetadata?.intent,
+        templateId: input.voiceMetadata?.templateId,
+        visualDependency: input.voiceMetadata?.visualDependency,
+      },
       music: { track: 'tension_01', volume: 0.18 },
       sfx: [
         { type: 'countdown', at: 8 },

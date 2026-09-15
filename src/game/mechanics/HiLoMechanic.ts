@@ -10,6 +10,8 @@ import { buildBaseGame, groupDigits, layoutCards } from './shared';
 import type { IMechanic, MechanicInput, MechanicOutput } from './types';
 import { STAGE_HEIGHT, STAGE_WIDTH } from './types';
 
+import { selectVoiceScript } from '../../audio/voiceSelector';
+
 export const HILO_CHOICES = [
   { id: 'higher', label: 'CAO HƠN' },
   { id: 'lower', label: 'THẤP HƠN' },
@@ -34,6 +36,13 @@ export class HiLoMechanic implements IMechanic {
     const question = `Sản phẩm B CAO HƠN hay THẤP HƠN A?`;
     const gameId = input.gameId ?? `hi_lo_${seed}`;
 
+    const voiceMeta = selectVoiceScript({
+      mechanic: this.id,
+      seed,
+      history: input.history,
+      customCandidates: input.voiceCandidates,
+    });
+
     const game = buildBaseGame({
       gameId,
       mechanic: this.id,
@@ -44,7 +53,8 @@ export class HiLoMechanic implements IMechanic {
       hook: 'Bạn đoán đúng được mấy vòng?',
       question,
       cta: 'Comment số vòng bạn đúng!',
-      voiceScript: `${a.name} ${groupDigits(a.price)} đồng. ${b.name} cao hơn hay thấp hơn?`,
+      voiceScript: voiceMeta.script,
+      voiceMetadata: voiceMeta,
       products,
     });
     game.gameplay.answer = answer;

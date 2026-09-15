@@ -1,5 +1,4 @@
 import type {
-  MechanicVoiceRule,
   VisualDependency,
   VoiceCandidate,
   VoiceIntent,

@@ -11,7 +11,10 @@ describe('VoiceRulebook', () => {
       expect(rule.allowedIntents.length).toBeGreaterThan(0);
 
       // Distributions must sum to ~1.0
-      const totalWeight = Object.values(rule.intentDistribution).reduce((a, b) => a + b, 0);
+      const totalWeight = Object.values(rule.intentDistribution).reduce(
+        (a: number, b: number) => a + b,
+        0,
+      );
       expect(totalWeight).toBeCloseTo(1.0, 2);
 
       // Timing bounds

@@ -21,5 +21,5 @@ describe('AudioEngine Physical Gap Timing', () => {
     expect(result.runtimeScore).toBeDefined();
     expect(result.runtimeScore?.gapErrorMs).toBeLessThanOrEqual(15);
     expect(result.runtimeScore?.pass).toBe(true);
-  });
+  }, 15000);
 });

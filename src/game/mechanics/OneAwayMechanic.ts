@@ -11,6 +11,8 @@ import { buildBaseGame, layoutCards, maskPrice } from './shared';
 import type { IMechanic, MechanicInput, MechanicOutput } from './types';
 import { STAGE_HEIGHT, STAGE_WIDTH } from './types';
 
+import { selectVoiceScript } from '../../audio/voiceSelector';
+
 export class OneAwayMechanic implements IMechanic {
   readonly id = 'ONE_AWAY' as const;
   readonly interaction = 'DIGIT' as const;
@@ -49,6 +51,13 @@ export class OneAwayMechanic implements IMechanic {
     const gameId = input.gameId ?? `one_away_${seed}`;
     const question = `Chữ số bị che trong giá ${maskedPrice} là số mấy?`;
 
+    const voiceMeta = selectVoiceScript({
+      mechanic: this.id,
+      seed,
+      history: input.history,
+      customCandidates: input.voiceCandidates,
+    });
+
     const game = buildBaseGame({
       gameId,
       mechanic: this.id,
@@ -59,7 +68,8 @@ export class OneAwayMechanic implements IMechanic {
       hook: 'Một chữ số bị che — bạn đoán được không?',
       question,
       cta: 'Comment đáp án của bạn!',
-      voiceScript: `${product.name} giá ${maskedPrice} đồng. Chữ số bị che là số mấy?`,
+      voiceScript: voiceMeta.script,
+      voiceMetadata: voiceMeta,
       products,
     });
     game.gameplay.hidden_index = hiddenIndex;

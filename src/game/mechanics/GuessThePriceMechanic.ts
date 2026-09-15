@@ -10,6 +10,7 @@ import { buildBaseGame, layoutCards } from './shared';
 import type { IMechanic, MechanicInput, MechanicOutput } from './types';
 import { STAGE_HEIGHT, STAGE_WIDTH } from './types';
 import { NumericEngine } from '../../challenge/engines/NumericEngine';
+import { selectVoiceScript } from '../../audio/voiceSelector';
 
 export class GuessThePriceMechanic implements IMechanic {
   readonly id = 'GUESS_THE_PRICE' as const;
@@ -30,6 +31,13 @@ export class GuessThePriceMechanic implements IMechanic {
     const brackets = this.numericEngine.generatePriceBrackets(product.price, 2.5, seed);
     const gameId = input.gameId ?? `g9_${seed}`;
 
+    const voiceMeta = selectVoiceScript({
+      mechanic: this.id,
+      seed,
+      history: input.history,
+      customCandidates: input.voiceCandidates,
+    });
+
     const question = `Giá của ${product.name} là bao nhiêu?`;
     const game = buildBaseGame({
       gameId,
@@ -41,7 +49,8 @@ export class GuessThePriceMechanic implements IMechanic {
       hook: '29K hay 299K? Đoán trúng ngay trong 3 giây!',
       question,
       cta: 'Comment xem bạn đúng hay sai!',
-      voiceScript: `${product.name}. Giá là ${brackets.choiceA.label} hay ${brackets.choiceB.label}?`,
+      voiceScript: voiceMeta.script,
+      voiceMetadata: voiceMeta,
       products: [product],
     });
 

@@ -111,14 +111,14 @@ export function selectVoiceScript(options: SelectVoiceOptions): VoiceMetadata {
     throw new Error(`Unknown mechanic: ${options.mechanic}`);
   }
 
-  const rawPool =
+  const rawPool: VoiceCandidate[] =
     options.customCandidates && options.customCandidates.length > 0
       ? options.customCandidates
       : rule.offlinePool;
 
   // Filter out any candidates that violate static anti-spoiler patterns
-  const validPool = rawPool.filter((candidate) =>
-    rule.staticForbiddenPatterns.every((pattern) => !pattern.test(candidate.script)),
+  const validPool: VoiceCandidate[] = rawPool.filter((candidate: VoiceCandidate) =>
+    rule.staticForbiddenPatterns.every((pattern: RegExp) => !pattern.test(candidate.script)),
   );
 
   const poolToUse = validPool.length > 0 ? validPool : rawPool;
