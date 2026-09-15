@@ -327,26 +327,26 @@ git commit -m "feat(audio): add dynamic reveal gap timing and AudioRuntimeScore 
 - Consumes: `selectVoiceScript` from `src/audio/voiceSelector`
 - Produces: Clean, punchy `voice_script` (<8 words) and structured `game.audio.voice`
 
-- [ ] **Step 1: Write test expectations in `test/engine/mechanics.test.ts`**
+- [x] **Step 1: Write test expectations in `test/engine/mechanics.test.ts`**
 Assert that across all 7 mechanics, `game.content.voice_script.split(/\s+/).length` is $\le 8$ words and `game.audio.voice.script` matches `game.content.voice_script`.
 
-- [ ] **Step 2: Update all 7 mechanics**
+- [x] **Step 2: Update all 7 mechanics**
 In each mechanic's `create()` method:
 Call `selectVoiceScript({ mechanic: this.id, seed })` and pass the returned script to `buildBaseGame`.
 
-- [ ] **Step 3: Run mechanics test suite**
+- [x] **Step 3: Run mechanics test suite**
 ```bash
 npx vitest run test/engine/
 ```
 Expected: PASS.
 
-- [ ] **Step 4: Run full project test suite**
+- [x] **Step 4: Run full project test suite**
 ```bash
 npx vitest run
 ```
 Expected: All 45 test files pass.
 
-- [ ] **Step 5: Commit Task 5**
+- [x] **Step 5: Commit Task 5**
 ```bash
 git add src/game/mechanics/ test/engine/
 git commit -m "refactor(game): wire VoiceSelector into all 7 mechanics with concise scripts"
@@ -360,19 +360,19 @@ git commit -m "refactor(game): wire VoiceSelector into all 7 mechanics with conc
 - Test: `test/render/satori-frame-renderer.test.ts`
 - Output: `export/hi_lo_new_audio.mp4`
 
-- [ ] **Step 1: Run TypeScript compiler check**
+- [x] **Step 1: Run TypeScript compiler check**
 ```bash
 npm run build
 ```
 Expected: PASS with 0 errors.
 
-- [ ] **Step 2: Render sample MP4 with Satori renderer**
+- [x] **Step 2: Render sample MP4 with Satori renderer**
 ```bash
 node dist/cli/index.js render --renderer satori
 ```
 Expected: Produces high-quality video with clean audio timing, 80-120ms anticipation gap before reveal, and no warning logs.
 
-- [ ] **Step 3: Commit Task 6**
+- [x] **Step 3: Commit Task 6**
 ```bash
 git add .
 git commit -m "chore: complete audio architecture upgrade and verify E2E video render"

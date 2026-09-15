@@ -26,13 +26,13 @@
   - [x] Step 4: Update `test/audio/AudioEngine.test.ts`
   - [x] Step 5: Run audio tests
   - [x] Step 6: Commit Task 4
-- [ ] **Task 5: Refactor 7 Mechanics to Use VoiceSelector & Punchy Scripts**
-  - [ ] Step 1: Write test expectations in `test/engine/mechanics.test.ts`
-  - [ ] Step 2: Update all 7 mechanics
-  - [ ] Step 3: Run mechanics test suite
-  - [ ] Step 4: Run full project test suite
-  - [ ] Step 5: Commit Task 5
-- [ ] **Task 6: Full System Verification & MP4 Render Test**
-  - [ ] Step 1: Run TypeScript compiler check
-  - [ ] Step 2: Render sample MP4 with Satori renderer
-  - [ ] Step 3: Commit Task 6
+- [x] **Task 5: Refactor 7 Mechanics to Use VoiceSelector & Punchy Scripts**
+  - [x] Step 1: Write test expectations in `test/engine/mechanics.test.ts`
+  - [x] Step 2: Update all 7 mechanics
+  - [x] Step 3: Run mechanics test suite
+  - [x] Step 4: Run full project test suite
+  - [x] Step 5: Commit Task 5
+- [x] **Task 6: Full System Verification & MP4 Render Test**
+  - [x] Step 1: Run TypeScript compiler check
+  - [x] Step 2: Render sample MP4 with Satori renderer
+  - [x] Step 3: Commit Task 6
