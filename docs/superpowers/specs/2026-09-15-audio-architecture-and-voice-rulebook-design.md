@@ -1,8 +1,8 @@
-# Technical Design Specification: Audio Architecture & Voice Rulebook Upgrade
+# Technical Design Specification: Audio Architecture & Voice Rulebook Upgrade (v2 - Refined)
 
 - **Author**: Antigravity & Trung
 - **Date**: 2026-09-15
-- **Status**: Draft (Review Gate)
+- **Status**: Ready for Implementation
 - **Target Components**: `src/audio/voiceRulebook.ts`, `src/audio/voiceSelector.ts`, `src/audio/voiceHistoryStore.ts`, `src/audio/AudioEngine.ts`, `src/audio/types.ts`, `src/game/mechanics/*Mechanic.ts`
 
 ---
@@ -10,236 +10,284 @@
 ## 1. Problem Statement & Motivation
 
 1. **Information Overlap & Over-budget Scripts:**
-   - In the existing mechanic generators (`*Mechanic.ts`), `voice_script` was duplicating information already visually prominent on the 1080×1920 stage (e.g. reading full product names, reference prices, and multiple choices).
-   - In mechanics like `DealOrScamMechanic` (25 words) and `HiLoMechanic` (15+ words with long product names), speech duration frequently exceeded the 1.9s budget, triggering `W_VOICE_OVER_BUDGET` or robotic fallback.
+   - In existing mechanics (`*Mechanic.ts`), `voice_script` duplicated visual stage content (reading long product names, baseline prices, multiple choices).
+   - In mechanics like `DealOrScamMechanic` (25 words), speech duration overran budgets, triggering warnings or robotic fallbacks.
 
-2. **No Anticipation Gap Before Reveal (Collision with Sound Effects):**
-   - The formula `voiceStartAt = revealAt - duration` forced speech to terminate exactly at `revealAt = 11.00s`.
-   - This caused the last syllable of speech to collide directly with the `reveal_chime.wav` SFX and the visual price reveal, eliminating the vital 80–120ms micro-silence pause that builds viewer tension.
+2. **No Anticipation Gap Before Reveal:**
+   - The old formula `voiceStartAt = revealAt - duration` forced speech to end right at `revealAt = 11.00s`, causing speech tails to collide with `reveal_chime.wav` and eliminating the vital 80–120ms micro-silence pause.
 
-3. **Pattern Fatigue in Mass Production:**
-   - Scripts lacked intent diversification (every video used the exact same sentence pattern).
-   - There was no anti-repetition tracking to prevent identical templates across consecutive videos.
+3. **Pattern Fatigue & Lack of Performance Tracking:**
+   - Every video used identical phrasing. There was no anti-repetition tracking and no metadata (`templateId`, `intent`) to track which voice patterns drove higher retention or comments.
 
-4. **Monolithic Pass/Fail instead of Dual-Stage Quality Scoring:**
-   - Quality was only assessed as a binary check (duration < 2.0s).
-   - Word count, mechanic fit, clarity, comment bait potential, and runtime execution metrics were conflated.
+4. **Architectural Blur between Hermes (Creative/LLM) and GameEngine (Deterministic Runtime):**
+   - The engine must NEVER call an LLM at runtime. Hermes generates creative candidates upstream; the Engine's `VoiceSelector` is a fast, offline, deterministic selector with history penalties.
 
 ---
 
-## 2. Core Principles & Architecture
-
-### 2.1. Separation of Responsibilities
-* **Visual Layer (Eye):** Displays products, badges, reference prices, and option buttons.
-* **Voice Layer (Ear):** Prompts the viewer to make a decision or take action (short, punchy 4–8 words).
-* **SFX Layer (Ear):** Countdown ticks (8.0s–10.5s) build pressure; Reveal chime (11.0s) awards the result.
-* **Micro-Silence Gap:** 80–120ms silence between voice end and reveal chime creates anticipation.
-
-### 2.2. Dual-Stage Architecture Flow
+## 2. Core Principles & Separation of Concerns
 
 ```text
                ┌────────────────────────────────────────────────────────┐
-               │              Game Mechanic (1 of 7 MVP)                │
+               │                  HERMES (Creative/LLM)                 │
+               │  - Analyzes products, trend, and audience psychology    │
+               │  - Generates 3-5 punchy VoiceCandidate[]                │
+               │  - Ensures semantic anti-spoiler compliance            │
+               └──────────────────────────┬─────────────────────────────┘
+                                          │  passes candidates in GameJson
+                                          ▼  (or fallback to Rulebook Pool)
+               ┌────────────────────────────────────────────────────────┐
+               │             GAME CONTENT JSON / RULEBOOK               │
+               │  - Allowed intents, weights, timing config, pool       │
+               │  - Visual dependency rating: HIGH | MEDIUM | LOW       │
                └──────────────────────────┬─────────────────────────────┘
                                           │
                                           ▼
                ┌────────────────────────────────────────────────────────┐
-               │           Voice Rulebook (Declarative Config)           │
-               │  - Intent Matrix (Challenge, Curiosity, Urgency, ...)  │
-               │  - Target Word Range (min: 3, max: 8, pref: [4, 6])    │
-               │  - Timing: defaultGapMs, minGapMs, maxGapMs            │
-               │  - Forbidden Patterns (anti-spoiler, anti-reading UI)  │
-               │  - Template Candidate Pool                             │
+               │         VoiceSelector (Engine Runtime Selection)       │
+               │  - Deterministic PRNG using job seed                   │
+               │  - Samples intent via seeded weighted distribution     │
+               │  - Filters out candidates via Static Anti-Spoiler      │
+               │  - Evaluates ScriptQualityScore (Brevity, Fit, Novelty)│
+               │  - Checks VoiceHistoryStore (penalizes recent repeats) │
+               │  - Output: { script, intent, templateId, visualDep }   │
                └──────────────────────────┬─────────────────────────────┘
                                           │
                                           ▼
                ┌────────────────────────────────────────────────────────┐
-               │       VoiceSelector (Creative Phase / Hermes)          │
-               │  1. Pick Intent via seeded probability distribution    │
-               │  2. Sample 3-5 candidates from pool or LLM             │
-               │  3. Filter out candidates matching Forbidden Patterns  │
-               │  4. Score via Script AQS (Fit, Brevity, Novelty)       │
-               │  5. Check against VoiceHistoryStore (N=10 videos)      │
-               │  6. Select highest-scoring script                      │
-               └──────────────────────────┬─────────────────────────────┘
-                                          │
-                             game.content.voice_script
-                                          │
-                                          ▼
-               ┌────────────────────────────────────────────────────────┐
-               │              AudioEngine (Execution Phase)             │
-               │  1. Synthesize speech via EdgeTtsEngine / Piper        │
-               │  2. Extract actual WAV duration                        │
-               │  3. Read revealGapMs from audio config / rulebook      │
-               │  4. Compute dynamic placement:                         │
-               │     voiceEndAt = revealAt - (revealGapMs / 1000)       │
-               │     voiceStartAt = voiceEndAt - actualDuration         │
-               │  5. Score via Runtime AQS (collision, gap, duration)   │
-               │  6. Assemble audio_bed.wav with SFX + BGM              │
+               │             AudioEngine (Execution Phase)              │
+               │  - Synthesizes speech via TTSProvider (EdgeTTS/Piper)  │
+               │  - Computes dynamic placement with targetGap           │
+               │  - Verifies minVoiceStartAt >= countdownAt             │
+               │  - Evaluates Runtime AQS (actualRevealGap, gapError)   │
+               │  - Assembles audio_bed.wav with SFX + BGM              │
                └────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 3. Component Specifications
+## 3. Detailed Component Specifications
 
-### 3.1. Voice Rulebook (`src/audio/voiceRulebook.ts`)
-
-Declarative schema for all 7 MVP mechanics:
+### 3.1. Voice Schema & Metadata (`src/audio/types.ts`)
 
 ```typescript
-export type VoiceIntent = 'CHALLENGE' | 'CURIOSITY' | 'URGENCY' | 'DECISION';
+export type VoiceMode = 'SPOKEN' | 'SILENT';
 
+export type VoiceIntent =
+  | 'CHALLENGE'   // e.g. "Cao hơn hay thấp hơn?" (boosts comments)
+  | 'CURIOSITY'   // e.g. "Nhìn kỹ kẻo nhầm nhé!" (boosts retention)
+  | 'URGENCY'     // e.g. "Chốt đáp án nhanh!" (boosts tension)
+  | 'DECISION';   // e.g. "Bạn chọn bên nào?"
+
+export type VisualDependency = 'HIGH' | 'MEDIUM' | 'LOW';
+
+export interface VoiceCandidate {
+  id: string;
+  intent: VoiceIntent;
+  script: string;
+}
+
+export interface VoiceMetadata {
+  script: string;
+  intent: VoiceIntent;
+  templateId: string;
+  visualDependency: VisualDependency;
+}
+
+export interface VoiceTimingConfig {
+  defaultGapMs: number;
+  minGapMs: number;
+  maxGapMs: number;
+  maxDurationSec: number;
+}
+```
+
+### 3.2. Declarative Rulebook with Candidate Pools (`src/audio/voiceRulebook.ts`)
+
+The rulebook holds the **rules** and a rich **offline fallback pool** (100+ candidates total across 7 mechanics), so the Engine runs 100% offline without needing Hermes.
+
+```typescript
 export interface MechanicVoiceRule {
   mechanic: string;
   allowedIntents: VoiceIntent[];
   intentDistribution: Record<VoiceIntent, number>;
-  targetWordCount: { min: number; max: number; preferred: [number, number] };
-  timing: { defaultGapMs: number; minGapMs: number; maxGapMs: number };
-  visualDependency: 'HIGH' | 'MEDIUM' | 'LOW';
-  forbiddenPatterns: RegExp[];
-  candidatePool: Array<{
-    id: string;
-    intent: VoiceIntent;
-    template: string;
-  }>;
+  timing: VoiceTimingConfig;
+  visualDependency: VisualDependency;
+  staticForbiddenPatterns: RegExp[];
+  offlinePool: VoiceCandidate[];
 }
 ```
 
-#### Rulebook Settings for the 7 MVP Mechanics:
+#### Settings for 7 MVP Mechanics:
 1. **`MOST_EXPENSIVE`**:
-   - Intents: Challenge (70%), Curiosity (20%), Urgency (10%).
-   - Word count: 4–8 words (preferred 4–6).
-   - Gap: 100ms (min 80ms, max 140ms).
-   - Forbidden: reading all product names, revealing winner, reading exact prices.
-   - Candidates: `"Món nào đắt nhất?"`, `"Đoán xem món nào đắt nhất?"`, `"Bạn chọn món nào đắt nhất?"`, `"Nhìn kỹ kẻo nhầm nhé!"`, `"Chốt đáp án nhanh!"`.
+   - Distribution: Challenge 70%, Curiosity 20%, Urgency 10%.
+   - Timing: `defaultGapMs: 100, minGapMs: 80, maxGapMs: 140, maxDurationSec: 2.2`.
+   - VisualDependency: `MEDIUM`.
+   - Forbidden: `/(đắt nhất là|kết quả là|giá tiền|triệu|nghìn đồng)/i`.
+   - Pool:
+     - `ME_CHALLENGE_01`: `"Món nào đắt nhất?"`
+     - `ME_CHALLENGE_02`: `"Đoán xem món nào đắt nhất?"`
+     - `ME_CHALLENGE_03`: `"Bạn chọn món nào đắt nhất?"`
+     - `ME_CURIOSITY_01`: `"Nhìn kỹ kẻo nhầm nhé!"`
+     - `ME_URGENCY_01`: `"Chốt đáp án nhanh!"`
 2. **`HI_LO`**:
-   - Intents: Challenge (70%), Decision (20%), Urgency (10%).
-   - Word count: 3–7 words (preferred 3–6).
-   - Gap: 90ms (min 70ms, max 120ms).
-   - Forbidden: reading reference price, revealing answer.
-   - Candidates: `"Cao hơn hay thấp hơn?"`, `"Cao hay thấp?"`, `"Bạn đoán cao hay thấp?"`, `"Chọn cao hay thấp nào?"`, `"Cao hay thấp, chọn nhanh!"`.
+   - Distribution: Challenge 70%, Decision 20%, Urgency 10%.
+   - Timing: `defaultGapMs: 90, minGapMs: 70, maxGapMs: 120, maxDurationSec: 1.8`.
+   - VisualDependency: `HIGH` (voice must remain extremely concise).
+   - Forbidden: `/(kết quả là|chắc chắn cao|chắc chắn thấp|\d{3})/i`.
+   - Pool:
+     - `HL_CHALLENGE_01`: `"Cao hơn hay thấp hơn?"`
+     - `HL_CHALLENGE_02`: `"Cao hay thấp?"`
+     - `HL_DECISION_01`: `"Bạn đoán cao hay thấp?"`
+     - `HL_DECISION_02`: `"Chọn cao hay thấp nào?"`
+     - `HL_URGENCY_01`: `"Cao hay thấp, chọn nhanh!"`
 3. **`ONE_AWAY`**:
-   - Intents: Challenge (70%), Curiosity (20%), Urgency (10%).
-   - Word count: 4–7 words (preferred 4–6).
-   - Gap: 100ms (min 80ms, max 130ms).
-   - Forbidden: revealing hidden digit.
-   - Candidates: `"Số nào bị che?"`, `"Chữ số bị che là mấy?"`, `"Đoán xem là số mấy?"`, `"Có một số rất dễ nhầm!"`, `"Chốt số mấy nào!"`.
+   - Distribution: Challenge 70%, Curiosity 20%, Urgency 10%.
+   - Timing: `defaultGapMs: 100, minGapMs: 80, maxGapMs: 130, maxDurationSec: 2.0`.
+   - VisualDependency: `HIGH`.
+   - Forbidden: `/(số \d là đúng|đáp án là)/i`.
+   - Pool:
+     - `OA_CHALLENGE_01`: `"Số nào bị che?"`
+     - `OA_CHALLENGE_02`: `"Chữ số bị che là mấy?"`
+     - `OA_CHALLENGE_03`: `"Đoán xem là số mấy?"`
+     - `OA_CURIOSITY_01`: `"Có một số rất dễ nhầm!"`
+     - `OA_URGENCY_01`: `"Chốt số mấy nào!"`
 4. **`ODD_ONE_OUT`**:
-   - Intents: Challenge (60%), Curiosity (30%), Urgency (10%).
-   - Word count: 4–8 words (preferred 4–6).
-   - Gap: 110ms (min 90ms, max 150ms).
-   - Forbidden: giving away the odd category before reveal.
-   - Candidates: `"Món nào khác biệt?"`, `"Đâu là món lạc loài?"`, `"Tìm ra món khác loài chưa?"`, `"Nhanh, món nào khác biệt?"`.
+   - Distribution: Challenge 60%, Curiosity 30%, Urgency 10%.
+   - Timing: `defaultGapMs: 110, minGapMs: 90, maxGapMs: 150, maxDurationSec: 2.0`.
+   - VisualDependency: `HIGH`.
+   - Forbidden: `/(món khác là|đáp án|loại bỏ)/i`.
+   - Pool:
+     - `OO_CHALLENGE_01`: `"Món nào khác biệt?"`
+     - `OO_CHALLENGE_02`: `"Đâu là món lạc loài?"`
+     - `OO_CURIOSITY_01`: `"Tìm ra món khác loài chưa?"`
+     - `OO_URGENCY_01`: `"Nhanh, món nào khác biệt?"`
 5. **`GUESS_THE_PRICE`**:
-   - Intents: Challenge (70%), Decision (20%), Urgency (10%).
-   - Word count: 4–7 words (preferred 4–6).
-   - Gap: 100ms (min 80ms, max 130ms).
-   - Forbidden: reading the target price or revealing side.
-   - Candidates: `"Trên hay dưới mức giá này?"`, `"Bạn chọn khoảng giá nào?"`, `"Trên hay dưới, chốt nhanh!"`.
+   - Distribution: Challenge 70%, Decision 20%, Urgency 10%.
+   - Timing: `defaultGapMs: 100, minGapMs: 80, maxGapMs: 130, maxDurationSec: 2.0`.
+   - VisualDependency: `HIGH`.
+   - Forbidden: `/(trên mức|dưới mức|chính xác là)/i`.
+   - Pool:
+     - `GP_CHALLENGE_01`: `"Trên hay dưới mức giá này?"`
+     - `GP_DECISION_01`: `"Bạn chọn khoảng giá nào?"`
+     - `GP_URGENCY_01`: `"Trên hay dưới, chốt nhanh!"`
 6. **`GROCERY_BASKET`**:
-   - Intents: Challenge (70%), Decision (20%), Urgency (10%).
-   - Word count: 4–7 words (preferred 4–6).
-   - Gap: 100ms (min 80ms, max 130ms).
-   - Forbidden: calculating total price out loud before reveal.
-   - Candidates: `"Ngân sách này đủ mua không?"`, `"Liệu có đủ tiền mua?"`, `"Đủ tiền hay cháy túi?"`, `"Đủ hay thiếu, chốt đi!"`.
+   - Distribution: Challenge 70%, Decision 20%, Urgency 10%.
+   - Timing: `defaultGapMs: 100, minGapMs: 80, maxGapMs: 130, maxDurationSec: 2.0`.
+   - VisualDependency: `HIGH`.
+   - Forbidden: `/(tổng cộng là|cháy túi rồi|thừa tiền)/i`.
+   - Pool:
+     - `GB_CHALLENGE_01`: `"Ngân sách này đủ mua không?"`
+     - `GB_CHALLENGE_02`: `"Liệu có đủ tiền mua?"`
+     - `GB_DECISION_01`: `"Đủ tiền hay cháy túi?"`
+     - `GB_URGENCY_01`: `"Đủ hay thiếu, chốt đi!"`
 7. **`DEAL_OR_SCAM`**:
-   - Intents: Challenge (65%), Decision (20%), Curiosity (15%).
-   - Word count: 4–7 words (preferred 4–6).
-   - Gap: 120ms (min 90ms, max 160ms).
-   - Forbidden: reading entire discount paragraph or revealing scam verdict.
-   - Candidates: `"Kèo thơm hay cú lừa?"`, `"Deal hời hay bẫy giá ảo?"`, `"Coi chừng bị lừa đấy!"`, `"Múc ngay hay né gấp?"`.
+   - Distribution: Challenge 65%, Decision 20%, Curiosity 15%.
+   - Timing: `defaultGapMs: 120, minGapMs: 90, maxGapMs: 160, maxDurationSec: 2.2`.
+   - VisualDependency: `MEDIUM`.
+   - Forbidden: `/(chắc chắn là scam|deal hời múc đi|lừa đảo đấy)/i`.
+   - Pool:
+     - `DS_CHALLENGE_01`: `"Kèo thơm hay cú lừa?"`
+     - `DS_CHALLENGE_02`: `"Deal hời hay bẫy giá ảo?"`
+     - `DS_CURIOSITY_01`: `"Coi chừng bị lừa đấy!"`
+     - `DS_URGENCY_01`: `"Múc ngay hay né gấp?"`
 
 ---
 
-### 3.2. Anti-Repetition Store (`src/audio/voiceHistoryStore.ts`)
+### 3.3. Multi-Dimension Script Quality Score (`ScriptQualityScore`)
 
-- In-memory circular buffer with optional persistence (`data/voice_history.json`).
-- Stores last $N$ records:
-  ```typescript
-  export interface VoiceHistoryEntry {
-    mechanic: string;
-    templateId: string;
-    scriptText: string;
-    timestamp: number;
-  }
-  ```
-- Evaluator checks:
-  - Exact script match in last $N$ videos $\rightarrow$ Penalty 100 (disqualify unless no alternatives).
-  - Same template ID match in last 3 videos $\rightarrow$ Penalty 50.
+Instead of hard-limiting words, `ScriptQualityScore` balances multiple signals:
 
----
-
-### 3.3. Script Quality Scoring (`ScriptAQS` in `src/audio/voiceSelector.ts`)
-
-Calculated during script generation:
-* **MechanicFit (0–30 pts):** Matches allowed intents for the mechanic.
-* **Brevity & Naturalness (0–30 pts):** 
-  * 4–6 words: 30 pts.
-  * 7–8 words: 24 pts.
-  * 3 words or 9–10 words: 15 pts.
-  * >10 words: 0 pts.
-* **Anti-Spoiler Guard (0 or Reject):** Pass regex check against `forbiddenPatterns`.
-* **Novelty vs History (0–40 pts):**
-  * Not used in last 10 videos: 40 pts.
-  * Used >3 videos ago: 20 pts.
-  * Used in last 2 videos: 0 pts.
+```typescript
+export interface ScriptQualityScore {
+  mechanicFit: number;        // 0-25 (matches allowed intents)
+  naturalness: number;        // 0-20 (Vietnamese cadence, punctuation)
+  brevity: number;            // 0-15 (word/char economy without sacrificing clarity)
+  challengeStrength: number;  // 0-15 (urgency / engagement prompt)
+  novelty: number;            // 0-15 (distance from recent history)
+  commentPotential: number;   // 0-10 (binary choice / polar prompt)
+  total: number;              // 0-100
+  antiSpoilerPassed: boolean; // hard gate (must be true)
+}
+```
 
 ---
 
-### 3.4. Dynamic Timeline Engine (`src/audio/AudioEngine.ts`)
+### 3.4. Multi-Attribute Anti-Repetition Store (`src/audio/voiceHistoryStore.ts`)
 
-1. **Configurable Gap Support:**
-   - Reads `revealGapMs` from `game.audio.voice.revealGapMs` or `VOICE_RULEBOOK[mechanic].timing.defaultGapMs`. Default: `100ms`.
-   - `revealGapSec = revealGapMs / 1000`.
-   - `voiceEndAt = revealAt - revealGapSec`.
+Stores enriched records of recent video renders:
+```typescript
+export interface VoiceHistoryRecord {
+  mechanic: string;
+  intent: VoiceIntent;
+  templateId: string;
+  script: string;
+  timestamp: number;
+}
+```
+**Penalty Calculations:**
+- Same exact script in last 10 videos: `-100 pts` (disqualified if alternatives exist).
+- Same templateId in last 3 videos: `-50 pts`.
+- Same intent in last 2 videos: `-15 pts`.
+- Same intent 3 times in a row: `-30 pts`.
+
+---
+
+### 3.5. Dynamic AudioEngine Timing & Physical Gap Metrics (`src/audio/AudioEngine.ts`)
+
+1. **Target Gap & Voice Placement:**
+   - `targetGapSec = (rule.timing.defaultGapMs) / 1000`.
+   - `voiceEndAt = revealAt - targetGapSec`.
    - `voiceStartAt = voiceEndAt - actualDuration`.
-   - `syncDelta = Math.abs(voiceStartAt + actualDuration - voiceEndAt)` (must be $\le 0.05s$).
 
-2. **Runtime AQS Check (`AudioRuntimeScore`):**
-   - Collision guard: `voiceStartAt >= countdownAt` (never speak before countdown starts).
-   - Safety pause guard: `revealAt - (voiceStartAt + actualDuration) >= minGapSec`.
-   - Hard duration limit: $0.35s \le \text{actualDuration} < 2.0s$.
-   - Emits structured report in `AudioSegment`:
-     ```typescript
-     export interface AudioRuntimeScore {
-       score: number; // 0..100
-       actualDuration: number;
-       revealGapMs: number;
-       collisionDetected: boolean;
-       pass: boolean;
-     }
-     ```
+2. **Tension Window Invariant (No Overrun):**
+   - Enforce `voiceStartAt >= countdownAt` (voice must never invade the Question scene before Countdown).
+   - If `actualDuration > rule.timing.maxDurationSec`, throw or warn `W_VOICE_OVER_BUDGET`.
+
+3. **Physical Metric Verification (`AudioRuntimeScore`):**
+   - `actualRevealGap = Number((revealAt - (voiceStartAt + actualDuration)).toFixed(3))`.
+   - `gapError = Number(Math.abs(actualRevealGap - targetGapSec).toFixed(3))`.
+   - Verification: `gapError <= 0.015` (15ms maximum physical timing tolerance).
+   - Collision check: `actualRevealGap >= (rule.timing.minGapMs / 1000)`.
+
+```typescript
+export interface AudioRuntimeScore {
+  score: number; // 0..100
+  actualDuration: number;
+  actualRevealGapMs: number;
+  gapErrorMs: number;
+  collisionDetected: boolean;
+  pass: boolean;
+}
+```
 
 ---
 
 ## 4. Mechanic Refactoring (`src/game/mechanics/`)
 
-All 7 mechanics will replace inline static string templates with:
+Each mechanic's `create()` method invokes:
 ```typescript
-const voiceSelection = selectVoiceScript({
+const voiceMeta = selectVoiceScript({
   mechanic: this.id,
   seed,
   history: voiceHistoryStore,
+  customCandidates: input.voiceCandidates, // Optional Hermes-provided candidates
 });
 ```
-This guarantees that any game created with a given seed generates a punchy, non-spoiling, non-colliding voiceover script, while remaining completely deterministic.
+And populates both `game.content.voice_script` (string for backwards compatibility) and `game.content.voice` (structured `VoiceMetadata` for analytics).
 
 ---
 
-## 5. Verification & Testing Strategy
+## 5. Verification Plan
 
-1. **`test/audio/voice-rulebook.test.ts`**:
-   - Verify every mechanic has defined intents, positive distributions summing to 1.0, and non-empty candidate pools.
-   - Verify all candidate pool templates stay within 3–8 words and pass their own forbidden patterns.
-2. **`test/audio/voice-selector.test.ts`**:
-   - Verify seeded selection is deterministic.
-   - Verify anti-repetition penalizes recently used candidates.
-   - Verify anti-spoiler rejects illegal candidate text.
-3. **`test/audio/audio-engine-timing.test.ts`**:
-   - Verify `voiceEndAt` ends strictly before `revealAt` by `revealGapMs`.
-   - Verify `syncDelta` reflects accuracy of gap placement.
-   - Verify `RuntimeAQS` outputs score $\ge 90$ for standard runs.
-4. **Integration & Regression:**
-   - Run `npm test` across all 45 test files to ensure 100% pass rate.
-   - Render sample MP4 videos for `hi_lo` and `most_expensive` using `--renderer satori` to verify audio timing and silence gap in the output video.
+1. **Unit Tests (`test/audio/voice-rulebook.test.ts`):**
+   - Validate distributions sum to 1.0 for all 7 mechanics.
+   - Validate every candidate passes static anti-spoiler regex.
+2. **Unit Tests (`test/audio/voice-selector.test.ts`):**
+   - Deterministic PRNG reproducibility by seed.
+   - History penalty prevents consecutive template reuse.
+   - ScriptQualityScore computation.
+3. **Unit Tests (`test/audio/audio-engine-timing.test.ts`):**
+   - Physical `actualRevealGap` verification within 15ms.
+   - `minVoiceStartAt >= countdownAt` invariant.
+4. **Integration (`npm test`):**
+   - Ensure all 45 test suites pass.
