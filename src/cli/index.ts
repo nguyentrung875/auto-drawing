@@ -38,6 +38,7 @@ render / batch flags:
   --seed 839271                            Deterministic seed (same seed → same answer)
   --result-variant in_video|comment        Where the answer appears
   --hidden-index 3                         ONE_AWAY: masked digit index
+  --renderer satori|browser|software       Frame renderer (satori is ultra-lightweight)
   --count 50                               batch: number of jobs
   --mechanics hi_lo,most_expensive,one_away
   --game path/to/game.json                 render: pre-authored Game JSON

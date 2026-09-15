@@ -21,6 +21,7 @@ import { FFmpegMuxer } from './ffmpeg';
 import { assertNoAffiliateBurn } from './pixelScan';
 import { SoftwareFrameRenderer } from './softwareFrameRenderer';
 import { BrowserFrameRenderer } from './browserFrameRenderer';
+import { SatoriFrameRenderer } from './satoriFrameRenderer';
 import {
   DEFAULT_RENDER_CONFIG,
   type FrameRenderContext,
@@ -95,6 +96,9 @@ export class RenderEngine {
   /** Frame stage backend, with the honest fallback recorded as a warning. */
   private createFrameRenderer(config: RenderConfig, warnings: RenderWarning[]): IFrameRenderer {
     if (this.options.frameRenderer) return this.options.frameRenderer;
+    if (config.frameRenderer === 'satori') {
+      return new SatoriFrameRenderer();
+    }
     if (config.frameRenderer === 'browser') {
       return new BrowserFrameRenderer();
     }

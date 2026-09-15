@@ -31,7 +31,7 @@ export interface RenderArgs {
   exportDir?: string;
   logsDir?: string;
   renderer?: RenderStagePort;
-  rendererType?: 'browser' | 'software';
+  rendererType?: 'browser' | 'software' | 'satori';
   keepQueueFile?: boolean;
 }
 
@@ -99,7 +99,13 @@ export function parseRenderArgs(argv: string[], rootDir = process.cwd()): Render
     mode,
     gameFile: flags.get('game'),
     queueDir: flags.get('queue-dir') ?? 'queue',
-    rendererType: flags.get('renderer') === 'software' ? 'software' : flags.get('renderer') === 'browser' ? 'browser' : (findBrowserExecutable() ? 'browser' : 'software'),
+    rendererType: flags.get('renderer') === 'satori'
+      ? 'satori'
+      : flags.get('renderer') === 'software'
+        ? 'software'
+        : flags.get('renderer') === 'browser'
+          ? 'browser'
+          : (findBrowserExecutable() ? 'browser' : 'software'),
     rootDir,
   };
 }
