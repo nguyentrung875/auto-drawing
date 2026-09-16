@@ -8,8 +8,10 @@
  * `publishing.affiliate_link` — the link belongs in `caption.json`/comment
  * (AD-4), and `pixelScan` guards the encoded frames for regressions.
  */
+import path from 'node:path';
 import { Canvas, parseColor } from './canvas';
 import { drawImageCover, isRenderableImage, loadPng } from './image';
+import type { RenderAssetCache } from './assetCache';
 import type { MultiRoundChallenge, ChallengeRound } from '../challenge/types';
 import type { Product } from '../product/schema';
 import type { Timeline } from '../types/game';
@@ -43,6 +45,7 @@ export interface PaintContext {
   rootDir: string;
   tilt: boolean;
   warnings: RenderWarning[];
+  assetCache?: RenderAssetCache;
 }
 
 const INK = '#f8fafc';
@@ -118,7 +121,7 @@ function drawBadge(canvas: Canvas, label: string, accent: string, y = 190): void
   });
 }
 
-function drawProductCard(canvas: Canvas, card: RenderCardView, ctx: PaintContext): void {
+export function drawProductCard(canvas: Canvas, card: RenderCardView, ctx: PaintContext): void {
   const tilt = ctx.tilt ? ctx.diversification.tilt : 0;
   const radius = 36;
   const corners = { x: card.x, y: card.y, width: card.width, height: card.height };
@@ -169,15 +172,27 @@ function drawProductCard(canvas: Canvas, card: RenderCardView, ctx: PaintContext
     width: card.width - 36,
     height: imageHeight,
   };
-  const imagePath = card.image && card.image.length > 0 ? `${ctx.rootDir}/${card.image}`.replaceAll('//', '/') : undefined;
-  const loaded = isRenderableImage(card.image, ctx.rootDir) ? loadPng(imagePath!) : null;
+  const imagePath = card.image && card.image.length > 0 ? path.resolve(ctx.rootDir, card.image) : undefined;
+  const loaded = imagePath
+    ? (ctx.assetCache
+        ? ctx.assetCache.getImage(imagePath)
+        : (isRenderableImage(card.image, ctx.rootDir) ? loadPng(imagePath) : null))
+    : null;
   if (loaded) {
     drawImageCover(canvas, loaded, imageBox, 24);
   } else {
-    if (card.image && !ctx.warnings.some((warning) => warning.code === 'W_ASSET_PLACEHOLDER')) {
+    const hint = `product image '${card.image}' (product: ${card.productId}) is not a decodable PNG; cards are drawn with the deterministic placeholder`;
+    if (
+      card.image &&
+      !ctx.warnings.some(
+        (warning) =>
+          warning.code === 'W_ASSET_PLACEHOLDER' &&
+          (warning.hint === hint || warning.hint?.includes(card.productId)),
+      )
+    ) {
       ctx.warnings.push({
         code: 'W_ASSET_PLACEHOLDER',
-        hint: `product image '${card.image}' is not a decodable PNG; cards are drawn with the deterministic placeholder`,
+        hint,
       });
     }
     canvas.fillRoundRect(
@@ -230,40 +245,6 @@ function drawProductCard(canvas: Canvas, card: RenderCardView, ctx: PaintContext
 
 function drawCards(canvas: Canvas, frame: RenderFrame, ctx: PaintContext): void {
   for (const card of cardsOf(frame, ctx)) drawProductCard(canvas, card, ctx);
-}
-
-function drawChoices(canvas: Canvas, frame: RenderFrame): void {
-  const choices = frame.data.choices as Array<{ id: string; label: string }> | undefined;
-  if (!choices || choices.length === 0) return;
-  const pillWidth = 900;
-  const pillHeight = 132;
-  const gap = 36;
-  const totalHeight = choices.length * pillHeight + (choices.length - 1) * gap;
-  let y = 1180 - Math.round(totalHeight / 2) + 120;
-  choices.forEach((choice, index) => {
-    const x = Math.round((STAGE_WIDTH - pillWidth) / 2);
-    canvas.fillRoundRect(x, y, pillWidth, pillHeight, 66, 'rgba(248,250,252,0.10)', 1);
-    canvas.strokeRoundRect(x, y, pillWidth, pillHeight, 66, 'rgba(248,250,252,0.22)', 3);
-    canvas.fillRoundRect(x + 22, y + 22, 88, 88, 44, ACCENT, 0.9);
-    const letter = String.fromCharCode(65 + index);
-    canvas.drawText(letter, {
-      x: x + 22 + 44,
-      y: y + 22 + 18,
-      size: 46,
-      weight: 700,
-      color: '#0b1120',
-      align: 'center',
-    });
-    canvas.drawText(choice.label, {
-      x: x + 140,
-      y: y + Math.round((pillHeight - 46 * 1.25) / 2),
-      size: 46,
-      weight: 600,
-      color: INK,
-      maxWidth: pillWidth - 180,
-    });
-    y += pillHeight + gap;
-  });
 }
 
 function drawFrameBadge(canvas: Canvas, frame: RenderFrame, accent: string): void {
@@ -671,8 +652,12 @@ export function drawCyberpunkShowcase(
       canvas.strokeRoundRect(itemX, itemY, itemW, itemH, 20, 'rgba(248,250,252,0.12)', 2);
 
       const imageBox = { x: itemX + 12, y: itemY + 12, width: itemW - 24, height: 280 };
-      const imagePath = item.image ? `${ctx.rootDir}/${item.image}`.replaceAll('//', '/') : undefined;
-      const loaded = item.image && isRenderableImage(item.image, ctx.rootDir) ? loadPng(imagePath!) : null;
+      const imagePath = item.image ? path.resolve(ctx.rootDir, item.image) : undefined;
+      const loaded = imagePath
+        ? (ctx.assetCache
+            ? ctx.assetCache.getImage(imagePath)
+            : (item.image && isRenderableImage(item.image, ctx.rootDir) ? loadPng(imagePath) : null))
+        : null;
       if (loaded) {
         drawImageCover(canvas, loaded, imageBox, 16);
       } else {
@@ -762,8 +747,12 @@ export function drawCyberpunkShowcase(
       );
 
       const imageBox = { x: cX + 12, y: cY + 12, width: cardW - 24, height: 180 };
-      const imagePath = entity.image ? `${ctx.rootDir}/${entity.image}`.replaceAll('//', '/') : undefined;
-      const loaded = entity.image && isRenderableImage(entity.image, ctx.rootDir) ? loadPng(imagePath!) : null;
+      const imagePath = entity.image ? path.resolve(ctx.rootDir, entity.image) : undefined;
+      const loaded = imagePath
+        ? (ctx.assetCache
+            ? ctx.assetCache.getImage(imagePath)
+            : (entity.image && isRenderableImage(entity.image, ctx.rootDir) ? loadPng(imagePath) : null))
+        : null;
       if (loaded) {
         drawImageCover(canvas, loaded, imageBox, 16);
       } else {
@@ -838,8 +827,12 @@ export function drawCyberpunkShowcase(
   const imageX = cardX + pad;
   const imageY = cardY + pad;
 
-  const imagePath = first?.image ? `${ctx.rootDir}/${first.image}`.replaceAll('//', '/') : undefined;
-  const loaded = first?.image && isRenderableImage(first.image, ctx.rootDir) ? loadPng(imagePath!) : null;
+  const imagePath = first?.image ? path.resolve(ctx.rootDir, first.image) : undefined;
+  const loaded = imagePath
+    ? (ctx.assetCache
+        ? ctx.assetCache.getImage(imagePath)
+        : (first?.image && isRenderableImage(first.image, ctx.rootDir) ? loadPng(imagePath) : null))
+    : null;
 
   if (loaded) {
     drawImageCover(canvas, loaded, { x: imageX, y: imageY, width: imageW, height: imageH }, 24);
@@ -1310,6 +1303,7 @@ function drawMultiRoundProducts(
   phase: 'play' | 'reveal',
   rootDir: string,
   gameId?: string,
+  assetCache?: RenderAssetCache,
 ): void {
   const products = round.products;
   const count = products.length;
@@ -1340,12 +1334,13 @@ function drawMultiRoundProducts(
     const imageY = cardY + pad;
 
     const imagePath = firstProduct.image
-      ? `${rootDir}/${firstProduct.image}`.replaceAll('//', '/')
+      ? path.resolve(rootDir, firstProduct.image)
       : undefined;
-    const loaded =
-      imagePath && isRenderableImage(firstProduct.image, rootDir)
-        ? loadPng(imagePath)
-        : null;
+    const loaded = imagePath
+      ? (assetCache
+          ? assetCache.getImage(imagePath)
+          : (isRenderableImage(firstProduct.image, rootDir) ? loadPng(imagePath) : null))
+      : null;
 
     if (loaded) {
       drawImageCover(canvas, loaded, { x: imageX, y: imageY, width: imageW, height: imageH }, 24);
@@ -1440,8 +1435,12 @@ function drawMultiRoundProducts(
     // Image A
     const imgWA = cardW - 32;
     const imgHA = 420;
-    const imgPathA = pA.image ? `${rootDir}/${pA.image}`.replaceAll('//', '/') : undefined;
-    const loadedA = imgPathA && isRenderableImage(pA.image, rootDir) ? loadPng(imgPathA) : null;
+    const imgPathA = pA.image ? path.resolve(rootDir, pA.image) : undefined;
+    const loadedA = imgPathA
+      ? (assetCache
+          ? assetCache.getImage(imgPathA)
+          : (isRenderableImage(pA.image, rootDir) ? loadPng(imgPathA) : null))
+      : null;
     if (loadedA) {
       drawImageCover(canvas, loadedA, { x: xA + 16, y: cardY + 68, width: imgWA, height: imgHA }, 18);
     } else {
@@ -1492,8 +1491,12 @@ function drawMultiRoundProducts(
       align: 'center',
     });
     // Image B
-    const imgPathB = pB.image ? `${rootDir}/${pB.image}`.replaceAll('//', '/') : undefined;
-    const loadedB = imgPathB && isRenderableImage(pB.image, rootDir) ? loadPng(imgPathB) : null;
+    const imgPathB = pB.image ? path.resolve(rootDir, pB.image) : undefined;
+    const loadedB = imgPathB
+      ? (assetCache
+          ? assetCache.getImage(imgPathB)
+          : (isRenderableImage(pB.image, rootDir) ? loadPng(imgPathB) : null))
+      : null;
     if (loadedB) {
       drawImageCover(canvas, loadedB, { x: xB + 16, y: cardY + 68, width: imgWA, height: imgHA }, 18);
     } else {
@@ -1555,8 +1558,12 @@ function drawMultiRoundProducts(
       // Image
       const imgW = cardW - 24;
       const imgH = 380;
-      const imgPath = p.image ? `${rootDir}/${p.image}`.replaceAll('//', '/') : undefined;
-      const loaded = imgPath && isRenderableImage(p.image, rootDir) ? loadPng(imgPath) : null;
+      const imgPath = p.image ? path.resolve(rootDir, p.image) : undefined;
+      const loaded = imgPath
+        ? (assetCache
+            ? assetCache.getImage(imgPath)
+            : (isRenderableImage(p.image, rootDir) ? loadPng(imgPath) : null))
+        : null;
       if (loaded) {
         drawImageCover(canvas, loaded, { x: x + 12, y: cardY + 56, width: imgW, height: imgH }, 16);
       } else {
@@ -1634,8 +1641,12 @@ function drawMultiRoundProducts(
       // Product Image
       const imgW = cardW - 24;
       const imgH = 180;
-      const imgPath = p.image ? `${rootDir}/${p.image}`.replaceAll('//', '/') : undefined;
-      const loaded = imgPath && isRenderableImage(p.image, rootDir) ? loadPng(imgPath) : null;
+      const imgPath = p.image ? path.resolve(rootDir, p.image) : undefined;
+      const loaded = imgPath
+        ? (assetCache
+            ? assetCache.getImage(imgPath)
+            : (isRenderableImage(p.image, rootDir) ? loadPng(imgPath) : null))
+        : null;
       if (loaded) {
         drawImageCover(canvas, loaded, { x: x + 12, y: y + 68, width: imgW, height: imgH }, 14);
       } else {
@@ -1681,11 +1692,16 @@ function drawMultiRoundProducts(
  * Renders a frame for a continuous Multi-Round challenge timeline (Sprint 2).
  * Handles hook, round play, reveal, micro-hooks, and scorecard phases.
  */
+export interface MultiRoundPaintOptions {
+  rootDir?: string;
+  assetCache?: RenderAssetCache;
+}
+
 export function paintMultiRoundFrame(
   canvas: Canvas,
   scene: AllInOneSceneLike,
   timeSeconds: number,
-  options?: { rootDir?: string },
+  options?: MultiRoundPaintOptions,
 ): void {
   // 1. Clears background with gradient
   canvas.fillGradientV(0, 0, canvas.width, canvas.height, '#0b0f19', '#020617', 1);
@@ -1770,7 +1786,7 @@ export function paintMultiRoundFrame(
 
     const rootDir = options?.rootDir ?? process.cwd();
     // Multi-Round Product(s) Display (supports 1, 2, 3, 4 products per round)
-    drawMultiRoundProducts(canvas, round, phase, rootDir, scene.challenge.gameId);
+    drawMultiRoundProducts(canvas, round, phase, rootDir, scene.challenge.gameId, options?.assetCache);
 
     // Choice deck starting at y=1200
     const deckResult = drawChoiceDeck(

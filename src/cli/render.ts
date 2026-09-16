@@ -180,6 +180,7 @@ export async function runRenderCommand(args: RenderArgs): Promise<RenderCommandR
     const { Canvas } = await import('../render/canvas');
     const { encodePng } = await import('../render/png');
     const { paintMultiRoundFrame } = await import('../render/scenePainter');
+    const { RenderAssetCache } = await import('../render/assetCache');
     const { FFmpegMuxer } = await import('../render/ffmpeg');
     const { DEFAULT_RENDER_CONFIG } = await import('../render/types');
 
@@ -252,12 +253,18 @@ export async function runRenderCommand(args: RenderArgs): Promise<RenderCommandR
     }
 
     const startMs = performance.now();
-    for (let i = 0; i < frameCount; i += 1) {
-      const timeSeconds = i / fps;
-      const canvas = new Canvas(1080, 1920);
-      paintMultiRoundFrame(canvas, scene, timeSeconds, { rootDir });
-      const png = encodePng({ width: 1080, height: 1920, data: canvas.data });
-      writeFileSync(path.join(framesDir, `frame_${String(i + 1).padStart(5, '0')}.png`), png);
+    const assetCache = new RenderAssetCache();
+    try {
+      for (let i = 0; i < frameCount; i += 1) {
+        const timeSeconds = i / fps;
+        const canvas = new Canvas(1080, 1920);
+        paintMultiRoundFrame(canvas, scene, timeSeconds, { rootDir, assetCache });
+        const png = encodePng({ width: 1080, height: 1920, data: canvas.data });
+        writeFileSync(path.join(framesDir, `frame_${String(i + 1).padStart(5, '0')}.png`), png);
+      }
+    } catch (error) {
+      console.error('[render] Frame generation failed:', error);
+      throw error;
     }
 
     const audioPath = path.join(tempDir, 'audio.wav');

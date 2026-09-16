@@ -7,6 +7,7 @@
  * `W_ASSET_PLACEHOLDER` so the operator knows why a card is drawn as a stub.
  */
 import { existsSync, readFileSync } from 'node:fs';
+import path from 'node:path';
 import type { Canvas } from './canvas';
 import { Canvas as CanvasClass } from './canvas';
 import type { PngImage } from './png';
@@ -25,7 +26,7 @@ export function loadPng(filePath: string): PngImage | null {
 export function isRenderableImage(filePath: string | undefined, rootDir: string): boolean {
   if (!filePath) return false;
   if (!/\.png$/i.test(filePath)) return false;
-  return existsSync(`${rootDir}/${filePath}`.replaceAll('//', '/'));
+  return existsSync(path.resolve(rootDir, filePath));
 }
 
 /**

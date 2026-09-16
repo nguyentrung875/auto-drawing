@@ -56,3 +56,4 @@ export { Canvas, parseColor } from './canvas';
 export { decodePng, encodePng, pngSize } from './png';
 export { ffmpegAvailable, resolveBinary, runProcess } from './process';
 export { TextRenderer, resolveFontFile } from './text';
+export { RenderAssetCache, type Image } from './assetCache';
