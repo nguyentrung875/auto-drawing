@@ -1,226 +1,300 @@
 # auto-drawing — Universal AI Game Video Engine
 
-Modular monolith (TypeScript, Node.js ≥22) sinh video game ngắn 1080×1920 cho
-TikTok/Shopee affiliate: khai báo **Universal Game JSON** → Validator 2 tầng →
-Game Engine (answer/timeline deterministic) → 7 scenes → Audio → Render MP4.
-100% local-first, MIT/Apache stack, cost ~0đ/video.
+Hệ thống **Modular Monolith** (TypeScript, Node.js ≥ 22) sản xuất video ngắn dạng đố vui tương tác dọc 9:16 (1080×1920) hoàn toàn tự động, phục vụ kênh giải trí, review và **affiliate marketing** (TikTok, YouTube Shorts, Facebook Reels). 
 
-> **Pivot:** PRD `prd-universal-game-engine-2026-09-11` supersede PRD
-> `prd-auto-drawing-2026-09-04-v2` (Drawing Transformation). Repo này chỉ build
-> Game Video Engine.
+100% local-first, mã nguồn mở, chi phí vận hành ~0đ/video, tối ưu hoá cho độ giữ chân người xem (audience retention) và tính toàn vẹn dữ liệu.
 
-## Trạng thái hiện tại — Epic 1: Foundation ✅
+---
 
-- [x] Story 1.1 — Project Scaffolding & Modular Monolith Structure
-- [x] Story 1.2 — Universal Game JSON Schema & Versioning (`src/game/schema.ts` + `GameLoader`)
-- [x] Story 1.3 — ProductProvider 50 files (`products/pXXX.json`, atomic write, FS watch) + CLI `game products list`
+## 🌟 Điểm nổi bật & Tính năng chính
 
-## Epic 2: Game Engine ✅
+1. **7 Game Mechanics Đa dạng (Được kiểm chứng viral)**:
+   - **G1: Hi-Lo (`hi_lo`)**: So sánh giá 2 sản phẩm — Món B CAO HƠN hay THẤP HƠN món A?
+   - **G2: Most Expensive (`most_expensive`)**: Tìm sản phẩm đắt nhất trong 3–4 món hàng.
+   - **G3: Odd One Out (`odd_one_out`)**: Tìm kẻ lạc loài khác danh mục hoặc khác phân khúc.
+   - **G5: One Away (`one_away`)**: Đoán chữ số bị che trong mức giá niêm yết (`189.?00₫`).
+   - **G7: Grocery Basket (`grocery_basket`)**: Cầm ngân sách đi siêu thị — Tổng giỏ hàng ĐỦ TIỀN hay CHÁY TÚI?
+   - **G9: Guess The Price (`guess_the_price`)**: Đoán khoảng giá thực tế của sản phẩm.
+   - **G41: Deal Or Scam (`deal_or_scam`)**: Phân tích giá sale sốc — DEAL HỜI chính hãng hay BẪY SALE ẢO?
 
-- [x] Story 2.1 — Two-Layer Validator (`src/validator/Validator.ts`): Schema + Game Logic,
-      `code/field/hint`, <200ms, warning `W_AFFILIATE_MISSING` không block (AD-4)
-- [x] Story 2.2 — Deterministic Answer & Timeline (`src/game/GameEngine.ts` + `src/game/rng.ts`),
-      timeline 18.0s (countdown 3.0s / reveal 2.0s), `E_TIMELINE_DRIFT`, seedrandom bắt buộc
-- [x] Story 2.3 — HI_LO (BOOLEAN) → `answer: higher|lower`, `E_HILO_EQUAL_PRICE` khi delta <5%
-- [x] Story 2.4 — MOST_EXPENSIVE (MULTIPLE_CHOICE) 3–4 cards, `E_MOST_EXPENSIVE_TIE` khi top2 <2%
-- [x] Story 2.5 — ONE_AWAY (DIGIT) `189,?00`, options delta 1 seeded, `DigitReveal`
+2. **Dynamic Multi-Round Engine**:
+   - Tùy biến linh hoạt số vòng thi (`--rounds 2..5`) và thời lượng đếm ngược (`--timer 5.0..10.0s`).
+   - Cấu trúc tâm lý học kịch bản 3 hồi: *Confidence Builder* (vòng 1 dễ tạo đà) → *Tension Creator* (vòng 2 sít sao) → *WTF Reveal* (vòng cuối bẻ lái cảm xúc).
+   - Nhịp dựng không khoảng chết (*Zero Dead Air*): Vòng đếm ngược kích hoạt ngay tức thì khi câu hỏi xuất hiện.
 
-## Epic 3: Scene & Audio ✅
+3. **Hệ thống Âm thanh Đa tầng (Multi-layer Audio Bed)**:
+   - Giọng đọc AI tự nhiên tiếng Việt qua **Microsoft Edge Neural TTS** (Nam Minh, Hoài My).
+   - Tự động hạ âm lượng nhạc nền (Audio Ducking) khi có giọng đọc.
+   - Hiệu ứng âm thanh (SFX) đếm ngược dồn dập và tiếng chuông reo/pháo hoa khi công bố đáp án.
 
-- [x] Story 3.1 — `src/scene/`: seven renderer-neutral scenes, deterministic frame model,
-      `PriceReveal`/`DigitReveal`, ProductCard layout and Result `in_video`/`comment` variants
-- [x] Story 3.2 — `src/audio/`: `IAudioEngine`, `ViPiperEngine` (Piper → built-in
-      Vietnamese formant voice → silence, mỗi bậc đều báo warning),
-      six countdown cues at 0.5s, reveal sync and `E_AUDIO_MISSING_SFX`
-- [x] Story 3.3 — `src/preview/`: autoplay HTML preview at 1080×1920, CLI `game render --preview`,
-      and CommonJS compatibility for the original spike runner
+4. **Engine Render Hiệu năng cao (30 FPS)**:
+   - **RenderAssetCache**: Cache in-memory bitmap hình ảnh sản phẩm, loại bỏ tình trạng đọc đĩa và decode lặp lại qua hàng trăm frame.
+   - **Safe Zone 9:16**: Bố cục giao diện neo an toàn (`y: 360px – 1580px`), không bao giờ bị che khuất bởi giao diện TikTok/Reels (thanh tìm kiếm, caption, music marquee, nút like/comment).
+   - Hỗ trợ đa dạng renderer: **Software Cyberpunk Canvas**, **Browser CDP Renderer** (Chromium/Edge), và **Satori SVG/PNG**.
 
+5. **An toàn Dữ liệu & Tiếp thị Liên kết (Data Integrity)**:
+   - **Zero Data Invention**: Renderer tuyệt đối không tự bịa giá hoặc đoán mò đáp án; dữ liệu được xác thực chặt chẽ qua Two-layer Validator.
+   - **Pixel-Scan Guard**: Tự động quét kiểm tra từng frame sau render để đảm bảo link affiliate không bao giờ bị lộ vào video (chỉ xuất hiện trong `caption.json` hoặc comment theo chuẩn chống vi phạm chính sách nền tảng).
+
+---
+
+## 🚀 Cài đặt & Khởi động Nhanh
+
+### 1. Yêu cầu Môi trường
+- **Node.js**: Phiên bản `>= 22.12`
+- **FFmpeg**: Đã cài đặt trên hệ điều hành và có trong `PATH` (hoặc cài đặt tự động qua `@ffmpeg-installer/ffmpeg`).
+- **Trình duyệt Chromium** (Tùy chọn cho Browser Renderer): Google Chrome hoặc Microsoft Edge.
+
+### 2. Cài đặt Dependencies
 ```bash
-game render --mechanic hi_lo --products p001,p042 --seed 839271 --preview
-node spike/universal-game-demo/src/run_spike.js
-```
-
-```bash
-game plan --mechanic hi_lo --products p001,p002 --seed 839271
-game plan --mechanic most_expensive --products p001,p015,p028 --seed 839272
-game plan --mechanic one_away --products p001 --seed 839273 --hidden-index 3
-```
-
-`game plan` chạy hết pipeline Epic 2 (Provider → Mechanic → Validator 2 tầng → Engine)
-và in JSON `{answer, timeline, revealType, diversification, game, sceneData}`;
-lỗi → exit 1 + `{"code","field","hint"}`.
-
-## Epic 4: Render & Batch ✅
-
-- [x] Story 4.1 — `src/render/`: `RenderEngine.render()` → PNG sequence (software
-      rasteriser, Motion Canvas contract giữ nguyên) → FFmpeg `libx264 -crf 18
-      -preset fast` 1080×1920@30 + AAC, `export/<gameId>_<seed>.mp4` +
-      `<gameId>_<seed>.caption.json`; pixel-scan chứng minh affiliate link
-      **không** bị burn vào video; render >45s → `W_RENDER_SLOW` nhưng vẫn xong;
-      treo quá 90s → `PROCESS_TIMEOUT` (SIGTERM → SIGKILL); `temp/<jobId>/` xoá
-      trong `finally`
-- [x] Story 4.2 — `src/cli/`: `game render` (queue file `status: pending` →
-      Validator → Engine → Audio → Scene → Render → `status: done` + `logs/<gameId>.json`,
-      exit 0 + `batch_report` 1 job; lỗi → exit 1 + `{"code","field","hint"}`),
-      `game products list` (50 SKU), `game queue status`, `game logs`, `game config`
-- [x] Story 4.3 — `src/queue/` + `src/observability/`: `game batch --count 50`
-      hoặc 50 files `queue/job_*.json`, pool `min(CPU-1,3)` (mỗi worker 1 job),
-      FIFO, fail-forward (job fail không abort batch), RAM ≤4GB, pre-flight disk
-      ≥2GB → `INSUFFICIENT_DISK_SPACE`, LLM stub retry 3×, cuối batch
-      `export/batch-<ts>/batch_report.json` + summary `passed 49/50` (SM-1 ≥98%)
-
-## Epic 5: High-Fidelity Browser Frame Renderer & Web Studio Integration ✅
-
-- [x] **BrowserFrameRenderer** (`src/render/browserFrameRenderer.ts`):
-  - Tự động phát hiện Google Chrome hoặc Microsoft Edge cài sẵn trên máy (thông qua `puppeteer-core`).
-  - Render template HTML5/CSS3 chuẩn 1080×1920 với hiệu ứng hiện đại: thẻ sản phẩm nổi bật, vòng đếm ngược SVG động, 3D flip card reveal mượt mà, typography sắc nét.
-  - Tối ưu CDP keyframe sampling: kết xuất video 18 giây mượt mà chỉ trong ~45 giây.
-  - Tự động fallback về `software` renderer nếu môi trường không có Chromium (`--renderer browser|software`).
-- [x] **Web Studio UI & API Integration**:
-  - Giao diện trực quan Next.js (`http://localhost:3000/studio`): chọn mechanic, cấu hình sản phẩm, xem trước timeline, bấm **"🎬 Render Video MP4 (1080×1920)"**.
-  - `POST /api/render`: thực thi `bin/game.js render --renderer browser` ngầm.
-  - `GET /api/videos/:filename`: hỗ trợ HTTP 206 Partial Content streaming, phát trực tiếp trên trình phát HTML5 tích hợp và tải file MP4 về máy.
-
-```bash
-game batch --count 50 --mechanics hi_lo,most_expensive,one_away --result-variant comment
-game batch --count 50 --quiet                 # report vẫn ghi ra disk
-game logs --gameId hi_lo_839271
-game queue status
-```
-
-### Usage notes (Trung & Hermes)
-
-**`game render`** — một video, dùng trước khi batch:
-
-```bash
-game render --mechanic hi_lo --products p001,p042 --seed 839271 --result-variant in_video
-game render --game games/hi_lo.json --products p001,p042     # Game JSON tự soạn
-```
-
-Kết quả: `queue/job_<uuid>.json` (`done`), `export/<gameId>_<seed>.mp4`,
-`export/<gameId>_<seed>.caption.json {caption, hashtags, affiliate_link}`,
-`logs/<gameId>.json`. `affiliate_link` **chỉ** nằm trong caption/comment —
-pixel-scan sẽ fail render (`E_AFFILIATE_BURNED_IN`) nếu link xuất hiện trong
-pixels. Lỗi → exit 1 + JSON `{code, field, hint}` (`E_GAME_LOGIC_INVALID`,
-`E_PRICE_SOURCE_INVALID`, …).
-
-**`game batch`** — 50 video qua đêm, không cần canh:
-
-- Pool `WORKER_POOL_MAX = min(CPU-1, 3)`, mỗi worker một job; `--concurrency`
-  chỉ dùng khi test/CI.
-- Job fail (Validator / LLM / timeout / render) → `logs/<gameId>.json`
-  `{code, filter, cause}`, queue job `status: failed`, batch chạy tiếp.
-- `export/batch-<ts>/batch_report.json`:
-  `{total, passed, failed, pass_rate, avg_render_ms, worker_pool_max, duration_ms, manual_interventions, jobs[], failed_jobs[], warnings[]}`.
-  Exit 0 khi SM-1 đạt (`pass_rate ≥ 0.98`), exit 1 khi dưới.
-- Mỗi `logs/<gameId>.json` có `planning_ms, tts_ms, audio_voice_ms, render_ms,
-  encode_ms, audio_mix_ms, total_ms, seed, products[], file_size,
-  validator_errors[], warnings[]`.
-- Hermes có thể tự ghi `queue/job_<uuid>.json` rồi chạy `game batch` không kèm
-  `--count`; file hỏng bị từ chối (`E_QUEUE_JOB_INVALID`, hiện trong
-  `failed_jobs[]`) nhưng không chặn các job khác.
-- `filter` trong log/report để Hermes route: `schema`, `game_logic`,
-  `price_source`, `asset`, `audio`, `scene`, `render`, `timeout`, `disk`, `llm`,
-  `queue`.
-
-**Sự cố thường gặp**
-
-| Triệu chứng | Nguyên nhân / cách xử lý |
-| --- | --- |
-| `E_FFMPEG_MISSING` | `@ffmpeg-installer/ffmpeg` chưa cài → `npm install`, hoặc set `FFMPEG_PATH` / `config.json → render.ffmpegPath` |
-| `W_RENDER_SLOW` | Render >45s (máy yếu, video dài) — video vẫn hợp lệ, chỉ là cảnh báo trong log |
-| `PROCESS_TIMEOUT` | Frame stage hoặc encode treo quá ngưỡng (AD-10) → xem `logs/<gameId>.json`, giảm `--count` |
-| `INSUFFICIENT_DISK_SPACE` | Dưới 2GB trống — batch abort trước khi render job nào |
-| `E_RENDER_STAGE_MISSING` | Job chạy qua `JobRunner` mà không inject renderer (chỉ xảy ra khi gọi API trực tiếp, CLI đã wire sẵn) |
-
-## Cấu trúc (modular monolith)
-
-```
-src/
-├── game/        # Game JSON schema (zod v1) + GameLoader + GameEngine + mechanics/ + rng
-├── product/     # ProductProvider — 50 SKU files, cache, atomic write, FS watch
-├── validator/   # Two-layer validation (Validator.ts) — Epic 2
-├── scene/       # (Epic 3) 7 reusable scenes
-├── audio/       # (Epic 3) ViPiper + formant fallback + SFX
-├── render/      # (Epic 4) Motion Canvas → FFmpeg
-├── queue/       # (Epic 4) file-based job queue
-├── observability/ # (Epic 4) logs + batch_report
-├── types/       # shared types (GameJson, …)
-├── utils/       # format helpers
-└── cli/         # `game` CLI entry
-products/        # 50 mock SKU files p001.json … p050.json
-games/           # sample Game JSON (hi_lo.json)
-```
-
-**Dependency rule (enforced by `eslint import/no-restricted-paths`):**
-
-```
-queue → validator → game → {audio, scene} → render → observability
-```
-
-## Commands
-
-```bash
+# Cài đặt core engine dependencies
 npm install
-npm run assets:generate  # BẮT BUỘC trước lần render đầu — sinh assets/ (xem dưới)
-npm run build          # tsc --noEmit (strict)
-npm test               # vitest
-npm run lint           # eslint (dependency rule)
-npm run products:list  # = game products list
-node bin/game.js products list
 
-# Epic 4 — render & batch
-node bin/game.js render --mechanic hi_lo --products p001,p042 --seed 839271
-node bin/game.js batch --count 50 --mechanics hi_lo,most_expensive,one_away
+# Cài đặt Web Studio dependencies
+npm --prefix studio install
+```
+
+### 3. Khởi tạo Tài nguyên Mẫu (Bắt buộc trước lần chạy đầu tiên)
+Dự án sử dụng cơ chế sinh asset offline deterministic:
+```bash
+npm run assets:generate   # Sinh 50 ảnh mẫu PNG 512×512, hiệu ứng SFX và nhạc nền mẫu
+```
+
+### 4. Kiểm tra Toàn bộ Hệ thống
+Chạy kiểm thử toàn diện (TypeScript compilation + ESLint + 80+ Vitest test suites):
+```bash
+npm run verify
+```
+
+---
+
+## 📖 Hướng dẫn Sử dụng
+
+### 1. Dòng lệnh CLI (`bin/game.js`)
+
+#### A. Xuất 1 Video Multi-Round Hoàn chỉnh
+Chạy kịch bản 3 vòng chơi với cơ chế `hi_lo`:
+```bash
+node bin/game.js render --mode multi --mechanic hi_lo --rounds 3 --timer 5.0 --seed 839271
+```
+*Tùy chọn:*
+- `--mechanic`: Một trong 7 cơ chế (`hi_lo`, `most_expensive`, `odd_one_out`, `one_away`, `grocery_basket`, `guess_the_price`, `deal_or_scam`).
+- `--rounds`: Số vòng chơi (mặc định: `3`).
+- `--timer`: Số giây đếm ngược mỗi vòng (mặc định: `5.0`).
+- `--seed`: Số nguyên ngẫu nhiên để tái lập video (deterministic).
+- `--exportDir`: Thư mục chứa video MP4 xuất ra (mặc định: `export/`).
+
+#### B. Xuất Video Hàng loạt qua đêm (Batch Mode)
+Sản xuất 50 video tự động với worker pool song song:
+```bash
+node bin/game.js batch --count 50 --mechanics hi_lo,deal_or_scam,grocery_basket
+```
+- Tự động chạy chế độ *Fail-Forward*: nếu 1 video bị lỗi sản phẩm, các video khác trong batch vẫn tiếp tục kết xuất bình thường.
+- Báo cáo chi tiết sau batch được ghi tại: `export/batch-<timestamp>/batch_report.json`.
+
+#### C. Xem danh sách Sản phẩm trong Kho dữ liệu
+```bash
+npm run products:list
+# hoặc: node bin/game.js products list
+```
+
+#### D. Kiểm tra Trạng thái Hàng đợi và Nhật ký Job
+```bash
 node bin/game.js queue status
 node bin/game.js logs --gameId hi_lo_839271
 ```
 
-## Assets & giọng đọc (bắt buộc đọc trước khi chạy production)
+---
 
-### `assets/` — sinh bằng script, không commit
+### 2. Giao diện Web Studio trực quan (Next.js)
 
-`assets/` nằm trong `.gitignore` (5.4 MB ảnh + audio). Tái tạo bằng:
-
-```bash
-npm run assets:generate   # 50 ảnh PNG 512×512 + 6 SFX + 3 music bed
-```
-
-Generator là **deterministic và offline**: seed từ `productId` qua FNV-1a, không
-dùng `Math.random()` (AR-10), nên chạy lại trên máy khác cho ra byte giống hệt.
-
-Nếu chưa chạy, mọi card sẽ hiện placeholder xám và job log bắn
-`W_ASSET_PLACEHOLDER`. Ảnh SKU phải là **PNG** — `isRenderableImage()` chỉ decode
-PNG, khai `.webp` sẽ âm thầm rơi về placeholder.
-
-### Giọng đọc — Piper (khuyến nghị) → formant (mặc định)
-
-`ViPiperEngine` xuống cấp theo thứ tự, mỗi bậc đều báo warning:
-
-| Bậc | Điều kiện | Warning |
-|---|---|---|
-| **Piper** (chất lượng phát hành) | có binary + model `vi_VN` | — |
-| **FormantViEngine** (mặc định hiện tại) | không có Piper | `W_VOICE_FORMANT_FALLBACK` |
-| WAV câm | formant lỗi | `W_VOICE_SILENT_STUB` |
-
-Giọng formant **nghe được nhưng như robot** — dùng để kiểm thử pipeline, **không
-nên đăng**. Bật giọng thật, không cần sửa code:
+Dự án tích hợp sẵn ứng dụng Web Studio giúp tùy biến và xem trước kịch bản video trên trình duyệt:
 
 ```bash
-export PIPER_PATH=/path/to/piper
-export PIPER_VOICE=assets/voices/vi_VN.onnx   # mặc định nếu không set
+npm run studio:dev
+```
+Truy cập: **`http://localhost:3000/studio`**
+
+*Các tính năng trong Studio:*
+- **Trực quan hoá Kịch bản**: Lựa chọn mechanic, tuỳ chỉnh số vòng, chỉnh sửa câu hỏi và danh sách sản phẩm.
+- **Xem trước Bố cục HTML**: Xem trước giao diện video 1080×1920 ở mọi mốc thời gian (Hook, Vòng 1, Đếm ngược, Reveal, Scorecard).
+- **Kết xuất MP4 Trực tiếp**: Bấm nút **"🎬 Render Video MP4"** để máy chủ thực thi render ngầm và tải video thành phẩm về máy.
+
+---
+
+## 🏗️ Kiến trúc Hệ thống (Architecture)
+
+### 1. Sơ đồ Luồng Dữ liệu (Pipeline Flow)
+
+```mermaid
+flowchart TD
+    Catalog[(Product Catalog\n50+ SKU Files)] --> Curator[ChallengeCurator\nLựa chọn sản phẩm & Phân phối độ khó]
+    Curator --> DSL[GameDefinitionDSL\nFamily & Timing Rules]
+    DSL --> Challenge[MultiRoundChallenge\nRounds 1..N + ScoreVectors]
+    
+    Challenge --> SceneSys[AllInOneScene\nTimeline Builder: Hook -> Rounds -> Scorecard]
+    Challenge --> AudioSys[MultiRoundAudioComposer\nEdge-TTS + SFX + Ducked BGM]
+    
+    SceneSys --> Painter[scenePainter & RenderAssetCache\n1080x1920 Safe Zone Frame Composition]
+    
+    Painter --> CanvasBuffer[Canvas Pixel Buffers]
+    CanvasBuffer --> PNGSeq[Encoded PNG Sequence]
+    AudioSys --> MasterWAV[Master Audio WAV]
+    
+    PNGSeq --> Muxer[FFmpeg Muxer\nH.264 CRF 18 + AAC 192k]
+    MasterWAV --> Muxer
+    
+    Muxer --> MP4[Final Vertical MP4\n1080x1920 @ 30FPS]
+    Muxer --> Caption[caption.json\nAffiliate Links & Hashtags]
 ```
 
-### Kiểm tra trước khi đăng
+### 2. Cấu trúc Thư mục (Modular Monolith)
 
-```bash
-# Layout gate chạy tự động mỗi job (W_LAYOUT_OVERLAP). Còn nhịp/animation thì soi bằng mắt:
-ffmpeg -i export/<video>.mp4 -vf "fps=12/18,scale=270:-1,tile=4x3" -frames:v 1 sheet.png
-
-REQUIRE_ASSETS=1 node bin/game.js batch --count 50   # fail cứng nếu thiếu asset
+```
+src/
+├── challenge/        # Dynamic Multi-round Engine: Curator, Scorer, Types
+├── definitions/      # Khai báo DSL cho 7 mechanics (g1, g2, g3, g5, g7, g9, g41)
+├── game/             # Legacy single-round engine & rng
+├── product/          # ProductProvider (quản lý SKU, cache in-memory, file watch)
+├── validator/        # Bộ kiểm tra 2 tầng (Schema Zod + Game Logic Invariants)
+├── scene/            # Xây dựng dòng thời gian (Timeline, AllInOneScene)
+├── audio/            # Quản lý giọng đọc TTS (Edge-TTS, Piper), SFX và BGM
+├── render/           # Động cơ kết xuất khung hình (scenePainter, assetCache, canvas)
+├── queue/            # Quản lý hàng đợi job bất đồng bộ file-based
+├── observability/    # Logging JSON, timing metrics, báo cáo batch
+└── cli/              # Entry point dòng lệnh `bin/game.js`
+studio/               # Next.js 15 Web Studio (App router, Tailwind, Preview APIs)
+products/             # Database sản phẩm mẫu (`p001.json` ... `p050.json`)
+assets/               # Font chữ, audio bed, hiệu ứng âm thanh SFX
 ```
 
-## Planning artifacts
+### 3. Quy tắc Ràng buộc Phụ thuộc (Dependency Rule)
+Được kiểm soát nghiêm ngặt bởi ESLint (`import/no-restricted-paths`):
+```
+queue → validator → game / challenge → {audio, scene} → render → observability
+```
+- Tầng `render` không phụ thuộc ngược vào domain `game` hoặc `scene`.
+- Tầng `challenge` độc lập với cách hiển thị đồ hoạ.
 
-Kế hoạch đầy đủ trong `_bmad-output/planning-artifacts/` (PRD, Architecture,
-Epics). Sprint status: `_bmad-output/implementation-artifacts/sprint-status.yaml`.
+---
+
+## 🧩 Hướng dẫn Mở rộng (Extension Guide)
+
+### 1. Thêm một Game Mechanic Mới (Ví dụ: `g10_mystery_box`)
+
+Để bổ sung một cơ chế trò chơi mới, bạn thực hiện qua 4 bước:
+
+#### Bước 1: Khai báo DSL Game trong `src/definitions/`
+Tạo file mới `src/definitions/g10_mystery_box.ts`:
+```typescript
+import type { GameDefinitionDSL } from '../challenge/types';
+import { gameDefinitionSchema } from '../challenge/types';
+
+export const g10Definition: GameDefinitionDSL = {
+  id: 'g10_mystery_box',
+  family: 'mystery_choice',
+  name: 'Hộp Quà Bí Ẩn',
+  targetDuration: 38.0,
+  inputs: {
+    countPerRound: 3,
+    requiredFields: ['productId', 'name', 'price', 'image'],
+  },
+  rounds: [
+    {
+      round: 1,
+      type: 'confidence_builder',
+      targetDifficulty: 0.3,
+      timerSeconds: 5.0,
+      hookText: 'Chọn 1 trong 3 hộp quà: Hộp nào có giá trị cao nhất?',
+    },
+  ],
+  presentation: {
+    layout: 'all_in_one_comparison',
+    actionButtons: ['HỘP A', 'HỘP B', 'HỘP C'],
+  },
+};
+
+gameDefinitionSchema.parse(g10Definition);
+```
+
+#### Bước 2: Bổ sung Logic Curation trong `src/challenge/ChallengeCurator.ts`
+Thêm nhánh xử lý câu hỏi, đáp án và gán `mechanic` cho round:
+```typescript
+else if (dsl.id === 'g10_mystery_box') {
+  choices = selectedProducts.map((p, i) => ({
+    id: String.fromCharCode(65 + i),
+    label: `Hộp ${String.fromCharCode(65 + i)}`,
+    isCorrect: p.productId === bestProduct.productId,
+    value: p.price,
+  }));
+  correctAnswer = winningChoice.id;
+  question = 'Hộp quà nào đắt tiền nhất?';
+  revealText = `Hộp ${winningChoice.id} trị giá ${bestProduct.price.toLocaleString('vi-VN')}₫!`;
+}
+```
+
+#### Bước 3: Định nghĩa Giao diện hiển thị trong `src/render/scenePainter.ts`
+Trong hàm `drawMultiRoundProducts`, bổ sung xử lý giao diện thẻ sản phẩm khi `round.mechanic === 'mystery_box'`.
+
+#### Bước 4: Viết Test Xác minh
+Thêm test case mới vào `test/challenge/all-mechanics-curator.test.ts` và `test/render/all-mechanics-painter.test.ts`.
+
+---
+
+### 2. Thêm Sản phẩm Mới vào Kho (`products/`)
+
+Mỗi sản phẩm là một file JSON độc lập đặt trong thư mục `products/` (ví dụ: `products/p051.json`):
+```json
+{
+  "productId": "p051",
+  "name": "Tai nghe chống ồn Sony WH-1000XM5",
+  "price": 6990000,
+  "originalPrice": 8490000,
+  "currency": "VND",
+  "category": "electronics",
+  "brand": "Sony",
+  "image": "assets/images/p051.png",
+  "affiliate_link": "https://shope.ee/example",
+  "updatedAt": "2026-09-16"
+}
+```
+*Lưu ý:*
+- File ảnh phải có định dạng **PNG**.
+- Đặt ảnh tương ứng tại `assets/images/p051.png`.
+
+---
+
+### 3. Tùy biến Giọng đọc & Âm nhạc (Voice & Audio Customization)
+
+#### Cấu hình Giọng đọc Edge-TTS
+Trong `src/audio/EdgeTtsEngine.ts`, bạn có thể chỉ định giọng đọc AI theo danh sách Microsoft Azure Neural:
+- `vi-VN-NamMinhNeural` (Giọng nam miền Bắc, trầm ấm, dứt khoát)
+- `vi-VN-HoaiMyNeural` (Giọng nữ miền Bắc, truyền cảm, cuốn hút)
+
+#### Thay đổi Nhạc nền (BGM)
+Thêm file nhạc `.wav` 44.1kHz stereo vào `assets/audio/music/` và chỉ định trong options:
+```typescript
+await audioComposer.composeAudio(challenge, timeline, {
+  rootDir: process.cwd(),
+  outputPath: 'output.wav',
+  musicTrack: 'tension_01', // Tên file nhạc trong assets/audio/music/
+  musicVolume: 0.18,        // Âm lượng nền (0.0 - 1.0)
+});
+```
+
+---
+
+## 🛠️ Xử lý Sự cố Thường gặp (Troubleshooting)
+
+| Mã lỗi / Cảnh báo | Nguyên nhân | Cách khắc phục |
+| :--- | :--- | :--- |
+| `E_FFMPEG_MISSING` | Môi trường chưa tìm thấy binary `ffmpeg`. | Cài đặt FFmpeg hoặc cấu hình biến môi trường `FFMPEG_PATH`. |
+| `W_ASSET_PLACEHOLDER` | Chưa có ảnh sản phẩm PNG tương ứng trong `assets/images/`. | Chạy `npm run assets:generate` hoặc bổ sung ảnh PNG đúng đường dẫn. |
+| `W_LAYOUT_OVERLAP` | Tên sản phẩm quá dài hoặc toạ độ text vượt khỏi khung card. | Hệ thống tự động đẩy toạ độ giá xuống dưới (`statusLabelY`), kiểm tra lại độ dài tên sản phẩm nếu vẫn báo warning. |
+| `E_AFFILIATE_BURNED_IN` | Pixel scan phát hiện link affiliate bị vẽ đè lên khung hình video. | Kiểm tra các hàm `canvas.drawText`, tuyệt đối không in trường `affiliate_link` lên Canvas. |
+| `INSUFFICIENT_DISK_SPACE` | Ổ đĩa còn trống dưới 2GB. | Dọn dẹp thư mục `temp/` hoặc giải phóng dung lượng đĩa trước khi batch. |
+
+---
+
+## 📜 Giấy phép & Đóng góp
+Dự án được phân phối theo giấy phép MIT. Toàn bộ mã nguồn hoàn toàn miễn phí cho mục đích thương mại và phát triển kênh affiliate cá nhân/doanh nghiệp.
