@@ -139,25 +139,25 @@ describe('paintMultiRoundFrame', () => {
     expect(() => paintMultiRoundFrame(canvas, scene, 0.5)).not.toThrow();
     expect(canvas.paintedText.some((t) => t.value.includes('TẬP #15'))).toBe(true);
 
-    // 4.0s: Round 1 Play (Countdown)
+    // 3.0s: Round 1 Play (Instant Countdown)
     const playCanvas = new Canvas(1080, 1920);
-    expect(() => paintMultiRoundFrame(playCanvas, scene, 4.0)).not.toThrow();
+    expect(() => paintMultiRoundFrame(playCanvas, scene, 3.0)).not.toThrow();
     expect(playCanvas.paintedText.some((t) => t.value.includes('Giá sản phẩm này'))).toBe(true);
-    expect(playCanvas.paintedText.some((t) => t.value.includes('Còn'))).toBe(true);
+    expect(playCanvas.paintedText.some((t) => t.value.includes('Còn 3.0s...'))).toBe(true);
 
-    // 9.0s: Round 1 Reveal
+    // 7.0s: Round 1 Reveal
     const revealCanvas = new Canvas(1080, 1920);
-    expect(() => paintMultiRoundFrame(revealCanvas, scene, 9.0)).not.toThrow();
+    expect(() => paintMultiRoundFrame(revealCanvas, scene, 7.0)).not.toThrow();
     expect(revealCanvas.paintedText.some((t) => t.value.includes('Giá chính xác: 29K'))).toBe(true);
 
-    // 11.0s: Micro-hook 1
+    // 8.2s: Micro-hook 1
     const microCanvas = new Canvas(1080, 1920);
-    expect(() => paintMultiRoundFrame(microCanvas, scene, 11.0)).not.toThrow();
+    expect(() => paintMultiRoundFrame(microCanvas, scene, 8.2)).not.toThrow();
     expect(microCanvas.paintedText.some((t) => t.value.includes('xoắn não'))).toBe(true);
 
-    // 36.0s: Scorecard & CTA
+    // 24.0s: Scorecard & CTA
     const scoreCanvas = new Canvas(1080, 1920);
-    expect(() => paintMultiRoundFrame(scoreCanvas, scene, 36.0)).not.toThrow();
+    expect(() => paintMultiRoundFrame(scoreCanvas, scene, 24.0)).not.toThrow();
     expect(scoreCanvas.paintedText.some((t) => t.value.includes('BẠN ĐÚNG MẤY CÂU?'))).toBe(true);
     expect(scoreCanvas.paintedText.some((t) => t.value.includes('Ai đúng 3/3 giơ tay!'))).toBe(true);
   });

@@ -1473,8 +1473,9 @@ export function paintMultiRoundFrame(
 
     // If play phase: draw pill countdown bar with remaining seconds
     if (phase === 'play') {
-      const secondsRemaining = Math.max(0, Math.min(round.timerSeconds, slot.end - timeSeconds));
-      drawPillCountdown(canvas, secondsRemaining, round.timerSeconds, countdownY);
+      const totalTimer = Math.max(5.0, round.timerSeconds);
+      const secondsRemaining = Math.max(0, Math.min(totalTimer, slot.end - timeSeconds));
+      drawPillCountdown(canvas, secondsRemaining, totalTimer, countdownY);
     }
 
     // If reveal phase: highlight winning choice with green border and show reveal text / actual price
