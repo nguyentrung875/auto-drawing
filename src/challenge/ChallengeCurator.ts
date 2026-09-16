@@ -143,6 +143,120 @@ export class ChallengeCurator {
           roundSpec.hookText ??
           `${prod.name} sale sốc -${evaluation.discountPercent}%: DEAL HỜI hay BẪY SCAM?`;
         revealText = `Đáp án: ${isDeal ? 'DEAL HỜI MÚC NGAY' : 'BẪY SALE ẢO / SCAM'} (-${evaluation.discountPercent}%)`;
+      } else if (dsl.family === 'numeric_comparison' || dsl.id === 'g1_hi_lo') {
+        // G1: Hi-Lo
+        const [prodA, prodB] = selectedProducts as [Product, Product];
+        const isHigher = prodB.price > prodA.price;
+        choices = [
+          { id: 'higher', label: 'CAO HƠN', isCorrect: isHigher, value: prodB.price },
+          { id: 'lower', label: 'THẤP HƠN', isCorrect: !isHigher, value: prodB.price },
+        ];
+        correctAnswer = isHigher ? 'higher' : 'lower';
+        question =
+          roundSpec.hookText ??
+          `${prodB.name} CAO HƠN hay THẤP HƠN ${prodA.name} (${this.numericEngine.formatVND(prodA.price)})?`;
+        revealText = `${prodB.name} giá ${this.numericEngine.formatVND(prodB.price)} (${isHigher ? 'CAO HƠN' : 'THẤP HƠN'} ${this.numericEngine.formatVND(prodA.price)})`;
+      } else if (dsl.family === 'multiple_choice_max' || dsl.id === 'g2_most_expensive') {
+        // G2: Most Expensive
+        let maxProd = selectedProducts[0]!;
+        for (const p of selectedProducts) {
+          if (p.price > maxProd.price) maxProd = p;
+        }
+        const letters = ['A', 'B', 'C', 'D'];
+        choices = selectedProducts.map((p, i) => ({
+          id: letters[i] ?? String(i + 1),
+          label: `${letters[i] ?? i + 1}. ${p.name}`,
+          isCorrect: p.productId === maxProd.productId,
+          value: p.price,
+        }));
+        const winningChoice = choices.find((c) => c.isCorrect);
+        correctAnswer = winningChoice?.id ?? 'A';
+        question =
+          roundSpec.hookText ??
+          `Trong ${selectedProducts.length} món này, món nào ĐẮT NHẤT?`;
+        revealText = `${maxProd.name} đắt nhất với giá ${this.numericEngine.formatVND(maxProd.price)}!`;
+      } else if (dsl.family === 'numeric_digit' || dsl.id === 'g5_one_away') {
+        // G5: One Away
+        const [prod] = selectedProducts as [Product, ...Product[]];
+        const priceStr = String(prod.price);
+        const hiddenIndex =
+          roundSpec.hiddenIndex !== undefined
+            ? Math.min(priceStr.length - 1, roundSpec.hiddenIndex)
+            : Math.min(priceStr.length - 1, Math.max(0, (seed + idx) % priceStr.length));
+        const correctDigit = Number(priceStr[hiddenIndex]);
+        const decoyDigit = correctDigit === 9 ? 8 : correctDigit + 1;
+        const options = (seed + idx) % 2 === 0 ? [correctDigit, decoyDigit] : [decoyDigit, correctDigit];
+        choices = options.map((d) => ({
+          id: String(d),
+          label: `Số ${d}`,
+          isCorrect: d === correctDigit,
+          value: d,
+        }));
+        correctAnswer = String(correctDigit);
+        const maskedPrice = priceStr
+          .split('')
+          .map((c, i) => (i === hiddenIndex ? '?' : c))
+          .join('')
+          .replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        question =
+          roundSpec.hookText ??
+          `Chữ số bị che trong giá ${maskedPrice}₫ là số mấy?`;
+        revealText = `Giá chính xác là ${this.numericEngine.formatVND(prod.price)} (Số ${correctDigit})!`;
+      } else if (dsl.family === 'semantic_outlier' || dsl.id === 'g3_odd_one_out') {
+        // G3: Odd One Out
+        // 1. By Category (3 in one category, 1 in another)
+        const categoryCounts = new Map<string, Product[]>();
+        for (const p of selectedProducts) {
+          const list = categoryCounts.get(p.category) ?? [];
+          list.push(p);
+          categoryCounts.set(p.category, list);
+        }
+        let oddProduct: Product | undefined;
+        let oddReason = '';
+        for (const [, list] of categoryCounts.entries()) {
+          if (list.length === 1 && categoryCounts.size === 2) {
+            oddProduct = list[0];
+            oddReason = `khác danh mục: ${oddProduct?.category}`;
+            break;
+          }
+        }
+        // 2. By Brand (3 in one brand, 1 in another)
+        if (!oddProduct) {
+          const brandCounts = new Map<string, Product[]>();
+          for (const p of selectedProducts) {
+            const list = brandCounts.get(p.brand) ?? [];
+            list.push(p);
+            brandCounts.set(p.brand, list);
+          }
+          for (const [, list] of brandCounts.entries()) {
+            if (list.length === 1 && brandCounts.size === 2) {
+              oddProduct = list[0];
+              oddReason = `khác thương hiệu: ${oddProduct?.brand}`;
+              break;
+            }
+          }
+        }
+        // 3. Fallback: Price outlier
+        if (!oddProduct) {
+          const sorted = [...selectedProducts].sort((a, b) => a.price - b.price);
+          const deltaLow = (sorted[1]?.price ?? 0) - (sorted[0]?.price ?? 0);
+          const deltaHigh = (sorted[3]?.price ?? 0) - (sorted[2]?.price ?? 0);
+          oddProduct = deltaHigh > deltaLow ? (sorted[3] ?? sorted[0]!) : sorted[0]!;
+          oddReason = `khác phân khúc giá: ${this.numericEngine.formatVND(oddProduct.price)}`;
+        }
+        const letters = ['A', 'B', 'C', 'D'];
+        choices = selectedProducts.map((p, i) => ({
+          id: letters[i] ?? String(i + 1),
+          label: `${letters[i] ?? i + 1}. ${p.name}`,
+          isCorrect: p.productId === oddProduct.productId,
+          value: p.price,
+        }));
+        const winChoice = choices.find((c) => c.isCorrect);
+        correctAnswer = winChoice?.id ?? 'A';
+        question =
+          roundSpec.hookText ??
+          `Món nào là "KẺ LẠ" trong ${selectedProducts.length} món này?`;
+        revealText = `${oddProduct.name} là kẻ lạ (${oddReason})!`;
       } else {
         // G9: Guess The Price (Default numeric single bracket)
         const [prod] = selectedProducts as [Product, ...Product[]];

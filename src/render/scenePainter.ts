@@ -11,6 +11,7 @@
 import { Canvas, parseColor } from './canvas';
 import { drawImageCover, isRenderableImage, loadPng } from './image';
 import type { MultiRoundChallenge, ChallengeRound } from '../challenge/types';
+import type { Product } from '../product/schema';
 import type { Timeline } from '../types/game';
 import type {
   RenderCardView,
@@ -1275,6 +1276,379 @@ export function drawPillCountdown(
   });
 }
 
+function drawMultiRoundProducts(
+  canvas: Canvas,
+  round: ChallengeRound,
+  phase: 'play' | 'reveal',
+  rootDir: string,
+  gameId?: string,
+): void {
+  const products = round.products;
+  const count = products.length;
+
+  if (count === 1) {
+    // Single Product Card (720x720 at y=440)
+    const cardX = Math.round((STAGE_WIDTH - 720) / 2);
+    const cardY = 440;
+    const cardW = 720;
+    const cardH = 720;
+
+    canvas.fillRoundRect(cardX, cardY, cardW, cardH, 36, '#0f172a', 1);
+    canvas.strokeRoundRect(
+      cardX,
+      cardY,
+      cardW,
+      cardH,
+      36,
+      phase === 'reveal' ? 'rgba(34,197,94,0.4)' : CARD_BORDER,
+      4,
+    );
+
+    const firstProduct = products[0]!;
+    const pad = 24;
+    const imageW = cardW - pad * 2;
+    const imageH = 480;
+    const imageX = cardX + pad;
+    const imageY = cardY + pad;
+
+    const imagePath = firstProduct.image
+      ? `${rootDir}/${firstProduct.image}`.replaceAll('//', '/')
+      : undefined;
+    const loaded =
+      imagePath && isRenderableImage(firstProduct.image, rootDir)
+        ? loadPng(imagePath)
+        : null;
+
+    if (loaded) {
+      drawImageCover(canvas, loaded, { x: imageX, y: imageY, width: imageW, height: imageH }, 24);
+    } else {
+      canvas.fillRoundRect(imageX, imageY, imageW, imageH, 24, '#1e293b', 1);
+      const placeholderText = (firstProduct.productId || 'SAN PHAM').toUpperCase();
+      canvas.drawText(placeholderText, {
+        x: imageX + Math.round(imageW / 2),
+        y: imageY + Math.round(imageH / 2) - 20,
+        size: 40,
+        weight: 700,
+        color: 'rgba(248,250,252,0.6)',
+        align: 'center',
+        maxWidth: imageW - 40,
+      });
+    }
+
+    if (firstProduct.brand) {
+      const badgeW = 220;
+      const badgeH = 44;
+      canvas.fillRoundRect(imageX + 16, imageY + 16, badgeW, badgeH, 12, 'rgba(15,23,42,0.85)', 1);
+      canvas.drawText(firstProduct.brand.toUpperCase(), {
+        x: imageX + 16 + Math.round(badgeW / 2),
+        y: imageY + 16 + Math.round((badgeH - 22 * 1.2) / 2),
+        size: 22,
+        weight: 800,
+        color: ACCENT,
+        align: 'center',
+        maxWidth: badgeW - 20,
+      });
+    }
+
+    if (firstProduct.name) {
+      canvas.drawText(firstProduct.name, {
+        x: Math.round(STAGE_WIDTH / 2),
+        y: cardY + 530,
+        size: 34,
+        weight: 700,
+        color: INK,
+        align: 'center',
+        maxWidth: cardW - 60,
+        lineHeight: 1.2,
+      });
+    }
+
+    let statusLabel: string | undefined;
+    if (gameId?.includes('one_away') || round.question.includes('che')) {
+      statusLabel =
+        phase === 'reveal'
+          ? `Giá thật: ${firstProduct.price.toLocaleString('vi-VN')}₫`
+          : `Chữ số bị che: ???`;
+    } else if (gameId?.includes('deal') || round.question.includes('sale')) {
+      statusLabel = `Giá niêm yết: ${firstProduct.price.toLocaleString('vi-VN')}₫`;
+    } else {
+      statusLabel = `Mốc so sánh: ${firstProduct.price.toLocaleString('vi-VN')}đ`;
+    }
+
+    if (statusLabel) {
+      canvas.drawText(statusLabel, {
+        x: Math.round(STAGE_WIDTH / 2),
+        y: cardY + 630,
+        size: 32,
+        weight: 800,
+        color: phase === 'reveal' ? '#22c55e' : ACCENT,
+        align: 'center',
+        maxWidth: cardW - 60,
+      });
+    }
+  } else if (count === 2) {
+    // 2 Products Side-by-Side (HI_LO)
+    const [pA, pB] = products as [Product, Product];
+    const cardW = 450;
+    const cardH = 720;
+    const gap = 60;
+    const startX = Math.round((STAGE_WIDTH - (cardW * 2 + gap)) / 2);
+    const cardY = 440;
+
+    // Card A (Reference product)
+    const xA = startX;
+    canvas.fillRoundRect(xA, cardY, cardW, cardH, 28, '#0f172a', 1);
+    canvas.strokeRoundRect(xA, cardY, cardW, cardH, 28, CARD_BORDER, 3);
+    // Badge MÓN A
+    canvas.fillRoundRect(xA + 16, cardY + 16, 170, 40, 10, ACCENT, 0.9);
+    canvas.drawText('MÓN A (GỐC)', {
+      x: xA + 16 + 85,
+      y: cardY + 16 + 10,
+      size: 20,
+      weight: 800,
+      color: '#000000',
+      align: 'center',
+    });
+    // Image A
+    const imgWA = cardW - 32;
+    const imgHA = 420;
+    const imgPathA = pA.image ? `${rootDir}/${pA.image}`.replaceAll('//', '/') : undefined;
+    const loadedA = imgPathA && isRenderableImage(pA.image, rootDir) ? loadPng(imgPathA) : null;
+    if (loadedA) {
+      drawImageCover(canvas, loadedA, { x: xA + 16, y: cardY + 68, width: imgWA, height: imgHA }, 18);
+    } else {
+      canvas.fillRoundRect(xA + 16, cardY + 68, imgWA, imgHA, 18, '#1e293b', 1);
+      canvas.drawText(pA.productId.toUpperCase(), {
+        x: xA + Math.round(cardW / 2),
+        y: cardY + 250,
+        size: 32,
+        weight: 700,
+        color: MUTED,
+        align: 'center',
+      });
+    }
+    // Name A
+    canvas.drawText(pA.name, {
+      x: xA + Math.round(cardW / 2),
+      y: cardY + 510,
+      size: 26,
+      weight: 700,
+      color: INK,
+      align: 'center',
+      maxWidth: cardW - 30,
+      lineHeight: 1.2,
+    });
+    // Price A (Always shown)
+    canvas.drawText(`${pA.price.toLocaleString('vi-VN')}₫`, {
+      x: xA + Math.round(cardW / 2),
+      y: cardY + 630,
+      size: 34,
+      weight: 800,
+      color: ACCENT,
+      align: 'center',
+    });
+
+    // Card B (Guess product)
+    const xB = startX + cardW + gap;
+    const isWin = phase === 'reveal';
+    canvas.fillRoundRect(xB, cardY, cardW, cardH, 28, '#0f172a', 1);
+    canvas.strokeRoundRect(xB, cardY, cardW, cardH, 28, isWin ? '#22c55e' : CARD_BORDER, isWin ? 4 : 3);
+    // Badge MÓN B
+    canvas.fillRoundRect(xB + 16, cardY + 16, 180, 40, 10, isWin ? '#22c55e' : '#38bdf8', 0.9);
+    canvas.drawText('MÓN B (ĐOÁN)', {
+      x: xB + 16 + 90,
+      y: cardY + 16 + 10,
+      size: 20,
+      weight: 800,
+      color: '#000000',
+      align: 'center',
+    });
+    // Image B
+    const imgPathB = pB.image ? `${rootDir}/${pB.image}`.replaceAll('//', '/') : undefined;
+    const loadedB = imgPathB && isRenderableImage(pB.image, rootDir) ? loadPng(imgPathB) : null;
+    if (loadedB) {
+      drawImageCover(canvas, loadedB, { x: xB + 16, y: cardY + 68, width: imgWA, height: imgHA }, 18);
+    } else {
+      canvas.fillRoundRect(xB + 16, cardY + 68, imgWA, imgHA, 18, '#1e293b', 1);
+      canvas.drawText(pB.productId.toUpperCase(), {
+        x: xB + Math.round(cardW / 2),
+        y: cardY + 250,
+        size: 32,
+        weight: 700,
+        color: MUTED,
+        align: 'center',
+      });
+    }
+    // Name B
+    canvas.drawText(pB.name, {
+      x: xB + Math.round(cardW / 2),
+      y: cardY + 510,
+      size: 26,
+      weight: 700,
+      color: INK,
+      align: 'center',
+      maxWidth: cardW - 30,
+      lineHeight: 1.2,
+    });
+    // Price B (Masked during play, revealed during reveal)
+    const priceBLabel = phase === 'reveal' ? `${pB.price.toLocaleString('vi-VN')}₫` : '??? ₫';
+    canvas.drawText(priceBLabel, {
+      x: xB + Math.round(cardW / 2),
+      y: cardY + 630,
+      size: 34,
+      weight: 800,
+      color: phase === 'reveal' ? '#22c55e' : '#fbbf24',
+      align: 'center',
+    });
+  } else if (count === 3) {
+    // 3 Products Tray (GROCERY_BASKET)
+    const cardW = 300;
+    const cardH = 700;
+    const gap = 30;
+    const startX = Math.round((STAGE_WIDTH - (cardW * 3 + gap * 2)) / 2);
+    const cardY = 450;
+
+    products.forEach((p, i) => {
+      const x = startX + i * (cardW + gap);
+      canvas.fillRoundRect(x, cardY, cardW, cardH, 24, '#0f172a', 1);
+      canvas.strokeRoundRect(x, cardY, cardW, cardH, 24, CARD_BORDER, 3);
+
+      // Badge item number
+      canvas.fillRoundRect(x + 12, cardY + 12, 100, 36, 8, ACCENT, 0.9);
+      canvas.drawText(`MÓN #${i + 1}`, {
+        x: x + 12 + 50,
+        y: cardY + 12 + 8,
+        size: 18,
+        weight: 800,
+        color: '#000000',
+        align: 'center',
+      });
+
+      // Image
+      const imgW = cardW - 24;
+      const imgH = 380;
+      const imgPath = p.image ? `${rootDir}/${p.image}`.replaceAll('//', '/') : undefined;
+      const loaded = imgPath && isRenderableImage(p.image, rootDir) ? loadPng(imgPath) : null;
+      if (loaded) {
+        drawImageCover(canvas, loaded, { x: x + 12, y: cardY + 56, width: imgW, height: imgH }, 16);
+      } else {
+        canvas.fillRoundRect(x + 12, cardY + 56, imgW, imgH, 16, '#1e293b', 1);
+        canvas.drawText(p.productId.toUpperCase(), {
+          x: x + Math.round(cardW / 2),
+          y: cardY + 220,
+          size: 24,
+          weight: 700,
+          color: MUTED,
+          align: 'center',
+        });
+      }
+
+      // Name
+      canvas.drawText(p.name, {
+        x: x + Math.round(cardW / 2),
+        y: cardY + 460,
+        size: 22,
+        weight: 700,
+        color: INK,
+        align: 'center',
+        maxWidth: cardW - 20,
+        lineHeight: 1.2,
+      });
+
+      // Price
+      canvas.drawText(`${p.price.toLocaleString('vi-VN')}₫`, {
+        x: x + Math.round(cardW / 2),
+        y: cardY + 610,
+        size: 28,
+        weight: 800,
+        color: ACCENT,
+        align: 'center',
+      });
+    });
+  } else {
+    // 4 Products 2x2 Grid (MOST_EXPENSIVE, ODD_ONE_OUT)
+    const cols = 2;
+    const cardW = 450;
+    const cardH = 340;
+    const gapX = 60;
+    const gapY = 24;
+    const startX = Math.round((STAGE_WIDTH - (cardW * 2 + gapX)) / 2);
+    const startY = 440;
+    const letters = ['A', 'B', 'C', 'D'];
+
+    products.slice(0, 4).forEach((p, i) => {
+      const col = i % cols;
+      const row = Math.floor(i / cols);
+      const x = startX + col * (cardW + gapX);
+      const y = startY + row * (cardH + gapY);
+
+      const letter = letters[i] ?? 'A';
+      const isWinner =
+        phase === 'reveal' &&
+        (round.correctAnswer === letter ||
+          round.correctAnswer === p.productId ||
+          round.choices.find((c) => c.id === letter)?.isCorrect);
+
+      canvas.fillRoundRect(x, y, cardW, cardH, 20, isWinner ? 'rgba(34,197,94,0.18)' : '#0f172a', 1);
+      canvas.strokeRoundRect(x, y, cardW, cardH, 20, isWinner ? '#22c55e' : CARD_BORDER, isWinner ? 4 : 2);
+
+      // Badge letter
+      canvas.fillRoundRect(x + 12, y + 12, 48, 48, 12, isWinner ? '#22c55e' : ACCENT, 1);
+      canvas.drawText(letter, {
+        x: x + 12 + 24,
+        y: y + 12 + 10,
+        size: 26,
+        weight: 800,
+        color: '#000000',
+        align: 'center',
+      });
+
+      // Product Image
+      const imgW = cardW - 24;
+      const imgH = 180;
+      const imgPath = p.image ? `${rootDir}/${p.image}`.replaceAll('//', '/') : undefined;
+      const loaded = imgPath && isRenderableImage(p.image, rootDir) ? loadPng(imgPath) : null;
+      if (loaded) {
+        drawImageCover(canvas, loaded, { x: x + 12, y: y + 68, width: imgW, height: imgH }, 14);
+      } else {
+        canvas.fillRoundRect(x + 12, y + 68, imgW, imgH, 14, '#1e293b', 1);
+        canvas.drawText(p.productId.toUpperCase(), {
+          x: x + Math.round(cardW / 2),
+          y: y + 150,
+          size: 22,
+          weight: 700,
+          color: MUTED,
+          align: 'center',
+        });
+      }
+
+      // Name
+      canvas.drawText(p.name, {
+        x: x + Math.round(cardW / 2),
+        y: y + 260,
+        size: 20,
+        weight: 700,
+        color: INK,
+        align: 'center',
+        maxWidth: cardW - 24,
+        lineHeight: 1.15,
+      });
+
+      // Price Tag if reveal
+      if (phase === 'reveal') {
+        canvas.drawText(`${p.price.toLocaleString('vi-VN')}₫`, {
+          x: x + Math.round(cardW / 2),
+          y: y + 302,
+          size: 22,
+          weight: 800,
+          color: isWinner ? '#4ade80' : MUTED,
+          align: 'center',
+        });
+      }
+    });
+  }
+}
+
 /**
  * Renders a frame for a continuous Multi-Round challenge timeline (Sprint 2).
  * Handles hook, round play, reveal, micro-hooks, and scorecard phases.
@@ -1366,99 +1740,9 @@ export function paintMultiRoundFrame(
       maxWidth: boxWidth - 40,
     });
 
-    // Product card at y=440 (720x720)
-    const cardX = Math.round((STAGE_WIDTH - 720) / 2);
-    const cardY = 440;
-    const cardW = 720;
-    const cardH = 720;
-
-    canvas.fillRoundRect(cardX, cardY, cardW, cardH, 36, '#0f172a', 1);
-    canvas.strokeRoundRect(
-      cardX,
-      cardY,
-      cardW,
-      cardH,
-      36,
-      phase === 'reveal' ? 'rgba(34,197,94,0.4)' : CARD_BORDER,
-      4,
-    );
-
-    const firstProduct = round.products[0];
-    const pad = 24;
-    const imageW = cardW - pad * 2;
-    const imageH = 480;
-    const imageX = cardX + pad;
-    const imageY = cardY + pad;
-
     const rootDir = options?.rootDir ?? process.cwd();
-    const imagePath = firstProduct?.image
-      ? `${rootDir}/${firstProduct.image}`.replaceAll('//', '/')
-      : undefined;
-    const loaded =
-      imagePath && isRenderableImage(firstProduct?.image, rootDir)
-        ? loadPng(imagePath)
-        : null;
-
-    if (loaded) {
-      drawImageCover(canvas, loaded, { x: imageX, y: imageY, width: imageW, height: imageH }, 24);
-    } else {
-      canvas.fillRoundRect(imageX, imageY, imageW, imageH, 24, '#1e293b', 1);
-      const placeholderText = (firstProduct?.productId || 'SAN PHAM').toUpperCase();
-      canvas.drawText(placeholderText, {
-        x: imageX + Math.round(imageW / 2),
-        y: imageY + Math.round(imageH / 2) - 20,
-        size: 40,
-        weight: 700,
-        color: 'rgba(248,250,252,0.6)',
-        align: 'center',
-        maxWidth: imageW - 40,
-      });
-    }
-
-    // Brand / Official badge on product image if brand exists
-    if (firstProduct?.brand) {
-      const badgeW = 220;
-      const badgeH = 44;
-      canvas.fillRoundRect(imageX + 16, imageY + 16, badgeW, badgeH, 12, 'rgba(15,23,42,0.85)', 1);
-      canvas.drawText(firstProduct.brand.toUpperCase(), {
-        x: imageX + 16 + Math.round(badgeW / 2),
-        y: imageY + 16 + Math.round((badgeH - 22 * 1.2) / 2),
-        size: 22,
-        weight: 800,
-        color: ACCENT,
-        align: 'center',
-        maxWidth: badgeW - 20,
-      });
-    }
-
-    if (firstProduct?.name) {
-      canvas.drawText(firstProduct.name, {
-        x: Math.round(STAGE_WIDTH / 2),
-        y: cardY + 530,
-        size: 34,
-        weight: 700,
-        color: INK,
-        align: 'center',
-        maxWidth: cardW - 60,
-        lineHeight: 1.2,
-      });
-    }
-
-    // Benchmark Price / Deal Tag
-    const benchmarkLabel = firstProduct?.price
-      ? `Mốc so sánh: ${firstProduct.price.toLocaleString('vi-VN')}đ`
-      : undefined;
-    if (benchmarkLabel) {
-      canvas.drawText(benchmarkLabel, {
-        x: Math.round(STAGE_WIDTH / 2),
-        y: cardY + 630,
-        size: 32,
-        weight: 800,
-        color: ACCENT,
-        align: 'center',
-        maxWidth: cardW - 60,
-      });
-    }
+    // Multi-Round Product(s) Display (supports 1, 2, 3, 4 products per round)
+    drawMultiRoundProducts(canvas, round, phase, rootDir, scene.challenge.gameId);
 
     // Choice deck starting at y=1200
     const deckResult = drawChoiceDeck(
@@ -1481,8 +1765,8 @@ export function paintMultiRoundFrame(
     // If reveal phase: highlight winning choice with green border and show reveal text / actual price
     if (phase === 'reveal') {
       const revealBannerY = countdownY;
-      const revealBannerW = 900;
-      const revealBannerH = 100;
+      const revealBannerW = 920;
+      const revealBannerH = 110;
       const revealX = Math.round((STAGE_WIDTH - revealBannerW) / 2);
 
       canvas.fillRoundRect(revealX, revealBannerY, revealBannerW, revealBannerH, 24, 'rgba(34,197,94,0.18)', 1);
@@ -1494,14 +1778,16 @@ export function paintMultiRoundFrame(
           ? `Giá chính xác: ${firstProduct.price.toLocaleString('vi-VN')}đ`
           : `Đáp án: ${round.correctAnswer}`);
 
+      const fontSize = revealText.length > 45 ? 28 : revealText.length > 30 ? 32 : 36;
       canvas.drawText(`🎉 ${revealText}`, {
         x: Math.round(STAGE_WIDTH / 2),
-        y: revealBannerY + Math.round((revealBannerH - 38 * 1.25) / 2),
-        size: 38,
+        y: revealBannerY + Math.round((revealBannerH - fontSize * 1.25) / 2),
+        size: fontSize,
         weight: 800,
         color: '#22c55e',
         align: 'center',
         maxWidth: revealBannerW - 40,
+        lineHeight: 1.2,
       });
     }
     return;

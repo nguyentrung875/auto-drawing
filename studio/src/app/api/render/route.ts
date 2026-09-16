@@ -26,6 +26,9 @@ export async function POST(req: NextRequest) {
     seed,
     resultVariant = 'in_video',
     hiddenIndex,
+    mode,
+    rounds,
+    timer,
   } = body as {
     gameId?: string;
     gameJson?: Record<string, unknown>;
@@ -34,6 +37,9 @@ export async function POST(req: NextRequest) {
     seed?: number;
     resultVariant?: string;
     hiddenIndex?: number;
+    mode?: string;
+    rounds?: number;
+    timer?: number;
   };
 
   if (!gameId) {
@@ -61,7 +67,17 @@ export async function POST(req: NextRequest) {
   let tempFilePath: string | null = null;
   const args: string[] = ['render'];
 
-  if (gameJson) {
+  if (mode) {
+    args.push('--mode', String(mode));
+  }
+  if (rounds !== undefined) {
+    args.push('--rounds', String(rounds));
+  }
+  if (timer !== undefined) {
+    args.push('--timer', String(timer));
+  }
+
+  if (gameJson && mode !== 'multi') {
     const tempDir = path.join(rootDir, 'temp');
     if (!fs.existsSync(tempDir)) {
       fs.mkdirSync(tempDir, { recursive: true });
@@ -72,10 +88,12 @@ export async function POST(req: NextRequest) {
   } else {
     args.push(
       '--mechanic', String(mechanic || 'HI_LO').toLowerCase(),
-      '--products', (productIds || []).join(','),
       '--seed', String(resolvedSeed),
       '--result-variant', String(resultVariant)
     );
+    if (productIds && productIds.length > 0) {
+      args.push('--products', productIds.join(','));
+    }
     if (hiddenIndex !== undefined) {
       args.push('--hidden-index', String(hiddenIndex));
     }

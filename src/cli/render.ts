@@ -53,9 +53,14 @@ export interface RenderCommandResult {
 
 const MECHANIC_ALIASES: Record<string, QueueJob['mechanic']> = {
   hi_lo: 'HI_LO',
+  hilo: 'HI_LO',
+  g1: 'HI_LO',
   most_expensive: 'MOST_EXPENSIVE',
+  g2: 'MOST_EXPENSIVE',
   one_away: 'ONE_AWAY',
+  g5: 'ONE_AWAY',
   odd_one_out: 'ODD_ONE_OUT',
+  g3: 'ODD_ONE_OUT',
   guess_the_price: 'GUESS_THE_PRICE',
   g9: 'GUESS_THE_PRICE',
   g7: 'GROCERY_BASKET',
@@ -132,7 +137,8 @@ export async function runRenderCommand(args: RenderArgs): Promise<RenderCommandR
       },
     };
   }
-  if (args.productIds.length === 0 && !args.gameFile) {
+  const explicitProductsPassed = args.productIds.length > 0;
+  if (!explicitProductsPassed && !args.gameFile) {
     const { ProductProvider } = await import('../product/ProductProvider');
     const provider = new ProductProvider(path.resolve(rootDir, 'products'), { watch: false });
     const all = provider.getAll();
@@ -148,10 +154,15 @@ export async function runRenderCommand(args: RenderArgs): Promise<RenderCommandR
   }
 
   const isMulti =
-    args.mode === 'multi' ||
-    args.rounds !== undefined ||
-    args.timer !== undefined ||
-    args.mechanic === 'GUESS_THE_PRICE';
+    !args.gameFile &&
+    args.mode !== 'single' &&
+    (args.mode === 'multi' ||
+      args.rounds !== undefined ||
+      args.timer !== undefined ||
+      !explicitProductsPassed ||
+      args.mechanic === 'GUESS_THE_PRICE' ||
+      args.mechanic === 'GROCERY_BASKET' ||
+      args.mechanic === 'DEAL_OR_SCAM');
 
   if (isMulti) {
     const seed = Number.isFinite(args.seed) ? (args.seed as number) : 839271;
@@ -162,6 +173,10 @@ export async function runRenderCommand(args: RenderArgs): Promise<RenderCommandR
     const { g9Definition } = await import('../definitions/g9_guess_the_price');
     const { g7Definition } = await import('../definitions/g7_grocery_basket');
     const { g41Definition } = await import('../definitions/g41_deal_or_scam');
+    const { g1Definition } = await import('../definitions/g1_hi_lo');
+    const { g2Definition } = await import('../definitions/g2_most_expensive');
+    const { g5Definition } = await import('../definitions/g5_one_away');
+    const { g3Definition } = await import('../definitions/g3_odd_one_out');
     const { Canvas } = await import('../render/canvas');
     const { encodePng } = await import('../render/png');
     const { paintMultiRoundFrame } = await import('../render/scenePainter');
@@ -171,12 +186,17 @@ export async function runRenderCommand(args: RenderArgs): Promise<RenderCommandR
     const provider = new ProductProvider(path.resolve(rootDir, 'products'), { watch: false });
     const products = provider.getAll();
     const curator = new ChallengeCurator();
-    const dsl =
-      args.mechanic === 'GROCERY_BASKET'
-        ? g7Definition
-        : args.mechanic === 'DEAL_OR_SCAM'
-          ? g41Definition
-          : g9Definition;
+
+    const DSL_MAP: Record<string, any> = {
+      GUESS_THE_PRICE: g9Definition,
+      GROCERY_BASKET: g7Definition,
+      DEAL_OR_SCAM: g41Definition,
+      HI_LO: g1Definition,
+      MOST_EXPENSIVE: g2Definition,
+      ONE_AWAY: g5Definition,
+      ODD_ONE_OUT: g3Definition,
+    };
+    const dsl = (args.mechanic && DSL_MAP[args.mechanic]) ?? g9Definition;
     const challenge = curator.curate(dsl, products, seed, {
       totalRounds: args.rounds,
       timerSeconds: args.timer,
@@ -266,7 +286,7 @@ export async function runRenderCommand(args: RenderArgs): Promise<RenderCommandR
       JSON.stringify(
         {
           caption: `${challenge.title} 🔥 ${challenge.rounds.length} vòng chơi đỉnh cao!`,
-          hashtags: ['#guesstheprice', '#multiround', '#viral'],
+          hashtags: [`#${challenge.gameId}`, '#multiround', '#viral', '#game'],
           affiliate_link: challenge.rounds[0]?.products[0]?.affiliate_link ?? '',
         },
         null,
@@ -283,7 +303,7 @@ export async function runRenderCommand(args: RenderArgs): Promise<RenderCommandR
       videoPath,
       captionPath,
       renderMs,
-      summary: `Successfully rendered 38s multi-round video to ${videoPath}`,
+      summary: `Successfully rendered ${timeline.totalDuration.toFixed(1)}s multi-round ${challenge.gameId} video to ${videoPath}`,
     };
   }
 

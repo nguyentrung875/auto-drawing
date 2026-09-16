@@ -57,7 +57,17 @@ export interface CurateOptions {
 
 export const gameDefinitionSchema = z.object({
   id: z.string().min(1),
-  family: z.enum(['numeric_single_bracket', 'numeric_knapsack', 'commerce_decision', 'semantic', 'visual']),
+  family: z.enum([
+    'numeric_single_bracket',
+    'numeric_knapsack',
+    'commerce_decision',
+    'numeric_comparison',
+    'multiple_choice_max',
+    'numeric_digit',
+    'semantic_outlier',
+    'semantic',
+    'visual',
+  ]),
   name: z.string().min(1),
   targetDuration: z.number().positive(),
   inputs: z.object({
@@ -73,6 +83,7 @@ export const gameDefinitionSchema = z.object({
       budget: z.number().positive().optional(),
       deltaBudgetMin: z.number().min(0).max(1).optional(),
       deltaBudgetMax: z.number().min(0).max(1).optional(),
+      hiddenIndex: z.number().int().min(0).optional(),
       timerSeconds: z.number().positive(),
       hookText: z.string().optional(),
       microHook: z.string().optional(),
