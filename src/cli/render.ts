@@ -26,6 +26,8 @@ export interface RenderArgs {
   resultVariant?: 'in_video' | 'comment';
   hiddenIndex?: number;
   mode?: string;
+  rounds?: number;
+  timer?: number;
   /** `--game <file.json>`: render an existing Game JSON instead of a template. */
   gameFile?: string;
   queueDir: string;
@@ -89,6 +91,8 @@ export function parseRenderArgs(argv: string[], rootDir = process.cwd()): Render
   const hiddenIndex = flags.get('hidden-index');
   const variant = flags.get('result-variant');
   const mode = flags.get('mode');
+  const rounds = flags.get('rounds');
+  const timer = flags.get('timer');
   return {
     mechanic: normalizeMechanic(flags.get('mechanic')),
     productIds: (flags.get('products') ?? '')
@@ -99,6 +103,8 @@ export function parseRenderArgs(argv: string[], rootDir = process.cwd()): Render
     resultVariant: variant === 'comment' ? 'comment' : variant === 'in_video' ? 'in_video' : undefined,
     hiddenIndex: hiddenIndex === undefined ? undefined : Number(hiddenIndex),
     mode,
+    rounds: rounds !== undefined ? Number(rounds) : undefined,
+    timer: timer !== undefined ? Number(timer) : undefined,
     gameFile: flags.get('game'),
     queueDir: flags.get('queue-dir') ?? 'queue',
     rendererType: flags.get('renderer') === 'satori'
@@ -141,25 +147,40 @@ export async function runRenderCommand(args: RenderArgs): Promise<RenderCommandR
     args.productIds = all.slice(0, needed).map((p) => p.productId);
   }
 
-  if (args.mode === 'multi') {
+  const isMulti =
+    args.mode === 'multi' ||
+    args.rounds !== undefined ||
+    args.timer !== undefined ||
+    args.mechanic === 'GUESS_THE_PRICE';
+
+  if (isMulti) {
     const seed = Number.isFinite(args.seed) ? (args.seed as number) : 839271;
     const { ProductProvider } = await import('../product/ProductProvider');
     const { ChallengeCurator } = await import('../challenge/ChallengeCurator');
     const { AllInOneScene } = await import('../scene/AllInOneScene');
+    const { MultiRoundAudioComposer } = await import('../audio/MultiRoundAudioComposer');
     const { g9Definition } = await import('../definitions/g9_guess_the_price');
     const { g7Definition } = await import('../definitions/g7_grocery_basket');
+    const { g41Definition } = await import('../definitions/g41_deal_or_scam');
     const { Canvas } = await import('../render/canvas');
     const { encodePng } = await import('../render/png');
     const { paintMultiRoundFrame } = await import('../render/scenePainter');
     const { FFmpegMuxer } = await import('../render/ffmpeg');
-    const { synthesizeMusicBed, writeWav } = await import('../render/wav');
     const { DEFAULT_RENDER_CONFIG } = await import('../render/types');
 
     const provider = new ProductProvider(path.resolve(rootDir, 'products'), { watch: false });
     const products = provider.getAll();
     const curator = new ChallengeCurator();
-    const dsl = args.mechanic === 'GROCERY_BASKET' ? g7Definition : g9Definition;
-    const challenge = curator.curate(dsl, products, seed);
+    const dsl =
+      args.mechanic === 'GROCERY_BASKET'
+        ? g7Definition
+        : args.mechanic === 'DEAL_OR_SCAM'
+          ? g41Definition
+          : g9Definition;
+    const challenge = curator.curate(dsl, products, seed, {
+      totalRounds: args.rounds,
+      timerSeconds: args.timer,
+    });
     const scene = new AllInOneScene(challenge);
     const timeline = scene.getTimeline();
 
@@ -194,7 +215,7 @@ export async function runRenderCommand(args: RenderArgs): Promise<RenderCommandR
           revealAt: 0,
           syncDelta: 0,
           sfxCues: [],
-          music: { track: 'music.mp3', volume: 0.18 },
+          music: { track: 'tension_01', volume: 0.18 },
         },
         seed,
         exportDir: args.exportDir,
@@ -206,7 +227,7 @@ export async function runRenderCommand(args: RenderArgs): Promise<RenderCommandR
         jobId,
         videoPath: outcome.videoPath,
         captionPath: outcome.captionPath,
-        renderMs: outcome.timings.renderMs,
+        renderMs: outcome.timings?.renderMs,
       };
     }
 
@@ -214,14 +235,19 @@ export async function runRenderCommand(args: RenderArgs): Promise<RenderCommandR
     for (let i = 0; i < frameCount; i += 1) {
       const timeSeconds = i / fps;
       const canvas = new Canvas(1080, 1920);
-      paintMultiRoundFrame(canvas, scene, timeSeconds);
+      paintMultiRoundFrame(canvas, scene, timeSeconds, { rootDir });
       const png = encodePng({ width: 1080, height: 1920, data: canvas.data });
       writeFileSync(path.join(framesDir, `frame_${String(i + 1).padStart(5, '0')}.png`), png);
     }
 
     const audioPath = path.join(tempDir, 'audio.wav');
-    const samples = synthesizeMusicBed(timeline.totalDuration + 0.4, 44100, 'tension_01', 0.18);
-    writeFileSync(audioPath, writeWav(samples, 44100));
+    const audioComposer = new MultiRoundAudioComposer();
+    await audioComposer.composeAudio(challenge, timeline, {
+      rootDir,
+      outputPath: audioPath,
+      musicTrack: 'tension_01',
+      musicVolume: 0.18,
+    });
 
     const videoPath = path.join(exportDir, `${gameId}_${seed}.mp4`);
     const muxer = new FFmpegMuxer();
@@ -239,7 +265,7 @@ export async function runRenderCommand(args: RenderArgs): Promise<RenderCommandR
       captionPath,
       JSON.stringify(
         {
-          caption: `${challenge.title} 🔥 3 vòng chơi đỉnh cao!`,
+          caption: `${challenge.title} 🔥 ${challenge.rounds.length} vòng chơi đỉnh cao!`,
           hashtags: ['#guesstheprice', '#multiround', '#viral'],
           affiliate_link: challenge.rounds[0]?.products[0]?.affiliate_link ?? '',
         },
