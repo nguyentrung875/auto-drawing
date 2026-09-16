@@ -5,6 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { MsEdgeTTS, OUTPUT_FORMAT } from 'msedge-tts';
 import { FormantViEngine } from './FormantViEngine';
+import { resolveBinary } from '../render/process';
 import type { IAudioEngine, VoiceOptions, VoiceResult } from './AudioEngine';
 
 export const EDGE_TTS_FALLBACK_WARNING = 'W_VOICE_EDGE_FALLBACK';
@@ -125,7 +126,8 @@ export class EdgeTtsEngine implements IAudioEngine {
           volume,
         });
 
-        const ff = spawn('ffmpeg', [
+        const ffmpegBinary = resolveBinary('ffmpeg') ?? 'ffmpeg';
+        const ff = spawn(ffmpegBinary, [
           '-y',
           '-v',
           'error',
@@ -186,7 +188,8 @@ export class EdgeTtsEngine implements IAudioEngine {
             const tempo = (duration / maxDur) * 1.05;
             if (tempo > 1.0) {
               const tempoWavPath = `${voiceWavPath}.tempo.wav`;
-              const tempoProcess = spawn('ffmpeg', [
+              const ffmpegBinary = resolveBinary('ffmpeg') ?? 'ffmpeg';
+              const tempoProcess = spawn(ffmpegBinary, [
                 '-y',
                 '-v',
                 'error',
