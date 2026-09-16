@@ -1,7 +1,7 @@
 import path from 'node:path';
 import { describe, it, expect } from 'vitest';
 import { Canvas } from '../../src/render/canvas';
-import { paintMultiRoundFrame } from '../../src/render/scenePainter';
+import { paintMultiRoundFrame, getChoicesForRenderGame } from '../../src/render/scenePainter';
 import { ChallengeCurator } from '../../src/challenge/ChallengeCurator';
 import { ProductProvider } from '../../src/product/ProductProvider';
 import { AllInOneScene } from '../../src/scene/AllInOneScene';
@@ -51,4 +51,72 @@ describe('scenePainter — MultiRoundFrame All 7 Mechanics Layouts', () => {
       expect(() => paintMultiRoundFrame(canvasEnd, scene, timeline.totalDuration - 0.2)).not.toThrow();
     });
   }
+
+  it('paints reveal frame cleanly when round.revealText is empty, falling back to round.correctAnswer', () => {
+    const challenge = curator.curate(g9Definition, catalog, 839271, { totalRounds: 3, timerSeconds: 5.0 });
+    for (const round of challenge.rounds) {
+      round.revealText = '';
+    }
+    const scene = new AllInOneScene(challenge);
+    const canvasReveal = new Canvas(1080, 1920);
+    // 6.5s corresponds to round 1 reveal
+    expect(() => paintMultiRoundFrame(canvasReveal, scene, 6.5)).not.toThrow();
+  });
+
+  describe('Hardened getChoicesForRenderGame validations', () => {
+    it('throws when DEAL_OR_SCAM lacks originalPrice and salePrice data', () => {
+      const game: any = {
+        metadata: { mechanic: 'DEAL_OR_SCAM', seed: 1 },
+        gameplay: {},
+        entities: [],
+      };
+      expect(() => getChoicesForRenderGame(game)).toThrow(
+        'DEAL_OR_SCAM requires originalPrice and salePrice data',
+      );
+    });
+
+    it('throws when GROCERY_BASKET has non-positive budget and totalBill', () => {
+      const game: any = {
+        metadata: { mechanic: 'GROCERY_BASKET', seed: 1 },
+        gameplay: { budget: 0, totalBill: 0 },
+        entities: [],
+      };
+      expect(() => getChoicesForRenderGame(game)).toThrow(
+        'GROCERY_BASKET requires valid budget or totalBill data',
+      );
+    });
+
+    it('throws when ONE_AWAY has missing or invalid first product price', () => {
+      const game: any = {
+        metadata: { mechanic: 'ONE_AWAY', seed: 1 },
+        gameplay: {},
+        entities: [{ productId: 'p1' }],
+      };
+      expect(() => getChoicesForRenderGame(game)).toThrow(
+        'ONE_AWAY requires valid first product price',
+      );
+    });
+
+    it('throws when mechanic has no correct choice matching the answer', () => {
+      const game: any = {
+        metadata: { mechanic: 'MOST_EXPENSIVE', seed: 1 },
+        gameplay: { answer: 'p_nonexistent' },
+        entities: [{ productId: 'p1', name: 'P1', price: 100 }],
+      };
+      expect(() => getChoicesForRenderGame(game)).toThrow(
+        'No correct choice found for mechanic MOST_EXPENSIVE',
+      );
+    });
+
+    it('throws when mechanic is unsupported or unconfigured', () => {
+      const game: any = {
+        metadata: { mechanic: 'UNKNOWN_MECHANIC', seed: 1 },
+        gameplay: {},
+        entities: [],
+      };
+      expect(() => getChoicesForRenderGame(game)).toThrow(
+        'Unsupported or unconfigured mechanic: UNKNOWN_MECHANIC',
+      );
+    });
+  });
 });

@@ -6,12 +6,25 @@ import type { RenderStagePort } from '../../src/queue/ports';
 function createFakeRenderStage(): RenderStagePort {
   return {
     async render(job) {
+      const game = job.game as { metadata?: { gameId?: string } } | undefined;
+      const gameId = game?.metadata?.gameId ?? 'unknown_game';
+      const rootDir = job.rootDir ?? process.cwd();
+      const exportDir = job.exportDir ?? 'export';
       return {
-        jobId: job.jobId,
-        gameId: job.game.metadata.gameId,
-        videoPath: path.resolve(job.rootDir, job.exportDir ?? 'export', `${job.game.metadata.gameId}_fake.mp4`),
-        captionPath: path.resolve(job.rootDir, job.exportDir ?? 'export', `${job.game.metadata.gameId}_fake.caption.json`),
-        timings: { renderMs: 42, encodeMs: 10, totalMs: 52 },
+        videoPath: path.resolve(rootDir, exportDir, `${gameId}_fake.mp4`),
+        captionPath: path.resolve(rootDir, exportDir, `${gameId}_fake.caption.json`),
+        fileSize: 1000,
+        frameCount: 30,
+        warnings: [],
+        slow: false,
+        timings: {
+          planningMs: 0,
+          ttsMs: 0,
+          renderMs: 42,
+          encodeMs: 10,
+          audioMixMs: 0,
+          totalMs: 52,
+        },
       };
     },
   };

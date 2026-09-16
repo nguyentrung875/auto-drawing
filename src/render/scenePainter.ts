@@ -423,15 +423,18 @@ export function getChoicesForRenderGame(
     const priceVal =
       typeof (prod as any)?.price === 'number'
         ? (prod as any).price
+        : typeof (e as any)?.price === 'number'
+        ? (e as any).price
         : (prod as any)?.priceLabel
         ? Number(String((prod as any).priceLabel).replace(/\D/g, ''))
         : 0;
     return {
       productId: e.productId,
-      name: prod?.name ?? e.productId,
+      name: prod?.name ?? (e as any).name ?? e.productId,
       price: priceVal,
       brand: (prod as any)?.brand,
-      image: prod?.image,
+      image: prod?.image ?? (e as any).image,
+      prod,
     };
   });
   const first = entities[0];
@@ -456,9 +459,23 @@ export function getChoicesForRenderGame(
 
   if (m === 'DEAL_OR_SCAM') {
     const isDeal = String(gp.answer ?? '').toLowerCase() === 'deal';
-    const originalPrice = Number(gp.originalPrice ?? (first?.price ? first.price * 2 : 500000));
-    const salePrice = Number(gp.salePrice ?? first?.price ?? 150000);
-    const discount = Number(gp.discountPercent ?? 85);
+    const prodOriginal =
+      (first?.prod as any)?.originalPrice ??
+      (first?.prod as any)?.original_price ??
+      (rawEntities[0] as any)?.originalPrice;
+    const rawOrig = gp.originalPrice ?? prodOriginal ?? first?.price;
+    const rawSale = gp.salePrice ?? first?.price;
+    const originalPrice = Number(rawOrig ?? 0);
+    const salePrice = Number(rawSale ?? 0);
+
+    if (!originalPrice || !salePrice || originalPrice <= 0 || salePrice <= 0) {
+      throw new Error('DEAL_OR_SCAM requires originalPrice and salePrice data');
+    }
+
+    const discount = Number(
+      gp.discountPercent ??
+        Math.round(((originalPrice - salePrice) / originalPrice) * 100),
+    );
     const correctChoiceId = isDeal ? 'A' : 'B';
     return {
       choices: [
@@ -475,8 +492,11 @@ export function getChoicesForRenderGame(
 
   if (m === 'GROCERY_BASKET') {
     const isUnder = String(gp.answer ?? '').toLowerCase() === 'under';
-    const budget = Number(gp.budget ?? 300000);
+    const budget = Number(gp.budget ?? 0);
     const totalBill = Number(gp.totalBill ?? 0);
+    if (budget <= 0 && totalBill <= 0) {
+      throw new Error('GROCERY_BASKET requires valid budget or totalBill data');
+    }
     const correctChoiceId = isUnder ? 'A' : 'B';
     return {
       choices: [
@@ -487,7 +507,7 @@ export function getChoicesForRenderGame(
         ? `ĐỦ TIỀN! Hoá đơn: ${totalBill > 0 ? totalBill.toLocaleString('vi-VN') + 'đ' : 'vừa ngân sách'}`
         : 'CHÁY TÚI! Vượt ngân sách!',
       correctChoiceId,
-      budgetLabel: `Ngân sách: ${budget.toLocaleString('vi-VN')}đ`,
+      budgetLabel: budget > 0 ? `Ngân sách: ${budget.toLocaleString('vi-VN')}đ` : undefined,
     };
   }
 
@@ -495,7 +515,11 @@ export function getChoicesForRenderGame(
     const digitReveal = frame ? element(frame, 'digit-reveal') : undefined;
     const correctDigit = Number(digitReveal?.revealedDigit ?? gp.correctDigit ?? 3);
     const options = (gp.options as number[]) ?? [correctDigit, (correctDigit + 1) % 10];
-    const price = Number(first?.price ?? 189000);
+    const rawPrice = first?.price;
+    if (typeof rawPrice !== 'number' || !Number.isFinite(rawPrice) || rawPrice <= 0) {
+      throw new Error('ONE_AWAY requires valid first product price');
+    }
+    const price = Number(rawPrice);
     const hiddenIndex = Number(gp.hiddenIndex ?? 2);
     const masked = String(digitReveal?.maskedPrice ?? maskPriceValue(price, hiddenIndex));
     const resolved = String(digitReveal?.resolvedPrice ?? `${price.toLocaleString('vi-VN')}đ`);
@@ -504,7 +528,10 @@ export function getChoicesForRenderGame(
       const isCorrect = Number(opt) === correctDigit;
       return { id, label: `Số ${opt}`, isCorrect };
     });
-    const winnerChoice = choices.find((c) => c.isCorrect)?.id ?? 'A';
+    const winnerChoice = choices.find((c) => c.isCorrect)?.id;
+    if (!winnerChoice) {
+      throw new Error(`No correct choice found for mechanic ${m}`);
+    }
     return {
       choices,
       revealAnswerText: `Chữ số đúng: ${correctDigit}! Giá: ${resolved}`,
@@ -522,7 +549,10 @@ export function getChoicesForRenderGame(
       const shortName = e.name.length > 12 ? `${e.name.slice(0, 11)}…` : e.name;
       return { id, label: shortName, isCorrect };
     });
-    const winnerChoice = choices.find((c) => c.isCorrect)?.id ?? 'A';
+    const winnerChoice = choices.find((c) => c.isCorrect)?.id;
+    if (!winnerChoice) {
+      throw new Error(`No correct choice found for mechanic ${m}`);
+    }
     const winner = entities.find((e) => e.productId === answer);
     return {
       choices,
@@ -539,7 +569,10 @@ export function getChoicesForRenderGame(
       const shortName = e.name.length > 12 ? `${e.name.slice(0, 11)}…` : e.name;
       return { id, label: shortName, isCorrect };
     });
-    const winnerChoice = choices.find((c) => c.isCorrect)?.id ?? 'A';
+    const winnerChoice = choices.find((c) => c.isCorrect)?.id;
+    if (!winnerChoice) {
+      throw new Error(`No correct choice found for mechanic ${m}`);
+    }
     const odd = entities.find((e) => e.productId === answer);
     return {
       choices,
@@ -563,7 +596,10 @@ export function getChoicesForRenderGame(
             { id: 'A', label: 'Khoảng A', isCorrect: true },
             { id: 'B', label: 'Khoảng B', isCorrect: false },
           ];
-    const winnerChoice = choices.find((c) => c.isCorrect)?.id ?? 'A';
+    const winnerChoice = choices.find((c) => c.isCorrect)?.id;
+    if (!winnerChoice) {
+      throw new Error(`No correct choice found for mechanic ${m}`);
+    }
     return {
       choices,
       revealAnswerText: `Đáp án [${answer}]! Giá thật: ${(first?.price ?? 0).toLocaleString('vi-VN')}đ`,
@@ -571,15 +607,7 @@ export function getChoicesForRenderGame(
     };
   }
 
-  // Fallback
-  return {
-    choices: [
-      { id: 'A', label: 'Lựa chọn A', isCorrect: true },
-      { id: 'B', label: 'Lựa chọn B', isCorrect: false },
-    ],
-    revealAnswerText: 'Đáp án chính xác là A!',
-    correctChoiceId: 'A',
-  };
+  throw new Error(`Unsupported or unconfigured mechanic: ${m}`);
 }
 
 export function drawCyberpunkShowcase(
@@ -1774,9 +1802,7 @@ export function paintMultiRoundFrame(
 
       const revealText =
         round.revealText ||
-        (firstProduct?.price
-          ? `Giá chính xác: ${firstProduct.price.toLocaleString('vi-VN')}đ`
-          : `Đáp án: ${round.correctAnswer}`);
+        (round.correctAnswer ? `Đáp án: ${round.correctAnswer}` : '');
 
       const fontSize = revealText.length > 45 ? 28 : revealText.length > 30 ? 32 : 36;
       canvas.drawText(`🎉 ${revealText}`, {
