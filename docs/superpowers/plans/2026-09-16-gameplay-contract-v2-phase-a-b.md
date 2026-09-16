@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Implement the Core Foundation and Safety Layers of Gameplay Contract v2.1: Forkable PRNG, Type-Safe Presentation Model with Information-Flow Security, Extensible MechanicRegistry with Lifecycle Hooks, File-Based Content Fingerprinting, Diversity Policy Manager, and Pre-Render Gameplay Leakage Validator.
+**Goal:** Implement the Core Foundation and Safety Layers of Gameplay Contract v2.1: Forkable PRNG, Type-Safe Presentation Model with Information-Flow Security, Extensible MechanicRegistry with Lifecycle Hooks, File-Based Content Fingerprinting, Diversity Policy Manager, and Pre-Render Gameplay Leakage Validator. [ALL TASKS COMPLETED]
 
 **Architecture:** 4-Layer Separation with functional compilation. Logic lives purely in `GameState`. `QuestionRenderModel` strictly strips answers and prices using discriminated `QuestionPrice`. Diversity is decoupled from Seed via an LRU-windowed `DiversityManager` backed by file-based JSON storage. Pre-render `GameplayValidator` audits against price, answer, and metadata leaks.
 
@@ -29,7 +29,7 @@
 **Interfaces:**
 - Produces: `IForkableRng`, `ForkableRng` with methods `next()`, `fork()`, `int()`, `pick()`, `shuffle()`, `boolean()`.
 
-- [ ] **Step 1: Write unit tests in `test/core/rng/ForkableRng.test.ts`**
+- [x] **Step 1: Write unit tests in `test/core/rng/ForkableRng.test.ts`**
 
 ```typescript
 import { describe, it, expect } from 'vitest';
@@ -157,7 +157,7 @@ git commit -m "feat(core): implement ForkableRng with composable namespaces and 
 **Interfaces:**
 - Produces: `GameState`, `QuestionRenderModel`, `QuestionPrice`, `RevealRenderModel`, `AnyRevealPayload`.
 
-- [ ] **Step 1: Write type contract tests in `test/core/presentation/types.test.ts`**
+- [x] **Step 1: Write type contract tests in `test/core/presentation/types.test.ts`**
 
 ```typescript
 import { describe, it, expect } from 'vitest';
@@ -394,7 +394,7 @@ git commit -m "feat(core): define type-safe GameState and QuestionPrice presenta
 **Interfaces:**
 - Produces: `DiversityPolicy`, `AudioPolicy`, `LayoutPolicy`, `QualityPolicy`, default instances.
 
-- [ ] **Step 1: Write tests in `test/core/policy/policy.test.ts`**
+- [x] **Step 1: Write tests in `test/core/policy/policy.test.ts`**
 
 ```typescript
 import { describe, it, expect } from 'vitest';
@@ -516,7 +516,7 @@ git commit -m "feat(core): implement policy module extracting configurable diver
 **Interfaces:**
 - Produces: `IMechanicDefinition`, `MechanicRegistry` (`register`, `get`, `list`, `clear`).
 
-- [ ] **Step 1: Create minimal theme & script types**
+- [x] **Step 1: Create minimal theme & script types**
 
 `src/core/theme/types.ts`:
 ```typescript
@@ -679,7 +679,7 @@ git commit -m "feat(core): implement MechanicRegistry with complete compilation 
 **Interfaces:**
 - Produces: `FingerprintBundle`, `computeFingerprints(input)`, `FileFingerprintStore` (`record`, `hasExact`, `hasSemantic`, `load`, `save`).
 
-- [ ] **Step 1: Write tests in `test/core/fingerprint/fingerprint.test.ts`**
+- [x] **Step 1: Write tests in `test/core/fingerprint/fingerprint.test.ts`**
 
 ```typescript
 import { describe, it, expect, beforeEach } from 'vitest';
@@ -878,7 +878,7 @@ git commit -m "feat(core): implement two-tier content fingerprint and atomic fil
 - Consumes: `DiversityPolicy`, `FileFingerprintStore`
 - Produces: `DiversityManager` (`canAcceptProductTuple`, `canAcceptHeroSku`, `canAcceptAnswer`, `recordHistory`).
 
-- [ ] **Step 1: Write tests in `test/core/diversity/DiversityManager.test.ts`**
+- [x] **Step 1: Write tests in `test/core/diversity/DiversityManager.test.ts`**
 
 ```typescript
 import { describe, it, expect } from 'vitest';
@@ -991,7 +991,7 @@ git commit -m "feat(core): implement DiversityManager with tuple cooldown and se
 - Consumes: `PresentationModel`, `GameState`
 - Produces: `GameplayValidator.validate(presentation, state)`
 
-- [ ] **Step 1: Write leakage detection tests in `test/validator/GameplayValidator.test.ts`**
+- [x] **Step 1: Write leakage detection tests in `test/validator/GameplayValidator.test.ts`**
 
 ```typescript
 import { describe, it, expect } from 'vitest';
@@ -1127,7 +1127,7 @@ git commit -m "feat(validator): implement GameplayValidator with premature price
 **Interfaces:**
 - Produces: `verifyMechanicContract(mechanicDefinition, sampleEntities, seed)`
 
-- [ ] **Step 1: Write `test/contract/contractRunner.ts`**
+- [x] **Step 1: Write `test/contract/contractRunner.ts`**
 
 ```typescript
 import { expect } from 'vitest';
@@ -1252,7 +1252,7 @@ git commit -m "test(contract): scaffold reusable contract verification harness f
 **Interfaces:**
 - Produces: `PresentationCompiler.compile(state, themeId, ctaVariant)`, `ScriptPlanner.plan(state, templatePool)`.
 
-- [ ] **Step 1: Write compiler test in `test/core/compiler/compiler.test.ts`**
+- [x] **Step 1: Write compiler test in `test/core/compiler/compiler.test.ts`**
 
 ```typescript
 import { describe, it, expect } from 'vitest';
