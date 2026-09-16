@@ -573,28 +573,28 @@ function generateOneAwayHtml() {
   }
 
   .card {
-    width: 650px;
+    width: 820px;
     background: #120e24;
     border: 4px solid #06b6d4;
-    border-radius: 12px;
+    border-radius: 16px;
     box-shadow: 0 0 40px rgba(6, 182, 212, 0.35);
-    padding: 36px;
+    padding: 32px 24px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    margin-bottom: 40px;
+    margin-bottom: 36px;
     z-index: 10;
   }
 
   .card-img-wrap {
-    width: 480px;
-    height: 480px;
+    width: 400px;
+    height: 400px;
     background: #ffffff;
-    border-radius: 10px;
+    border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 24px;
+    margin-bottom: 20px;
     overflow: hidden;
   }
   .card-img {
@@ -604,11 +604,11 @@ function generateOneAwayHtml() {
   }
 
   .card-name {
-    font-size: 32px;
+    font-size: 30px;
     font-weight: 800;
     text-align: center;
     color: #f0fdf4;
-    margin-bottom: 24px;
+    margin-bottom: 20px;
     line-height: 1.3;
   }
 
@@ -616,26 +616,41 @@ function generateOneAwayHtml() {
   .masked-price-wrap {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 8px;
-    font-size: 60px;
-    font-weight: 900;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.02em;
+    width: 100%;
   }
 
   .digit-box {
     background: rgba(255, 255, 255, 0.08);
     border: 2px solid rgba(255, 255, 255, 0.2);
-    padding: 8px 18px;
+    padding: 8px 14px;
     border-radius: 8px;
+    font-size: 46px;
+    font-weight: 900;
     color: #ffffff;
+    min-width: 54px;
+    text-align: center;
+  }
+
+  .digit-dot {
+    font-size: 46px;
+    font-weight: 900;
+    color: #94a3b8;
+    padding: 0 2px;
   }
 
   .digit-secret {
     background: #f43f5e;
     border: 3px solid #fda4af;
     color: #ffffff;
-    padding: 8px 24px;
+    padding: 8px 16px;
     border-radius: 8px;
+    font-size: 48px;
+    font-weight: 900;
+    min-width: 58px;
+    text-align: center;
     box-shadow: 0 0 30px rgba(244, 63, 94, 0.8);
   }
 
@@ -694,11 +709,11 @@ function generateOneAwayHtml() {
     <div class="card-name">${p.name}</div>
     <div class="masked-price-wrap">
       <div class="digit-box">1</div>
-      <div class="digit-box">.</div>
+      <div class="digit-dot">.</div>
       <div class="digit-secret">?</div>
       <div class="digit-box">9</div>
       <div class="digit-box">0</div>
-      <div class="digit-box">.</div>
+      <div class="digit-dot">.</div>
       <div class="digit-box">0</div>
       <div class="digit-box">0</div>
       <div class="digit-box">0</div>
