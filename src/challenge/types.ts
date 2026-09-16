@@ -50,6 +50,11 @@ export interface MultiRoundChallenge {
   finalCta: string;
 }
 
+export interface CurateOptions {
+  totalRounds?: number;
+  timerSeconds?: number;
+}
+
 export const gameDefinitionSchema = z.object({
   id: z.string().min(1),
   family: z.enum(['numeric_single_bracket', 'numeric_knapsack', 'commerce_decision', 'semantic', 'visual']),

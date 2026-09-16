@@ -1,5 +1,5 @@
 import type { Product } from '../product/schema';
-import type { GameDefinitionDSL, MultiRoundChallenge, ChallengeRound, ChallengeChoice } from './types';
+import type { GameDefinitionDSL, MultiRoundChallenge, ChallengeRound, ChallengeChoice, CurateOptions } from './types';
 import { EligibilityFilter } from './filters/EligibilityFilter';
 import { CandidateFilter } from './filters/CandidateFilter';
 import { NumericEngine } from './engines/NumericEngine';
@@ -14,11 +14,62 @@ export class ChallengeCurator {
   private readonly viralScorer = new ViralScorer();
   private readonly candidateFilter = new CandidateFilter();
 
-  curate(dsl: GameDefinitionDSL, catalog: Product[], seed: number): MultiRoundChallenge {
+  curate(
+    dsl: GameDefinitionDSL,
+    catalog: Product[],
+    seed: number,
+    options?: CurateOptions,
+  ): MultiRoundChallenge {
+    // Dynamic Round Count & Timer Customization
+    const targetRoundCount = options?.totalRounds ? Math.max(1, options.totalRounds) : dsl.rounds.length;
+    const roundTimer = options?.timerSeconds !== undefined ? Math.max(5.0, options.timerSeconds) : undefined;
+
+    let effectiveRoundSpecs = dsl.rounds.map((r) => ({ ...r }));
+    if (targetRoundCount !== dsl.rounds.length) {
+      if (targetRoundCount === 1) {
+        effectiveRoundSpecs = [{ ...dsl.rounds[0]!, round: 1 }];
+      } else if (targetRoundCount === 2) {
+        effectiveRoundSpecs = [
+          { ...dsl.rounds[0]!, round: 1 },
+          { ...(dsl.rounds[dsl.rounds.length - 1] ?? dsl.rounds[0]!), round: 2, type: 'wtf_reveal' as const },
+        ];
+      } else if (targetRoundCount <= dsl.rounds.length) {
+        const middleCount = targetRoundCount - 2;
+        effectiveRoundSpecs = [
+          { ...dsl.rounds[0]!, round: 1 },
+          ...dsl.rounds.slice(1, 1 + middleCount).map((r, i) => ({ ...r, round: i + 2 })),
+          { ...(dsl.rounds[dsl.rounds.length - 1] ?? dsl.rounds[0]!), round: targetRoundCount, type: 'wtf_reveal' as const },
+        ];
+      } else {
+        const specs = [];
+        specs.push({ ...dsl.rounds[0]!, round: 1 });
+        const middleTemplate = dsl.rounds.find((r) => r.type === 'tension_creator') ?? dsl.rounds[1] ?? dsl.rounds[0]!;
+        for (let r = 2; r < targetRoundCount; r++) {
+          specs.push({
+            ...middleTemplate,
+            round: r,
+            type: 'tension_creator' as const,
+            targetDifficulty: Number((0.3 + (r / targetRoundCount) * 0.4).toFixed(2)),
+          });
+        }
+        const lastTemplate = dsl.rounds[dsl.rounds.length - 1] ?? dsl.rounds[0]!;
+        specs.push({
+          ...lastTemplate,
+          round: targetRoundCount,
+          type: 'wtf_reveal' as const,
+        });
+        effectiveRoundSpecs = specs;
+      }
+    }
+
+    for (const spec of effectiveRoundSpecs) {
+      spec.timerSeconds = roundTimer !== undefined ? roundTimer : Math.max(5.0, spec.timerSeconds ?? 5.0);
+    }
+
     // Layer 1: Eligibility Filter
     const eligibility = new EligibilityFilter(dsl.inputs.requiredFields as Array<keyof Product>);
     const eligibleCatalog = eligibility.apply(catalog);
-    const requiredTotalProducts = dsl.rounds.length * dsl.inputs.countPerRound;
+    const requiredTotalProducts = effectiveRoundSpecs.length * dsl.inputs.countPerRound;
     if (eligibleCatalog.length < requiredTotalProducts) {
       throw new Error(
         `Insufficient eligible products: ${eligibleCatalog.length} available, needed ${requiredTotalProducts}.`,
@@ -34,7 +85,7 @@ export class ChallengeCurator {
     );
     const standardCandidates = eligibleCatalog.filter((p) => !wtfCandidates.includes(p));
 
-    dsl.rounds.forEach((roundSpec, idx) => {
+    effectiveRoundSpecs.forEach((roundSpec, idx) => {
       const count = dsl.inputs.countPerRound;
       const selectedProducts: Product[] = [];
 
@@ -131,7 +182,7 @@ export class ChallengeCurator {
       title: dsl.name,
       seriesNumber: Math.floor((seed % 100) + 1),
       rounds,
-      finalCta: 'Ai đúng 3/3 giơ tay! Săn deal tại giỏ hàng bên dưới!',
+      finalCta: `Ai đúng ${rounds.length}/${rounds.length} giơ tay! Săn deal tại giỏ hàng bên dưới!`,
     };
   }
 }
