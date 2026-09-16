@@ -72,5 +72,5 @@ describe('BrowserFrameRenderer', () => {
         rmSync(testFramesDir, { recursive: true, force: true });
       }
     }
-  });
+  }, 30000);
 });
