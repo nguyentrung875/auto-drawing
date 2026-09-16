@@ -8,19 +8,23 @@ export class AllInOneScene {
     const slots: TimelineSlot[] = [];
     let currentTime = 0;
 
-    // 0s - 1.5s: Series Hook
+    // 0s - 1.0s: Series Hook (Quick 1s intro)
+    const hookDuration = 1.0;
     slots.push({
       type: 'hook',
-      duration: 1.5,
+      duration: hookDuration,
       start: currentTime,
-      end: currentTime + 1.5,
+      end: currentTime + hookDuration,
     });
-    currentTime += 1.5;
+    currentTime += hookDuration;
 
-    // 3 Rounds
+    // N Rounds with Instant Countdown
+    const revealDuration = 2.0;
+    const microHookDuration = 0.5;
+
     this.challenge.rounds.forEach((round, idx) => {
-      // Play / Countdown period: timerSeconds + 2.5s
-      const playDuration = round.timerSeconds + 2.5;
+      // Play / Instant Countdown period: exactly round.timerSeconds (minimum 5.0s, no 2.5s lag)
+      const playDuration = Math.max(5.0, round.timerSeconds);
       slots.push({
         type: `round_${round.roundIndex}_play`,
         duration: playDuration,
@@ -29,8 +33,7 @@ export class AllInOneScene {
       });
       currentTime += playDuration;
 
-      // Reveal period: 2.5s
-      const revealDuration = 2.5;
+      // Reveal period: 2.0s
       slots.push({
         type: `round_${round.roundIndex}_reveal`,
         duration: revealDuration,
@@ -39,31 +42,31 @@ export class AllInOneScene {
       });
       currentTime += revealDuration;
 
-      // Micro-hook transition between rounds (1.0s)
+      // Micro-hook transition between rounds (0.5s)
       if (idx < this.challenge.rounds.length - 1) {
         slots.push({
           type: `micro_hook_${idx + 1}`,
-          duration: 1.0,
+          duration: microHookDuration,
           start: currentTime,
-          end: currentTime + 1.0,
+          end: currentTime + microHookDuration,
         });
-        currentTime += 1.0;
+        currentTime += microHookDuration;
       }
     });
 
-    // Scorecard & CTA (remaining duration up to 38s)
-    const remaining = Math.max(3.0, 38.0 - currentTime);
+    // Scorecard & CTA (1.5s)
+    const scorecardDuration = 1.5;
     slots.push({
       type: 'scorecard',
-      duration: remaining,
+      duration: scorecardDuration,
       start: currentTime,
-      end: currentTime + remaining,
+      end: currentTime + scorecardDuration,
     });
-    currentTime += remaining;
+    currentTime += scorecardDuration;
 
     return {
       slots,
-      totalDuration: Math.round(currentTime),
+      totalDuration: Number(currentTime.toFixed(2)),
     };
   }
 
@@ -77,7 +80,7 @@ export class AllInOneScene {
       if (timeSeconds >= slot.start && timeSeconds < slot.end) {
         if (slot.type.startsWith('round_')) {
           const parts = slot.type.split('_');
-          const roundIdx = parseInt(parts[1], 10);
+          const roundIdx = parseInt(parts[1]!, 10);
           const phase = parts[2] as 'play' | 'reveal';
           const round = this.challenge.rounds.find((r) => r.roundIndex === roundIdx);
           if (round) {

@@ -3,7 +3,7 @@ import { AllInOneScene } from '../../src/scene/AllInOneScene';
 import type { MultiRoundChallenge } from '../../src/challenge/types';
 
 describe('AllInOneScene Timeline and Layout Generation', () => {
-  it('generates a 38-second continuous timeline with 3 rounds and micro-hooks', () => {
+  it('generates an instant countdown timeline without 2.5s idle lag', () => {
     const mockChallenge: MultiRoundChallenge = {
       gameId: 'g9_guess_the_price',
       seed: 42,
@@ -33,7 +33,7 @@ describe('AllInOneScene Timeline and Layout Generation', () => {
             { id: 'B', label: '290K', isCorrect: false },
           ],
           correctAnswer: 'A',
-          timerSeconds: 4.0,
+          timerSeconds: 5.0,
           scoreVector: {
             difficulty: 0.2,
             visualClarity: 1,
@@ -109,7 +109,7 @@ describe('AllInOneScene Timeline and Layout Generation', () => {
             { id: 'B', label: '2.5 Tr', isCorrect: true },
           ],
           correctAnswer: 'B',
-          timerSeconds: 5.0,
+          timerSeconds: 6.0,
           scoreVector: {
             difficulty: 0.85,
             visualClarity: 1,
@@ -130,7 +130,23 @@ describe('AllInOneScene Timeline and Layout Generation', () => {
 
     const scene = new AllInOneScene(mockChallenge);
     const timeline = scene.getTimeline();
-    expect(timeline.totalDuration).toBe(38);
-    expect(timeline.slots.length).toBeGreaterThan(5);
+
+    // Hook is 1.0s
+    const hook = timeline.slots.find((s) => s.type === 'hook');
+    expect(hook?.duration).toBe(1.0);
+    expect(hook?.start).toBe(0.0);
+    expect(hook?.end).toBe(1.0);
+
+    // Round 1 play starts immediately at 1.0s and lasts exactly 5.0s (timerSeconds)
+    const round1Play = timeline.slots.find((s) => s.type === 'round_1_play');
+    expect(round1Play?.start).toBe(1.0);
+    expect(round1Play?.duration).toBe(5.0);
+
+    // Round 3 play lasts 6.0s (matching round 3's timerSeconds)
+    const round3Play = timeline.slots.find((s) => s.type === 'round_3_play');
+    expect(round3Play?.duration).toBe(6.0);
+
+    // Total duration: 1.0 + (5+2) + 0.5 + (5+2) + 0.5 + (6+2) + 1.5 = 25.5s
+    expect(timeline.totalDuration).toBe(25.5);
   });
 });
