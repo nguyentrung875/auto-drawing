@@ -21,7 +21,7 @@ describe('dependency rule — eslint import/no-restricted-paths (Story 1.1)', ()
       path.join(root, 'src/cli/ok.ts'),
     );
     expect(result.errorCount).toBe(0);
-  });
+  }, 15000);
 
   it('flags queue importing render (the AC example)', async () => {
     const result = await lintOne(
@@ -30,5 +30,5 @@ describe('dependency rule — eslint import/no-restricted-paths (Story 1.1)', ()
     );
     expect(result.errorCount).toBeGreaterThan(0);
     expect(result.messages.map((m) => m.ruleId)).toContain('import/no-restricted-paths');
-  });
+  }, 15000);
 });

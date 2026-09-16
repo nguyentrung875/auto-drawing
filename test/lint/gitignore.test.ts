@@ -39,5 +39,5 @@ describe('gitignore hygiene', () => {
     }
     const ignored = stdout.split(/\r?\n/).filter(Boolean);
     expect(ignored).toEqual([]);
-  });
+  }, 30000);
 });

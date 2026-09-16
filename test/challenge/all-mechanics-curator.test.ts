@@ -38,9 +38,30 @@ describe('ChallengeCurator — All 7 Mechanics Support', () => {
         expect(round.choices.length).toBeGreaterThanOrEqual(minChoices);
         expect(round.correctAnswer).toBeDefined();
         expect(round.choices.some((c) => c.isCorrect)).toBe(true);
+        expect(round.mechanic).toBe(dsl.id.replace(/^g\d+_/, ''));
         expect(round.revealText).toBeTruthy();
         expect(round.question).toBeTruthy();
       });
     });
   }
+
+  it('assigns round.mechanic to each round across all 7 definitions', () => {
+    const expectedMechanics: Record<string, string> = {
+      g9: 'guess_the_price',
+      g7: 'grocery_basket',
+      g41: 'deal_or_scam',
+      g1: 'hi_lo',
+      g2: 'most_expensive',
+      g5: 'one_away',
+      g3: 'odd_one_out',
+    };
+
+    for (const { id, dsl } of gameDefs) {
+      const challenge = curator.curate(dsl, catalog, 839271, { totalRounds: 3 });
+      expect(challenge.rounds).toHaveLength(3);
+      for (const round of challenge.rounds) {
+        expect(round.mechanic).toBe(expectedMechanics[id]);
+      }
+    }
+  });
 });

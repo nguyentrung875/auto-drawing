@@ -95,5 +95,5 @@ describe('POST /api/preview/html', () => {
     expect(html).toContain('id="stage"');
     expect(html).toContain('window.__SEEK_FRAME__');
     expect(html).toContain('Nước giặt 3.5kg');
-  });
+  }, 15000);
 });

@@ -30,6 +30,7 @@ export interface ChallengeChoice {
 export interface ChallengeRound {
   roundIndex: number;
   type: RoundType;
+  mechanic?: string;
   question: string;
   hookText?: string;
   microHook?: string;

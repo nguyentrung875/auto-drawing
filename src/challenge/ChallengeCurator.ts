@@ -278,6 +278,7 @@ export class ChallengeCurator {
       rounds.push({
         roundIndex: roundSpec.round,
         type: roundSpec.type as any,
+        mechanic: dsl.id.replace(/^g\d+_/, ''),
         question,
         hookText: roundSpec.hookText,
         microHook: roundSpec.microHook,

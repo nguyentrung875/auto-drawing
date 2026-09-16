@@ -1,7 +1,7 @@
 import path from 'node:path';
 import { describe, it, expect } from 'vitest';
 import { Canvas } from '../../src/render/canvas';
-import { paintMultiRoundFrame, getChoicesForRenderGame } from '../../src/render/scenePainter';
+import { paintMultiRoundFrame, getChoicesForRenderGame, drawMultiRoundProducts } from '../../src/render/scenePainter';
 import { ChallengeCurator } from '../../src/challenge/ChallengeCurator';
 import { ProductProvider } from '../../src/product/ProductProvider';
 import { AllInOneScene } from '../../src/scene/AllInOneScene';
@@ -117,6 +117,144 @@ describe('scenePainter — MultiRoundFrame All 7 Mechanics Layouts', () => {
       expect(() => getChoicesForRenderGame(game)).toThrow(
         'Unsupported or unconfigured mechanic: UNKNOWN_MECHANIC',
       );
+    });
+  });
+
+  describe('drawMultiRoundProducts typed mechanic handling without keyword dependency', () => {
+    const dummyProduct = {
+      ...catalog[0],
+      productId: 'prod-001',
+      name: 'Bàn phím cơ không dây Bluetooth RGB cao cấp',
+      price: 1500000,
+      category: 'Công nghệ',
+      brand: 'Keychron',
+      features: ['Wireless'],
+    };
+
+    it('renders one_away statusLabel correctly even when question text has custom copy without "che"', () => {
+      const canvasPlay = new Canvas(1080, 1920);
+      const round = {
+        roundIndex: 1,
+        type: 'confidence_builder' as const,
+        mechanic: 'one_away',
+        question: 'Con số bí ẩn là gì?', // No keyword 'che'
+        products: [dummyProduct],
+        choices: [
+          { id: '1', label: '1', isCorrect: true },
+          { id: '2', label: '2', isCorrect: false },
+        ],
+        correctAnswer: '1',
+        timerSeconds: 5,
+        scoreVector: {
+          difficulty: 0.5,
+          visualClarity: 0.8,
+          curiosity: 0.7,
+          surprise: 0.6,
+          perceptionConflict: 0.5,
+          debate: 0.4,
+          identity: 0.5,
+          familiarity: 0.6,
+          commerceRelevance: 0.8,
+          revealImpact: 0.7,
+        },
+        revealText: 'Giá chính xác là 1.500.000₫',
+      };
+
+      // Play phase: should render "Chữ số bị che: ???"
+      drawMultiRoundProducts(canvasPlay, round, 'play', process.cwd());
+      const playText = canvasPlay.paintedText.find((t) => t.value === 'Chữ số bị che: ???');
+      expect(playText).toBeDefined();
+
+      // Reveal phase: should render "Giá thật: 1.500.000₫"
+      const canvasReveal = new Canvas(1080, 1920);
+      drawMultiRoundProducts(canvasReveal, round, 'reveal', process.cwd());
+      const revealText = canvasReveal.paintedText.find((t) => t.value.startsWith('Giá thật:'));
+      expect(revealText).toBeDefined();
+      expect(revealText?.value).toContain('1.500.000');
+    });
+
+    it('renders deal_or_scam statusLabel correctly even when question text has custom copy without "sale"', () => {
+      const canvas = new Canvas(1080, 1920);
+      const round = {
+        roundIndex: 1,
+        type: 'confidence_builder' as const,
+        mechanic: 'deal_or_scam',
+        question: 'Món này mua được không bạn ơi?', // No keyword 'sale'
+        products: [dummyProduct],
+        choices: [
+          { id: 'deal', label: 'DEAL HỜI', isCorrect: true },
+          { id: 'scam', label: 'BẪY SCAM', isCorrect: false },
+        ],
+        correctAnswer: 'deal',
+        timerSeconds: 5,
+        scoreVector: {
+          difficulty: 0.5,
+          visualClarity: 0.8,
+          curiosity: 0.7,
+          surprise: 0.6,
+          perceptionConflict: 0.5,
+          debate: 0.4,
+          identity: 0.5,
+          familiarity: 0.6,
+          commerceRelevance: 0.8,
+          revealImpact: 0.7,
+        },
+        revealText: 'Đáp án: DEAL HỜI',
+      };
+
+      drawMultiRoundProducts(canvas, round, 'play', process.cwd());
+      const statusText = canvas.paintedText.find((t) => t.value.startsWith('Giá niêm yết:'));
+      expect(statusText).toBeDefined();
+      expect(statusText?.value).toContain('1.500.000');
+    });
+
+    it('adjusts statusLabelY downward when product name is long to prevent text collision', () => {
+      const shortRound = {
+        roundIndex: 1,
+        type: 'confidence_builder' as const,
+        mechanic: 'guess_the_price',
+        question: 'Giá của sản phẩm là bao nhiêu?',
+        products: [{ ...dummyProduct, name: 'Sạc cáp' }],
+        choices: [],
+        correctAnswer: '',
+        timerSeconds: 5,
+        scoreVector: {
+          difficulty: 0.5,
+          visualClarity: 0.8,
+          curiosity: 0.7,
+          surprise: 0.6,
+          perceptionConflict: 0.5,
+          debate: 0.4,
+          identity: 0.5,
+          familiarity: 0.6,
+          commerceRelevance: 0.8,
+          revealImpact: 0.7,
+        },
+        revealText: '',
+      };
+
+      const canvasShort = new Canvas(1080, 1920);
+      drawMultiRoundProducts(canvasShort, shortRound, 'play', process.cwd());
+      const shortLabel = canvasShort.paintedText.find((t) => t.value.startsWith('Mốc so sánh:'));
+      expect(shortLabel).toBeDefined();
+
+      const longRound = {
+        ...shortRound,
+        products: [
+          {
+            ...dummyProduct,
+            name: 'Điện thoại thông minh siêu phẩm thế hệ mới màn hình gập cao cấp kèm bút cảm ứng và bao da chính hãng phiên bản giới hạn',
+          },
+        ],
+      };
+
+      const canvasLong = new Canvas(1080, 1920);
+      drawMultiRoundProducts(canvasLong, longRound, 'play', process.cwd());
+      const longLabel = canvasLong.paintedText.find((t) => t.value.startsWith('Mốc so sánh:'));
+      expect(longLabel).toBeDefined();
+
+      // Long name pushes statusLabelY further down than short name
+      expect(longLabel!.y).toBeGreaterThan(shortLabel!.y);
     });
   });
 });

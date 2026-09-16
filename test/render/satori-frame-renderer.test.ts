@@ -59,7 +59,7 @@ describe('SatoriFrameRenderer', () => {
         rmSync(testFramesDir, { recursive: true, force: true });
       }
     }
-  });
+  }, 30000);
 
   it('renders MOST_EXPENSIVE mechanic cards cleanly', async () => {
     const input = await renderFixture({

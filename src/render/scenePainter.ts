@@ -494,14 +494,16 @@ export function getChoicesForRenderGame(
 
   if (m === 'ONE_AWAY') {
     const digitReveal = frame ? element(frame, 'digit-reveal') : undefined;
-    const correctDigit = Number(digitReveal?.revealedDigit ?? gp.correctDigit ?? 3);
+    const correctDigit = Number(
+      digitReveal?.revealedDigit ?? gp.correctDigit ?? gp.correct_digit ?? gp.answer ?? 3,
+    );
     const options = (gp.options as number[]) ?? [correctDigit, (correctDigit + 1) % 10];
     const rawPrice = first?.price;
     if (typeof rawPrice !== 'number' || !Number.isFinite(rawPrice) || rawPrice <= 0) {
       throw new Error('ONE_AWAY requires valid first product price');
     }
     const price = Number(rawPrice);
-    const hiddenIndex = Number(gp.hiddenIndex ?? 2);
+    const hiddenIndex = Number(gp.hiddenIndex ?? gp.hidden_index ?? 2);
     const masked = String(digitReveal?.maskedPrice ?? maskPriceValue(price, hiddenIndex));
     const resolved = String(digitReveal?.resolvedPrice ?? `${price.toLocaleString('vi-VN')}đ`);
     const choices = options.map((opt, i) => {
@@ -1297,7 +1299,7 @@ export function drawPillCountdown(
   });
 }
 
-function drawMultiRoundProducts(
+export function drawMultiRoundProducts(
   canvas: Canvas,
   round: ChallengeRound,
   phase: 'play' | 'reveal',
@@ -1373,8 +1375,9 @@ function drawMultiRoundProducts(
       });
     }
 
+    let nameHeight = 0;
     if (firstProduct.name) {
-      canvas.drawText(firstProduct.name, {
+      const nameMetrics = canvas.drawText(firstProduct.name, {
         x: Math.round(STAGE_WIDTH / 2),
         y: cardY + 530,
         size: 34,
@@ -1384,24 +1387,27 @@ function drawMultiRoundProducts(
         maxWidth: cardW - 60,
         lineHeight: 1.2,
       });
+      nameHeight = nameMetrics.height;
     }
 
     let statusLabel: string | undefined;
-    if (gameId?.includes('one_away') || round.question.includes('che')) {
+    const mech = (round.mechanic || gameId || '').toLowerCase();
+    if (mech.includes('one_away')) {
       statusLabel =
         phase === 'reveal'
           ? `Giá thật: ${firstProduct.price.toLocaleString('vi-VN')}₫`
           : `Chữ số bị che: ???`;
-    } else if (gameId?.includes('deal') || round.question.includes('sale')) {
+    } else if (mech.includes('deal')) {
       statusLabel = `Giá niêm yết: ${firstProduct.price.toLocaleString('vi-VN')}₫`;
     } else {
       statusLabel = `Mốc so sánh: ${firstProduct.price.toLocaleString('vi-VN')}đ`;
     }
 
     if (statusLabel) {
+      const statusLabelY = Math.min(cardY + cardH - 45, Math.max(cardY + 630, cardY + 530 + nameHeight + 10));
       canvas.drawText(statusLabel, {
         x: Math.round(STAGE_WIDTH / 2),
-        y: cardY + 630,
+        y: statusLabelY,
         size: 32,
         weight: 800,
         color: phase === 'reveal' ? '#22c55e' : ACCENT,
