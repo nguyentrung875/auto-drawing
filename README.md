@@ -38,6 +38,20 @@ Hệ thống **Modular Monolith** (TypeScript, Node.js ≥ 22) sản xuất vide
 
 ---
 
+## 📚 Bộ Tài Liệu Sản Xuất (Production Docs Suite)
+
+Để phục vụ triển khai production, tích hợp tự động và mở rộng dự án lâu dài, hãy tham khảo các tài liệu chuyên sâu:
+
+| Tài liệu | Mô tả |
+| :--- | :--- |
+| 📖 **[docs/GETTING_STARTED.md](docs/GETTING_STARTED.md)** | Hướng dẫn onboarding từ A-Z: cài đặt môi trường, asset generation, render video đầu tiên & Web Studio. |
+| 🏗️ **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** | Kiến trúc chi tiết: Modular Monolith bounded contexts, sơ đồ tuần tự pipeline, hợp đồng dữ liệu & chuẩn Safe Zone. |
+| 🧩 **[docs/EXTENSION_GUIDE.md](docs/EXTENSION_GUIDE.md)** | Hướng dẫn phát triển mở rộng: thêm Game Mechanic mới với TypeScript, thêm SKU sản phẩm, đổi giọng AI & themes. |
+| 🛡️ **[docs/AFFILIATE_SAFETY.md](docs/AFFILIATE_SAFETY.md)** | Chính sách bảo vệ tiếp thị liên kết: Zero Data Invention, Pixel-Scan Guard, cấu trúc `caption.json` & chống bóp tương tác. |
+| 🤝 **[CONTRIBUTING.md](CONTRIBUTING.md)** | Hướng dẫn đóng góp: Tiêu chuẩn code, quy trình kiểm thử Vitest, Conventional Commits & PR checklist. |
+
+---
+
 ## 🚀 Cài đặt & Khởi động Nhanh
 
 ### 1. Yêu cầu Môi trường
@@ -297,4 +311,5 @@ await audioComposer.composeAudio(challenge, timeline, {
 ---
 
 ## 📜 Giấy phép & Đóng góp
-Dự án được phân phối theo giấy phép MIT. Toàn bộ mã nguồn hoàn toàn miễn phí cho mục đích thương mại và phát triển kênh affiliate cá nhân/doanh nghiệp.
+- **Giấy phép**: Dự án được phân phối theo giấy phép MIT. Toàn bộ mã nguồn hoàn toàn miễn phí cho mục đích thương mại và phát triển kênh affiliate cá nhân/doanh nghiệp.
+- **Đóng góp**: Vui lòng đọc kĩ **[CONTRIBUTING.md](CONTRIBUTING.md)** để nắm rõ quy chuẩn coding standards, viết tests và quy trình gửi Pull Request.
