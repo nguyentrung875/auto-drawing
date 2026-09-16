@@ -1,4 +1,4 @@
-import type { DiversityPolicy, AudioPolicy, LayoutPolicy } from './types';
+import type { DiversityPolicy, AudioPolicy, AudioMixPolicy, LayoutPolicy } from './types';
 export * from './types';
 
 export const DEFAULT_DIVERSITY_POLICY: DiversityPolicy = {
@@ -15,6 +15,17 @@ export const DEFAULT_AUDIO_POLICY: AudioPolicy = {
   maxTruePeakDbTp: -1.0,
   maxSilenceDurationSec: 1.2,
   duckingRatio: 0.3,
+};
+
+export const DEFAULT_AUDIO_MIX_POLICY: AudioMixPolicy = {
+  targetLufs: -14.0,
+  lufsTolerance: 1.5,
+  maxTruePeakDbTp: -1.0,
+  maxLra: 12.0,
+  maxSilenceDurationSec: 1.2,
+  voiceDuckDb: -8.0,
+  duckAttackMs: 150,
+  duckReleaseMs: 300,
 };
 
 export const DEFAULT_LAYOUT_POLICY: LayoutPolicy = {

@@ -14,6 +14,17 @@ export interface AudioPolicy {
   duckingRatio: number;
 }
 
+export interface AudioMixPolicy {
+  targetLufs: number;
+  lufsTolerance: number;
+  maxTruePeakDbTp: number;
+  maxLra: number;
+  maxSilenceDurationSec: number;
+  voiceDuckDb: number;
+  duckAttackMs: number;
+  duckReleaseMs: number;
+}
+
 export interface LayoutPolicy {
   safeZoneTop: number;
   safeZoneBottom: number;
