@@ -40,17 +40,11 @@ export const OneAwayDefinition: IMechanicDefinition<OneAwayReveal> = {
     const hiddenDigitIndex = 1; // Default to 2nd significant digit
     const correctDigit = Number(priceStr[hiddenDigitIndex]);
 
-    const decoyDigit = correctDigit === 9 ? 8 : correctDigit + 1;
-    const rng = input.rng.fork('decoy_order');
-    const swap = rng.boolean();
-
-    const options = swap ? [decoyDigit, correctDigit] : [correctDigit, decoyDigit];
-    const winningChoiceId = options[0] === correctDigit ? 'A' : 'B';
-
-    const choices = [
-      { id: 'A', label: String(options[0]) },
-      { id: 'B', label: String(options[1]) },
-    ];
+    const choices = Array.from({ length: 10 }, (_, i) => ({
+      id: String(i),
+      label: String(i),
+    }));
+    const winningChoiceId = String(correctDigit);
 
     return {
       gameId: `one_away_${Date.now()}`,
@@ -82,7 +76,8 @@ export const OneAwayDefinition: IMechanicDefinition<OneAwayReveal> = {
 
   validateState(state: GameState<OneAwayReveal>): void {
     if (state.entities.length !== 1) throw new Error('ONE_AWAY must have 1 entity');
-    if (!['A', 'B'].includes(state.answer.winningChoiceId)) {
+    const validDigits = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+    if (!validDigits.includes(state.answer.winningChoiceId)) {
       throw new Error(`Invalid winning choice: ${state.answer.winningChoiceId}`);
     }
   },

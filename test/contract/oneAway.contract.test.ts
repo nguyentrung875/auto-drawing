@@ -13,12 +13,13 @@ describe('ONE_AWAY Contract Verification', () => {
     verifyMechanicContract(OneAwayDefinition, sampleEntities, 333);
   });
 
-  it('masks one digit and provides delta 1 decoy', () => {
+  it('masks one digit and provides 10 digit choices 0-9', () => {
     const rng = new ForkableRng(12);
     const state = OneAwayDefinition.createState({ entities: sampleEntities, rng });
-    expect(state.choices).toHaveLength(2);
+    expect(state.choices).toHaveLength(10);
+    expect(state.choices.map((c) => c.id)).toEqual(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']);
     expect(state.answer.revealPayload.fullPrice).toBe(3800000);
-    expect([7, 9]).toContain(Number(state.choices.find((c) => c.id !== state.answer.winningChoiceId)?.label));
+    expect(state.answer.winningChoiceId).toBe('8');
 
     const question = OneAwayDefinition.compileQuestion(state, 'tv_game_show');
     expect(question.questionHeadline).toContain('Chữ số bị che');
