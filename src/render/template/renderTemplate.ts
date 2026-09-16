@@ -422,6 +422,8 @@ export function generateRenderHtml(input: RenderInput): string {
   <!-- Bottom Zone -->
   <div class="bottom-zone">
     <div class="cta-banner" id="cta-banner">${game.content.cta}</div>
+    <!-- Progress Line -->
+    <div class="progress-line" id="progress-line"></div>
   </div>
 </div>
 
@@ -459,11 +461,12 @@ export function generateRenderHtml(input: RenderInput): string {
     let scene = activeSlot ? activeSlot.type : 'hook';
     let progressInSlot = activeSlot ? (timeSec - activeSlot.start) / activeSlot.duration : 0;
 
-    // Countdown Scene (8.0s - 11.0s)
+    // Countdown Scene (dynamic duration based on activeSlot.duration)
     if (scene === 'countdown') {
       countdownOverlay.style.opacity = '1';
-      let remaining = Math.max(0, 3 - (progressInSlot * 3));
-      let currentDigit = Math.min(3, Math.max(1, Math.ceil(remaining)));
+      let totalCountdown = activeSlot ? activeSlot.duration : 3.0;
+      let remaining = Math.max(0, totalCountdown * (1 - progressInSlot));
+      let currentDigit = Math.min(Math.ceil(totalCountdown), Math.max(1, Math.ceil(remaining)));
       countdownNum.innerText = currentDigit;
 
       let ringProgress = 1 - progressInSlot;
@@ -472,8 +475,10 @@ export function generateRenderHtml(input: RenderInput): string {
       countdownOverlay.style.opacity = '0';
     }
 
-    // Reveal Scene (11.0s - 13.0s)
-    if (timeSec >= 11.0) {
+    // Reveal Scene
+    let revealSlot = SLOTS.find(s => s.type === 'reveal');
+    let revealStart = revealSlot ? revealSlot.start : 11.0;
+    if (timeSec >= revealStart) {
       // Reveal the true price on secret cards
       CARDS_DATA.forEach((card, idx) => {
         let priceEl = document.getElementById('card-price-' + idx);

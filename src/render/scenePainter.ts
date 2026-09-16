@@ -12,6 +12,8 @@ import path from 'node:path';
 import { Canvas, parseColor } from './canvas';
 import { drawImageCover, isRenderableImage, loadPng } from './image';
 import type { RenderAssetCache } from './assetCache';
+import { getTheme } from '../core/theme/themes';
+import type { VisualTheme, VisualThemeId } from '../core/theme/types';
 import type { MultiRoundChallenge, ChallengeRound } from '../challenge/types';
 import type { Product } from '../product/schema';
 import type { Timeline } from '../types/game';
@@ -1042,14 +1044,17 @@ export function paintFrame(canvas: Canvas, frame: RenderFrame, ctx: PaintContext
       drawCyberpunkShowcase(canvas, ctx, false, meta, frame, 360);
       drawChoiceDeck(canvas, meta.choices, false, undefined, 1160);
 
-      const countdownElem = element(frame, 'countdown');
-      let remaining = 3.0;
-      if (frame.data.remaining !== undefined) {
-        remaining = Number(frame.data.remaining);
-      } else if (countdownElem?.value !== undefined) {
-        remaining = Number(countdownElem.value);
+      if (frame.scene === 'countdown') {
+        const countdownElem = element(frame, 'countdown');
+        const countdownDuration = Number(frame.data.countdownDuration ?? 3.0);
+        let remaining = countdownDuration;
+        if (frame.data.remaining !== undefined) {
+          remaining = Number(frame.data.remaining);
+        } else if (countdownElem?.value !== undefined) {
+          remaining = Number(countdownElem.value);
+        }
+        drawPillCountdown(canvas, remaining, countdownDuration, 1350);
       }
-      drawPillCountdown(canvas, remaining, 3.0, 1350);
       break;
     }
 
@@ -1145,9 +1150,14 @@ export function paintOverlay(
 ): void {
   const { time, totalDuration, frame, sceneProgress } = options;
   if (frame.scene === 'countdown') {
-    const remainingRatio = 1 - Math.min(1, Math.max(0, sceneProgress));
-    const secondsRemaining = Math.max(0, 3.0 * remainingRatio);
-    drawPillCountdown(canvas, secondsRemaining, 3.0, 1350);
+    const countdownDuration = Number(frame.data.countdownDuration ?? 3.0);
+    const countdownEnd = frame.data.countdownEnd !== undefined
+      ? Number(frame.data.countdownEnd)
+      : (frame.start + countdownDuration);
+    const secondsRemaining = frame.data.countdownEnd !== undefined
+      ? Math.max(0, Math.min(countdownDuration, countdownEnd - time))
+      : Math.max(0, countdownDuration * (1 - Math.min(1, Math.max(0, sceneProgress))));
+    drawPillCountdown(canvas, secondsRemaining, countdownDuration, 1350);
   }
 
   const barX = 72;
@@ -1701,6 +1711,7 @@ export function drawMultiRoundProducts(
 export interface MultiRoundPaintOptions {
   rootDir?: string;
   assetCache?: RenderAssetCache;
+  theme?: string | VisualTheme;
 }
 
 export function paintMultiRoundFrame(
@@ -1709,9 +1720,21 @@ export function paintMultiRoundFrame(
   timeSeconds: number,
   options?: MultiRoundPaintOptions,
 ): void {
+  const visualTheme: VisualTheme =
+    typeof options?.theme === 'object'
+      ? options.theme
+      : getTheme((options?.theme as VisualThemeId) ?? 'tv_game_show');
+
+  const bgTop = visualTheme.colors.backgroundGradient[0] ?? '#0b0f19';
+  const bgBottom = visualTheme.colors.backgroundGradient[1] ?? '#020617';
+  const themeAccent = visualTheme.colors.accent ?? ACCENT;
+  const cardBg = visualTheme.colors.cardBackground ?? '#161d2e';
+  const cardBorder = visualTheme.colors.cardBorder ?? 'rgba(251,191,36,0.3)';
+  const cardRadius = visualTheme.geometry.cardBorderRadius ?? 24;
+
   // 1. Clears background with gradient
-  canvas.fillGradientV(0, 0, canvas.width, canvas.height, '#0b0f19', '#020617', 1);
-  canvas.fill(0, 0, canvas.width, 10, ACCENT, 0.9);
+  canvas.fillGradientV(0, 0, canvas.width, canvas.height, bgTop, bgBottom, 1);
+  canvas.fill(0, 0, canvas.width, 10, themeAccent, 0.9);
 
   // 2. Finds active slot in scene.getTimeline()
   const timeline = scene.getTimeline();
@@ -1777,8 +1800,8 @@ export function paintMultiRoundFrame(
     const boxHeight = 96;
     const boxX = Math.round((STAGE_WIDTH - boxWidth) / 2);
 
-    canvas.fillRoundRect(boxX, boxY, boxWidth, boxHeight, 24, '#161d2e', 0.95);
-    canvas.strokeRoundRect(boxX, boxY, boxWidth, boxHeight, 24, 'rgba(251,191,36,0.3)', 2);
+    canvas.fillRoundRect(boxX, boxY, boxWidth, boxHeight, cardRadius, cardBg, 0.95);
+    canvas.strokeRoundRect(boxX, boxY, boxWidth, boxHeight, cardRadius, cardBorder, 2);
 
     canvas.drawText(round.question, {
       x: Math.round(STAGE_WIDTH / 2),
@@ -1807,7 +1830,7 @@ export function paintMultiRoundFrame(
 
     // If play phase: draw pill countdown bar with remaining seconds
     if (phase === 'play') {
-      const totalTimer = Math.max(5.0, round.timerSeconds);
+      const totalTimer = Math.max(1.0, round.timerSeconds);
       const secondsRemaining = Math.max(0, Math.min(totalTimer, slot.end - timeSeconds));
       drawPillCountdown(canvas, secondsRemaining, totalTimer, countdownY);
     }

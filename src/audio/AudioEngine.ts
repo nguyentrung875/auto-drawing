@@ -123,6 +123,12 @@ function countdownStart(game: GameJson, timeline?: Timeline): number {
   return cursor;
 }
 
+function countdownDuration(game: GameJson, timeline?: Timeline): number {
+  const fromTimeline = timeline?.slots.find((slot) => slot.type === 'countdown')?.duration;
+  if (fromTimeline !== undefined) return fromTimeline;
+  return DURATIONS.countdown ?? 3;
+}
+
 function wavSilence(duration: number, sampleRate = 16_000): Buffer {
   const frames = Math.max(1, Math.round(duration * sampleRate));
   const dataSize = frames * 2;
@@ -312,13 +318,36 @@ function sfxAsset(type: string): string {
   return stubPath;
 }
 
-function makeCountdownCues(start: number): SfxCue[] {
+function makeCountdownCues(start: number, duration = 3.0): SfxCue[] {
   const assetPath = sfxAsset('countdown');
-  return Array.from({ length: 6 }, (_, index) => ({
-    type: 'countdown',
-    at: Number((start + index * 0.5).toFixed(3)),
-    assetPath,
-  }));
+  const cues: SfxCue[] = [];
+  const rushThreshold = duration * 0.8;
+  const regularStep = 0.5;
+  const rushStep = Math.min(0.2, Math.max(0.1, (duration * 0.2) / 4));
+
+  // 1. Regular 80% phase: every 0.5s
+  let t = 0;
+  while (t <= rushThreshold + 0.01) {
+    cues.push({
+      type: 'countdown',
+      at: Number((start + t).toFixed(3)),
+      assetPath,
+    });
+    t += regularStep;
+  }
+
+  // 2. Rush 20% phase: accelerated ticking (every ~0.2s) to hurry the user
+  t = rushThreshold + rushStep;
+  while (t <= duration - 0.05) {
+    cues.push({
+      type: 'countdown',
+      at: Number((start + t).toFixed(3)),
+      assetPath,
+    });
+    t += rushStep;
+  }
+
+  return cues;
 }
 
 function configuredCues(game: GameJson): SfxCue[] {
@@ -354,6 +383,7 @@ export class AudioEngine {
 
     const revealAt = revealStart(game, timeline);
     const countdownAt = countdownStart(game, timeline);
+    const countdownSec = countdownDuration(game, timeline);
     const mechanic = game.metadata?.mechanic;
     const rule = mechanic ? VOICE_RULEBOOK[mechanic] : undefined;
     const targetGapMs =
@@ -438,7 +468,7 @@ export class AudioEngine {
       revealAt,
       syncDelta,
       runtimeScore,
-      sfxCues: [...makeCountdownCues(countdownAt), ...configuredCues(game)],
+      sfxCues: [...makeCountdownCues(countdownAt, countdownSec), ...configuredCues(game)],
       music: {
         track: game.audio?.music?.track ?? 'tension_01',
         // FR-9 fixes the mix level so music cannot overpower narration.

@@ -65,6 +65,10 @@ function buildAtempoFilter(factor: number): string {
   return filters.join(',');
 }
 
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 function safeScript(script: string): string {
   return script.trim().replace(/\s+/g, ' ');
 }
@@ -113,127 +117,137 @@ export class EdgeTtsEngine implements IAudioEngine {
       }
     }
 
-    // 2. Synthesize with MsEdgeTTS via WebSocket stream converted to PCM WAV via FFmpeg
-    let tts: MsEdgeTTS | null = null;
-    try {
-      tts = new MsEdgeTTS();
-      await tts.setMetadata(voice, OUTPUT_FORMAT.AUDIO_24KHZ_96KBITRATE_MONO_MP3);
+    // 2. Synthesize with MsEdgeTTS via WebSocket stream converted to PCM WAV via FFmpeg (with retries)
+    const maxRetries = 3;
+    let lastError: unknown = null;
 
-      const synthesizePromise = new Promise<void>((resolve, reject) => {
-        const { audioStream } = tts!.toStream(normalized, {
-          rate,
-          pitch,
-          volume,
-        });
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      let tts: MsEdgeTTS | null = null;
+      try {
+        tts = new MsEdgeTTS();
+        await tts.setMetadata(voice, OUTPUT_FORMAT.AUDIO_24KHZ_96KBITRATE_MONO_MP3);
 
-        const ffmpegBinary = resolveBinary('ffmpeg') ?? 'ffmpeg';
-        const ff = spawn(ffmpegBinary, [
-          '-y',
-          '-v',
-          'error',
-          '-i',
-          'pipe:0',
-          '-ac',
-          '1',
-          '-ar',
-          '24000',
-          voiceWavPath,
-        ]);
+        const synthesizePromise = new Promise<void>((resolve, reject) => {
+          const { audioStream } = tts!.toStream(normalized, {
+            rate,
+            pitch,
+            volume,
+          });
 
-        audioStream.pipe(ff.stdin);
+          const ffmpegBinary = resolveBinary('ffmpeg') ?? 'ffmpeg';
+          const ff = spawn(ffmpegBinary, [
+            '-y',
+            '-v',
+            'error',
+            '-i',
+            'pipe:0',
+            '-ac',
+            '1',
+            '-ar',
+            '24000',
+            voiceWavPath,
+          ]);
 
-        audioStream.once('error', (err) => {
-          try {
-            ff.kill();
-          } catch {}
-          try {
-            if (existsSync(voiceWavPath)) unlinkSync(voiceWavPath);
-          } catch {}
-          reject(err);
-        });
+          audioStream.pipe(ff.stdin);
 
-        ff.stdin.on('error', (err) => {
-          reject(err);
-        });
-
-        ff.once('close', (code) => {
-          if (code === 0 && existsSync(voiceWavPath)) {
-            resolve();
-          } else {
+          audioStream.once('error', (err) => {
+            try {
+              ff.kill();
+            } catch {}
             try {
               if (existsSync(voiceWavPath)) unlinkSync(voiceWavPath);
             } catch {}
-            reject(new Error(`ffmpeg exited with code ${code}`));
-          }
-        });
+            reject(err);
+          });
 
-        ff.once('error', (err) => {
-          try {
-            if (existsSync(voiceWavPath)) unlinkSync(voiceWavPath);
-          } catch {}
-          reject(err);
-        });
-      });
+          ff.stdin.on('error', (err) => {
+            reject(err);
+          });
 
-      const timeoutPromise = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error(`Edge-TTS timeout after ${timeoutMs}ms`)), timeoutMs),
-      );
-
-      await Promise.race([synthesizePromise, timeoutPromise]);
-
-      if (existsSync(voiceWavPath)) {
-        let duration = wavDuration(voiceWavPath);
-        if (duration !== null && duration > 0) {
-          if (typeof maxDur === 'number' && maxDur > 0 && duration > maxDur) {
-            const tempo = (duration / maxDur) * 1.05;
-            if (tempo > 1.0) {
-              const tempoWavPath = `${voiceWavPath}.tempo.wav`;
-              const ffmpegBinary = resolveBinary('ffmpeg') ?? 'ffmpeg';
-              const tempoProcess = spawn(ffmpegBinary, [
-                '-y',
-                '-v',
-                'error',
-                '-i',
-                voiceWavPath,
-                '-filter:a',
-                buildAtempoFilter(tempo),
-                '-ac',
-                '1',
-                '-ar',
-                '24000',
-                tempoWavPath,
-              ]);
-              await new Promise<void>((resolve, reject) => {
-                tempoProcess.once('close', (code) => {
-                  if (code === 0 && existsSync(tempoWavPath)) {
-                    copyFileSync(tempoWavPath, voiceWavPath);
-                    try {
-                      unlinkSync(tempoWavPath);
-                    } catch {}
-                    resolve();
-                  } else {
-                    reject(new Error(`atempo ffmpeg exited with ${code}`));
-                  }
-                });
-                tempoProcess.once('error', reject);
-              });
-              duration = wavDuration(voiceWavPath) ?? duration;
+          ff.once('close', (code) => {
+            if (code === 0 && existsSync(voiceWavPath)) {
+              resolve();
+            } else {
+              try {
+                if (existsSync(voiceWavPath)) unlinkSync(voiceWavPath);
+              } catch {}
+              reject(new Error(`ffmpeg exited with code ${code}`));
             }
+          });
+
+          ff.once('error', (err) => {
+            try {
+              if (existsSync(voiceWavPath)) unlinkSync(voiceWavPath);
+            } catch {}
+            reject(err);
+          });
+        });
+
+        const timeoutPromise = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error(`Edge-TTS timeout after ${timeoutMs}ms`)), timeoutMs),
+        );
+
+        await Promise.race([synthesizePromise, timeoutPromise]);
+
+        if (existsSync(voiceWavPath)) {
+          let duration = wavDuration(voiceWavPath);
+          if (duration !== null && duration > 0) {
+            if (typeof maxDur === 'number' && maxDur > 0 && duration > maxDur) {
+              const tempo = (duration / maxDur) * 1.05;
+              if (tempo > 1.0) {
+                const tempoWavPath = `${voiceWavPath}.tempo.wav`;
+                const ffmpegBinary = resolveBinary('ffmpeg') ?? 'ffmpeg';
+                const tempoProcess = spawn(ffmpegBinary, [
+                  '-y',
+                  '-v',
+                  'error',
+                  '-i',
+                  voiceWavPath,
+                  '-filter:a',
+                  buildAtempoFilter(tempo),
+                  '-ac',
+                  '1',
+                  '-ar',
+                  '24000',
+                  tempoWavPath,
+                ]);
+                await new Promise<void>((resolve, reject) => {
+                  tempoProcess.once('close', (code) => {
+                    if (code === 0 && existsSync(tempoWavPath)) {
+                      copyFileSync(tempoWavPath, voiceWavPath);
+                      try {
+                        unlinkSync(tempoWavPath);
+                      } catch {}
+                      resolve();
+                    } else {
+                      reject(new Error(`atempo ffmpeg exited with ${code}`));
+                    }
+                  });
+                  tempoProcess.once('error', reject);
+                });
+                duration = wavDuration(voiceWavPath) ?? duration;
+              }
+            }
+            return { voiceWavPath, duration: Number(duration.toFixed(3)) };
           }
-          return { voiceWavPath, duration: Number(duration.toFixed(3)) };
         }
+        throw new Error('Synthesized WAV file is empty or corrupted');
+      } catch (error) {
+        lastError = error;
+        if (attempt < maxRetries) {
+          await sleep(600 * attempt);
+        }
+      } finally {
+        try {
+          tts?.close();
+        } catch {}
       }
-      throw new Error('Synthesized WAV file is empty or corrupted');
-    } catch (error) {
-      this.warnings.push({
-        code: EDGE_TTS_FALLBACK_WARNING,
-        hint: `Edge-TTS synthesis failed (${String(error)}); falling back to Formant voice`,
-      });
-    } finally {
-      try {
-        tts?.close();
-      } catch {}
     }
+
+    this.warnings.push({
+      code: EDGE_TTS_FALLBACK_WARNING,
+      hint: `Edge-TTS synthesis failed after ${maxRetries} attempts (${String(lastError)}); falling back to Formant voice`,
+    });
 
     // 3. Fallback: Formant voice
     if (this.options.formantFallback !== false) {

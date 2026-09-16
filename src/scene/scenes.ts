@@ -213,6 +213,9 @@ export class CountdownScene extends BaseScene {
         remaining,
         display,
         interval: 0.5,
+        countdownDuration: slot.duration,
+        countdownStart: slot.start,
+        countdownEnd: slot.end,
       }, start, 0.5);
     });
   }

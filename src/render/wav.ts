@@ -131,9 +131,9 @@ export function synthesizeMusicBed(
   const frames = Math.max(1, Math.round(durationSeconds * sampleRate));
   const out = new Float32Array(frames);
   const roots: Record<string, number[]> = {
-    tension_01: [110, 164.81, 220],
-    tension_02: [98, 146.83, 196],
-    tension_03: [123.47, 185, 246.94],
+    tension_01: [220, 261.63, 329.63, 392], // Am7 warm pad
+    tension_02: [196, 246.94, 293.66, 349.23], // G7 warm pad
+    tension_03: [246.94, 293.66, 369.99, 440], // Bm7 warm pad
   };
   const notes = roots[track] ?? roots.tension_01!;
   for (let i = 0; i < frames; i += 1) {
@@ -141,15 +141,13 @@ export function synthesizeMusicBed(
     let value = 0;
     for (let n = 0; n < notes.length; n += 1) {
       const note = notes[n]!;
-      value += Math.sin(2 * Math.PI * note * t) * (0.1 / (n + 1));
-      // Slight detune for a wider, less synthetic pad.
-      value += Math.sin(2 * Math.PI * (note * 1.004) * t) * (0.05 / (n + 1));
+      // Soft pure tone with low-pass roll off
+      value += Math.sin(2 * Math.PI * note * t) * (0.08 / (n + 1));
     }
-    const tremolo = 0.75 + 0.25 * Math.sin(2 * Math.PI * 0.5 * t);
-    const pulse = Math.exp(-8 * ((t * 2) % 1)) * 0.08 * Math.sin(2 * Math.PI * 880 * t);
-    const fadeIn = Math.min(1, t / 0.4);
-    const fadeOut = Math.min(1, Math.max(0, (durationSeconds - t) / 0.6));
-    out[i] = (value * tremolo + pulse) * gain * fadeIn * fadeOut;
+    const gentleSwell = 0.85 + 0.15 * Math.sin(2 * Math.PI * 0.25 * t);
+    const fadeIn = Math.min(1, t / 0.5);
+    const fadeOut = Math.min(1, Math.max(0, (durationSeconds - t) / 0.8));
+    out[i] = value * gentleSwell * (gain * 0.7) * fadeIn * fadeOut;
   }
   return out;
 }

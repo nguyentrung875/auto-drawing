@@ -17,11 +17,11 @@ function game() {
 }
 
 describe('AudioEngine', () => {
-  it('creates a deterministic offline WAV and six half-second countdown cues', async () => {
+  it('creates a deterministic offline WAV and countdown cues with rush phase', async () => {
     const result = await new AudioEngine().synthesize(game());
     expect(existsSync(result.voiceWavPath)).toBe(true);
     expect(result.duration).toBeLessThan(2);
-    expect(result.sfxCues.filter((cue) => cue.type === 'countdown')).toHaveLength(6);
+    expect(result.sfxCues.filter((cue) => cue.type === 'countdown').length).toBeGreaterThanOrEqual(6);
     expect(result.sfxCues.every((cue) => existsSync(cue.assetPath))).toBe(true);
     expect(result.music).toEqual({ track: 'tension_01', volume: 0.18 });
     expect(result.syncDelta).toBeLessThanOrEqual(0.1);

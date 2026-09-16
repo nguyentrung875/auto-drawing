@@ -1,0 +1,299 @@
+{
+  "gameId": "game_4hs0GjiG",
+  "mechanic": "GROCERY_BASKET",
+  "seed": 813839,
+  "resultVariant": "in_video",
+  "status": "created",
+  "gameJson": {
+    "metadata": {
+      "gameId": "game_4hs0GjiG",
+      "mechanic": "GROCERY_BASKET",
+      "language": "vi-VN",
+      "difficulty": "medium",
+      "seed": 813839,
+      "resultVariant": "in_video"
+    },
+    "content": {
+      "title": "Quiz Giá — Tai Nghe Bluetooth Sony WF-1000XM5",
+      "hook": "🛍️ Thử thách đi chợ: Cháy túi hay còn dư tiền?",
+      "question": "Tổng bill 3 món này ĐỦ TIỀN hay CHÁY TÚI với ngân sách 300.000₫?",
+      "choices": [
+        "ĐỦ TIỀN (DƯỚI BUDGET)",
+        "CHÁY TÚI (TRÊN BUDGET)"
+      ],
+      "cta": "📌 Save để mua ngay hôm nay!",
+      "caption": "🎯 Đố bạn cộng nhẩm tiền 3 món siêu thị này! Tổng bill 3 món này ĐỦ TIỀN hay CHÁY TÚI với ngân sách 300.000₫?\n📌 Save để mua ngay hôm nay!",
+      "hashtags": [
+        "#đoángiá",
+        "#tiktokviral",
+        "#dealhot",
+        "#mua_sắm",
+        "#affiliate",
+        "#game_giá",
+        "#Điện_tử",
+        "#Sony"
+      ],
+      "voiceScript": "Tổng bill 3 món này là 10.370.000 ₫, ngân sách 300.000 ₫. Đáp án là CHÁY TÚI!"
+    },
+    "entities": [
+      {
+        "productId": "p002",
+        "name": "Tai Nghe Bluetooth Sony WF-1000XM5",
+        "image": "/assets/products/p002.webp",
+        "price": 5990000,
+        "currency": "VND",
+        "source": "mock",
+        "updatedAt": "2026-09-11T00:00:00Z",
+        "category": "Điện tử",
+        "brand": "Sony",
+        "affiliateLink": "https://shopee.vn/product/p002"
+      },
+      {
+        "productId": "p001",
+        "name": "Robot Hút Bụi Xiaomi G1",
+        "image": "/assets/products/p001.webp",
+        "price": 2490000,
+        "currency": "VND",
+        "source": "mock",
+        "updatedAt": "2026-09-11T00:00:00Z",
+        "category": "Điện tử",
+        "brand": "Xiaomi",
+        "affiliateLink": "https://shopee.vn/product/p001"
+      },
+      {
+        "productId": "p004",
+        "name": "Bàn Phím Cơ Keychron K2",
+        "image": "/assets/products/p004.webp",
+        "price": 1890000,
+        "currency": "VND",
+        "source": "mock",
+        "updatedAt": "2026-09-11T00:00:00Z",
+        "category": "Điện tử",
+        "brand": "Keychron",
+        "affiliateLink": "https://shopee.vn/product/p004"
+      }
+    ],
+    "gameplay": {
+      "mechanic": "GROCERY_BASKET",
+      "productIds": [
+        "p002",
+        "p001",
+        "p004"
+      ],
+      "budget": 300000,
+      "totalBill": 10370000,
+      "answer": "over",
+      "choices": [
+        "ĐỦ TIỀN (DƯỚI BUDGET)",
+        "CHÁY TÚI (TRÊN BUDGET)"
+      ]
+    },
+    "scenes": [
+      {
+        "type": "hook",
+        "duration": 3
+      },
+      {
+        "type": "question",
+        "duration": 5
+      },
+      {
+        "type": "countdown",
+        "duration": 3
+      },
+      {
+        "type": "reveal",
+        "duration": 2.5
+      },
+      {
+        "type": "product",
+        "duration": 6
+      },
+      {
+        "type": "countdown",
+        "duration": 3
+      },
+      {
+        "type": "reveal",
+        "duration": 2.5
+      },
+      {
+        "type": "question",
+        "duration": 5
+      },
+      {
+        "type": "countdown",
+        "duration": 3
+      },
+      {
+        "type": "result",
+        "duration": 2.5,
+        "variant": "in_video",
+        "answerVisible": true
+      },
+      {
+        "type": "cta",
+        "duration": 2.5
+      }
+    ],
+    "timeline": {
+      "totalDuration": 38,
+      "sceneTimings": [
+        {
+          "type": "hook",
+          "startAt": 0,
+          "endAt": 3,
+          "duration": 3
+        },
+        {
+          "type": "question",
+          "startAt": 3,
+          "endAt": 8,
+          "duration": 5
+        },
+        {
+          "type": "countdown",
+          "startAt": 8,
+          "endAt": 11,
+          "duration": 3
+        },
+        {
+          "type": "reveal",
+          "startAt": 11,
+          "endAt": 13.5,
+          "duration": 2.5
+        },
+        {
+          "type": "product",
+          "startAt": 13.5,
+          "endAt": 19.5,
+          "duration": 6
+        },
+        {
+          "type": "countdown",
+          "startAt": 19.5,
+          "endAt": 22.5,
+          "duration": 3
+        },
+        {
+          "type": "reveal",
+          "startAt": 22.5,
+          "endAt": 25,
+          "duration": 2.5
+        },
+        {
+          "type": "question",
+          "startAt": 25,
+          "endAt": 30,
+          "duration": 5
+        },
+        {
+          "type": "countdown",
+          "startAt": 30,
+          "endAt": 33,
+          "duration": 3
+        },
+        {
+          "type": "result",
+          "startAt": 33,
+          "endAt": 35.5,
+          "duration": 2.5
+        },
+        {
+          "type": "cta",
+          "startAt": 35.5,
+          "endAt": 38,
+          "duration": 2.5
+        }
+      ]
+    },
+    "audio": {
+      "voice": {
+        "script": "Tổng bill 3 món này là 10.370.000 ₫, ngân sách 300.000 ₫. Đáp án là CHÁY TÚI!",
+        "wavPath": "temp/game_4hs0GjiG/voice.wav",
+        "duration": 2
+      },
+      "music": {
+        "track": "tension_01",
+        "volume": 0.18
+      },
+      "sfx": [
+        {
+          "type": "transition",
+          "at": 1.8
+        },
+        {
+          "type": "tick",
+          "at": 8
+        },
+        {
+          "type": "countdown",
+          "at": 8
+        },
+        {
+          "type": "tick",
+          "at": 8.5
+        },
+        {
+          "type": "tick",
+          "at": 9
+        },
+        {
+          "type": "tick",
+          "at": 9.5
+        },
+        {
+          "type": "tick",
+          "at": 10
+        },
+        {
+          "type": "tick",
+          "at": 10.5
+        },
+        {
+          "type": "reveal",
+          "at": 11
+        },
+        {
+          "type": "correct",
+          "at": 11.5
+        }
+      ]
+    },
+    "publishing": {
+      "caption": "🎯 Đố bạn cộng nhẩm tiền 3 món siêu thị này! Tổng bill 3 món này ĐỦ TIỀN hay CHÁY TÚI với ngân sách 300.000₫?\n📌 Save để mua ngay hôm nay!",
+      "hashtags": [
+        "#đoángiá",
+        "#tiktokviral",
+        "#dealhot",
+        "#mua_sắm",
+        "#affiliate",
+        "#game_giá",
+        "#Điện_tử",
+        "#Sony"
+      ],
+      "affiliateLink": "https://shopee.vn/product/p002",
+      "outputPath": "export/game_4hs0GjiG_813839.mp4"
+    }
+  },
+  "outputPath": "export/game_4hs0GjiG_813839.mp4",
+  "captionJson": {
+    "caption": "🎯 Đố bạn cộng nhẩm tiền 3 món siêu thị này! Tổng bill 3 món này ĐỦ TIỀN hay CHÁY TÚI với ngân sách 300.000₫?\n📌 Save để mua ngay hôm nay!",
+    "hashtags": [
+      "#đoángiá",
+      "#tiktokviral",
+      "#dealhot",
+      "#mua_sắm",
+      "#affiliate",
+      "#game_giá",
+      "#Điện_tử",
+      "#Sony"
+    ],
+    "affiliateLink": "https://shopee.vn/product/p002"
+  },
+  "validatorErrors": [],
+  "planningMs": 1,
+  "renderMs": 3,
+  "createdAt": "2026-09-16T15:28:00.244Z",
+  "updatedAt": "2026-09-16T15:28:00.244Z"
+}

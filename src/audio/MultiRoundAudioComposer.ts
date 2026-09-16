@@ -88,14 +88,29 @@ export class MultiRoundAudioComposer {
           maxDuration,
         });
 
-        // Accelerating countdown ticks throughout play phase
-        const tickStep = 0.5;
-        for (let t = playSlot.start + 1.0; t <= playSlot.end - 0.2; t += tickStep) {
+        // Countdown ticks: 80% regular (0.5s), 20% rush (0.2s)
+        const rushThreshold = playSlot.start + playSlot.duration * 0.8;
+        const regularStep = 0.5;
+        const rushStep = 0.2;
+
+        let t = playSlot.start + 0.5;
+        while (t <= rushThreshold + 0.01) {
           sfxCues.push({
             type: 'tick',
             at: Number(t.toFixed(3)),
             assetPath: sfxAsset('tick', rootDir),
           });
+          t += regularStep;
+        }
+
+        t = rushThreshold + rushStep;
+        while (t <= playSlot.end - 0.1) {
+          sfxCues.push({
+            type: 'tick',
+            at: Number(t.toFixed(3)),
+            assetPath: sfxAsset('tick', rootDir),
+          });
+          t += rushStep;
         }
       }
 

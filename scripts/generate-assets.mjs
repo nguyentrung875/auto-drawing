@@ -230,9 +230,9 @@ function sfx(type) {
 /** 8s loopable minor pad; whole cycles only, so the loop seam is silent. */
 function musicBed(track) {
   const chords = {
-    tension_01: [110, 164.81, 220],
-    tension_02: [98, 146.83, 196],
-    tension_03: [123.47, 185, 246.94],
+    tension_01: [220, 261.63, 329.63, 392], // Am7 warm chord
+    tension_02: [196, 246.94, 293.66, 349.23], // G7 warm chord
+    tension_03: [246.94, 293.66, 369.99, 440], // Bm7 warm chord
   }[track];
   const duration = 8;
   const frames = Math.round(duration * SAMPLE_RATE);
@@ -241,14 +241,11 @@ function musicBed(track) {
     const t = i / SAMPLE_RATE;
     let value = 0;
     chords.forEach((note, n) => {
-      // Round each partial to a whole number of cycles over the loop so the
-      // end joins the start without a click.
       const cycles = Math.round((note * duration) / 1) / duration;
-      value += Math.sin(2 * Math.PI * cycles * t) * (0.1 / (n + 1));
-      value += Math.sin(2 * Math.PI * Math.round(cycles * 1.004 * duration) / duration * t) * (0.05 / (n + 1));
+      value += Math.sin(2 * Math.PI * cycles * t) * (0.08 / (n + 1));
     });
-    const tremolo = 0.78 + 0.22 * Math.sin((2 * Math.PI * 2 * t) / duration);
-    out[i] = value * tremolo;
+    const gentleSwell = 0.85 + 0.15 * Math.sin((2 * Math.PI * 1 * t) / duration);
+    out[i] = value * gentleSwell * 0.6;
   }
   return encodeWav(out);
 }

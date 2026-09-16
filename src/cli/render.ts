@@ -28,6 +28,8 @@ export interface RenderArgs {
   mode?: string;
   rounds?: number;
   timer?: number;
+  /** UI visual theme / template: tv_game_show | clean_shopping | cyber_arcade */
+  theme?: string;
   /** `--game <file.json>`: render an existing Game JSON instead of a template. */
   gameFile?: string;
   queueDir: string;
@@ -110,6 +112,7 @@ export function parseRenderArgs(argv: string[], rootDir = process.cwd()): Render
     mode,
     rounds: rounds !== undefined ? Number(rounds) : undefined,
     timer: timer !== undefined ? Number(timer) : undefined,
+    theme: flags.get('theme') ?? flags.get('template'),
     gameFile: flags.get('game'),
     queueDir: flags.get('queue-dir') ?? 'queue',
     rendererType: flags.get('renderer') === 'satori'
@@ -258,7 +261,7 @@ export async function runRenderCommand(args: RenderArgs): Promise<RenderCommandR
       for (let i = 0; i < frameCount; i += 1) {
         const timeSeconds = i / fps;
         const canvas = new Canvas(1080, 1920);
-        paintMultiRoundFrame(canvas, scene, timeSeconds, { rootDir, assetCache });
+        paintMultiRoundFrame(canvas, scene, timeSeconds, { rootDir, assetCache, theme: args.theme });
         const png = encodePng({ width: 1080, height: 1920, data: canvas.data });
         writeFileSync(path.join(framesDir, `frame_${String(i + 1).padStart(5, '0')}.png`), png);
       }
