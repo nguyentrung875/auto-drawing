@@ -1,9 +1,9 @@
-# Master Design Spec: Gameplay Contract v2 & Decoupled Engine Architecture
+# Master Design Spec: Gameplay Contract v2.1 & Decoupled Engine Architecture
 
 - **Author / Lead**: Architecture & Core Engine
 - **Target**: Universal AI Game Video Engine (`auto-drawing`)
-- **Status**: Approved Foundation Spec (Ready for Implementation Planning)
-- **Primary Goal**: Decouple Game Logic from Presentation/Audio/Timeline, establish Information-Flow Security against leakage, support scale to 30+ mechanics, and enable rigorous deterministic verification.
+- **Status**: Approved Foundation Spec v2.1 (Proceed to Phase A–B Implementation Planning)
+- **Primary Goal**: Decouple Game Logic from Presentation/Audio/Timeline, establish Information-Flow Security against leakage, support scale to 30+ mechanics via lifecycle hooks, and enable policy-driven deterministic verification.
 
 ---
 
@@ -30,7 +30,7 @@ Hệ thống được tái cấu trúc từ nền tảng nguyên khối sang **4
 ┌──────────────────────────────────┐  ┌──────────────────────────────────┐
 │ 2. PRESENTATION LAYER            │  │ 3. SCRIPT & AUDIO PLAN LAYER     │
 │    - QuestionRenderModel         │  │    - ScriptPlan (Events & Copy)  │
-│      (Actual price stripped!)    │  │    - VoiceDirector (TTS & SFX)   │
+│      (Type-safe QuestionPrice)   │  │    - VoiceDirector (TTS & SFX)   │
 │    - RevealRenderModel<TReveal>  │  │    - Language & Persona Catalog  │
 │    - VisualTheme (TV, Cyber,...) │  └──────────────────┬───────────────┘
 └──────────────────┬───────────────┘                     │
@@ -39,18 +39,19 @@ Hệ thống được tái cấu trúc từ nền tảng nguyên khối sang **4
                                       ▼
 ┌────────────────────────────────────────────────────────────────────────┐
 │ 4. RENDER TIMELINE LAYER                                               │
-│    - RenderPlan (Dynamic Durations: 15s, 18s, 28s, 38s)                │
+│    - RenderPlan (Dynamic Durations: 12s, 15s, 18s, 28s, 38s)           │
 │    - Canvas / HTML Frame Painter                                       │
 │    - Video QA & Information Leakage Audit                              │
 └────────────────────────────────────────────────────────────────────────┘
 ```
 
-### 5 Nguyên Tắc Kiến Trúc Bắt Buộc
+### 6 Nguyên Tắc Kiến Trúc v2.1 Bắt Buộc
 1. **Single Responsibility per Layer**: `GameState` không chứa thông tin font chữ, màu sắc, thời lượng giây hay câu thoại voice.
-2. **Information-Flow Security (Defensive Typing)**: Renderer trong phase Question tuyệt đối không được cấp `answer` hay `actualPrice`. Dữ liệu đáp án chỉ tồn tại trong `RevealRenderModel`.
+2. **Information-Flow Security (Defensive Typing)**: Renderer trong phase Question tuyệt đối không được cấp `answer` hay `actualPrice`. Trường hiển thị giá là discriminated type `QuestionPrice` (HiddenPrice hoặc ReferencePrice).
 3. **Type-Safe Discriminated Unions**: Mọi mechanic phải khai báo `RevealPayload` riêng biệt. Bắt lỗi cấu trúc ở compile-time thay vì runtime.
-4. **Forkable PRNG & Separated Diversity**: PRNG có cơ chế phân nhánh namespace (`rng.fork(...)`), tách biệt hoàn toàn với `DiversityManager` (quản lý lịch sử và chống va chạm nội dung).
-5. **Content Fingerprint & Contract Testing**: Mỗi video có mã băm định danh lưu trữ tại `data/fingerprints/history.json`. Mỗi mechanic có suite test hợp đồng (contract test) bất biến.
+4. **Composited Forkable PRNG**: `ForkableRng` là full object API (`next()`, `fork()`, `int()`, `pick()`, `shuffle()`), hoàn toàn độc lập với `DiversityManager`.
+5. **Two-Tier Content Fingerprint**: Kết hợp `ExactFingerprint` (chống lặp tuyệt đối) và `SemanticFingerprint` (chống lặp nhận thức người xem).
+6. **Policy-Driven Configurations**: Tách rời toàn bộ tham số cứng (N=50, M=10, -14 LUFS, safe-zone) thành các Policy object có thể cấu hình linh hoạt.
 
 ---
 
@@ -111,26 +112,40 @@ export interface GameState<TRevealPayload = unknown> {
 }
 ```
 
-### 2.2 MechanicRegistry & Extensibility Pattern
-Không hard-code enum 7 game. Mọi game đăng ký qua `MechanicRegistry`:
+### 2.2 MechanicRegistry & Lifecycle Hooks
+Tránh để `PresentationCompiler` hay `ScriptPlanner` phình to các câu lệnh `if (mechanicId === ...)` khi mở rộng tới 30+ game. Mỗi game đóng gói đầy đủ lifecycle:
 
 ```typescript
 // src/core/registry/MechanicRegistry.ts
+import type { IForkableRng } from '../rng/ForkableRng';
+import type { QuestionRenderModel, RevealRenderModel } from '../presentation/types';
+import type { VisualThemeId } from '../theme/types';
+import type { MechanicScriptContext } from '../script/types';
+
+export interface CreateStateInput {
+  entities: RawEntity[];
+  rng: IForkableRng;
+  difficultyTarget?: Partial<GlobalDifficulty>;
+  roundIndex?: number;
+  totalRounds?: number;
+}
 
 export interface IMechanicDefinition<TReveal = unknown> {
   readonly id: MechanicId;
   readonly name: string;
   readonly defaultTotalRounds: number;
   
-  createGameState(input: {
-    entities: RawEntity[];
-    rng: ForkableRng;
-    difficultyTarget?: Partial<GlobalDifficulty>;
-    roundIndex?: number;
-    totalRounds?: number;
-  }): GameState<TReveal>;
+  // 1. Logic State Generation & Validation
+  createState(input: CreateStateInput): GameState<TReveal>;
+  validateState(state: GameState<TReveal>): void;
 
-  validateGameState(state: GameState<TReveal>): void;
+  // 2. Presentation Compilation (Lifecycle Hooks)
+  compileQuestion(state: GameState<TReveal>, themeId: VisualThemeId): QuestionRenderModel;
+  compileReveal(state: GameState<TReveal>): RevealRenderModel<TReveal>;
+
+  // 3. Dynamic Script & Difficulty Extraction
+  getDifficultyModel(state: GameState<TReveal>): DifficultyProfile;
+  getScriptContext(state: GameState<TReveal>): MechanicScriptContext;
 }
 
 export class MechanicRegistry {
@@ -152,6 +167,10 @@ export class MechanicRegistry {
   static list(): string[] {
     return Array.from(this.mechanics.keys());
   }
+
+  static clear(): void {
+    this.mechanics.clear();
+  }
 }
 ```
 
@@ -159,18 +178,32 @@ export class MechanicRegistry {
 
 ## 3. Đặc Tả Tầng 2: PresentationModel & Information-Flow Security
 
-### 3.1 Tách Rời QuestionRenderModel & RevealRenderModel
-Để triệt tiêu vĩnh viễn nguy cơ lộ giá hoặc rò rỉ đáp án trong pha đếm ngược:
+### 3.1 Type-Safe QuestionPrice (Loại bỏ Arbitrary Price String)
+Để compiler không thể vô tình truyền `displayPrice: "189.000₫"` trong lúc hỏi:
 
 ```typescript
 // src/core/presentation/types.ts
+
+export type HiddenPrice = {
+  kind: 'hidden';
+  label: '???';
+};
+
+export type ReferencePrice = {
+  kind: 'reference';
+  value: number;
+  label: string; // "189.000₫"
+  role: 'anchor_benchmark' | 'original_price';
+};
+
+export type QuestionPrice = HiddenPrice | ReferencePrice;
 
 export interface QuestionProductViewModel {
   productId: string;
   name: string;
   image: string;
   brand?: string;
-  displayPrice: string; // "???" hoặc mốc so sánh (ví dụ: "189.000₫")
+  price: QuestionPrice; // Bắt buộc là type-safe QuestionPrice
   badgeTag?: string;    // "MỐC CHUẨN", "SALE -50%"
 }
 
@@ -283,7 +316,7 @@ export type AnyRevealPayload =
 
 ## 4. Đặc Tả Tầng 3: ScriptPlan & VoiceDirector
 
-Tách lời thoại ra khỏi Engine logic. `ScriptPlanner` đóng vai trò biên soạn kịch bản từ catalog câu thoại:
+Tách lời thoại ra khỏi Engine logic:
 
 ```typescript
 // src/core/script/types.ts
@@ -306,6 +339,13 @@ export interface ScriptEvent {
   emotion?: 'neutral' | 'excited' | 'urgent' | 'surprised';
 }
 
+export interface MechanicScriptContext {
+  productNames: string[];
+  benchmarkPriceLabel?: string;
+  bracketLabels?: string[];
+  discountRateLabel?: string;
+}
+
 export interface ScriptPlan {
   roundIndex: number;
   events: ScriptEvent[];
@@ -317,16 +357,17 @@ export interface ScriptPlan {
 - Nhận `ScriptPlan`.
 - Gọi TTS engine (ViPiper hoặc EdgeTTS) để sinh âm thanh giọng đọc.
 - Kiểm tra độ dài âm thanh thực tế so với `maxDurationSec` (Dynamic Timeline Gap Validation).
-- Trộn nhạc nền (BGM), tiếng tick-tock, chuông reo (Chime/Buzzer) với kỹ thuật tự động hạ âm lượng nhạc nền (Audio Ducking) $70\%$ khi có giọng đọc.
+- Trộn nhạc nền (BGM), tiếng tick-tock, chuông reo (Chime/Buzzer) với Audio Ducking theo `AudioPolicy`.
 
 ---
 
 ## 5. Đặc Tả Tầng 4: RenderPlan & Variable Duration
 
-Engine không ép buộc mọi video 1-round là 18s, multi-round là 38s. Thời lượng được tính dựa trên **mật độ thông tin (Information Density)**:
+Thời lượng được tính dựa trên **mật độ thông tin (Information Density)**:
 
 ```typescript
 // src/core/render/types.ts
+import type { VisualThemeId } from '../theme/types';
 
 export interface RenderSlot {
   name: string;
@@ -340,7 +381,7 @@ export interface RenderSlot {
 export interface RenderPlan {
   totalDurationSec: number;
   fps: number;
-  themeId: 'tv_game_show' | 'clean_shopping' | 'cyber_arcade' | 'street_quiz';
+  themeId: VisualThemeId;
   slots: RenderSlot[];
 }
 ```
@@ -353,33 +394,123 @@ export interface RenderPlan {
 
 ---
 
-## 6. Hệ Thống RNG Phân Nhánh & Quản Lý Đa Dạng (Diversity & Fingerprint)
+## 6. RNG Phân Nhánh & Quản Lý Đa Dạng (Diversity & Fingerprint)
 
-### 6.1 Forkable PRNG
+### 6.1 Forkable PRNG Object API
+Cung cấp đầy đủ interface hướng đối tượng, cho phép compose sâu:
+
 ```typescript
 // src/core/rng/ForkableRng.ts
 import seedrandom from 'seedrandom';
 
-export class ForkableRng {
-  constructor(private readonly seedValue: string | number) {}
+export interface IForkableRng {
+  next(): number;
+  fork(namespace: string): IForkableRng;
+  int(min: number, max: number): number;
+  pick<T>(array: readonly T[]): T;
+  shuffle<T>(array: readonly T[]): T[];
+  boolean(probability?: number): boolean;
+}
 
-  fork(namespace: string): () => number {
-    return seedrandom(`${this.seedValue}::${namespace}`);
+export class ForkableRng implements IForkableRng {
+  private readonly rng: () => number;
+
+  constructor(private readonly seedValue: string | number) {
+    this.rng = seedrandom(String(seedValue));
+  }
+
+  next(): number {
+    return this.rng();
+  }
+
+  fork(namespace: string): IForkableRng {
+    return new ForkableRng(`${this.seedValue}::${namespace}`);
+  }
+
+  int(min: number, max: number): number {
+    return Math.floor(this.next() * (max - min + 1)) + min;
+  }
+
+  pick<T>(array: readonly T[]): T {
+    if (array.length === 0) throw new Error('Cannot pick from empty array');
+    const index = Math.floor(this.next() * array.length);
+    return array[index]!;
+  }
+
+  shuffle<T>(array: readonly T[]): T[] {
+    const copy = [...array];
+    for (let i = copy.length - 1; i > 0; i--) {
+      const j = Math.floor(this.next() * (i + 1));
+      [copy[i], copy[j]] = [copy[j]!, copy[i]!] as [T, T];
+    }
+    return copy;
+  }
+
+  boolean(probability = 0.5): boolean {
+    return this.next() < probability;
   }
 }
 ```
 
-### 6.2 Quản Lý Tránh Trùng Lặp (DiversityManager)
-* Quản lý bộ đệm trượt LRU lưu trong file `data/fingerprints/history.json`.
-* **Quy tắc ngăn chặn (Collision Policy):**
-  1. Không lặp lại cùng bộ tuple sản phẩm trong $N = 50$ video gần nhất.
-  2. Không đặt cùng một SKU làm Hero Product trong $M = 10$ video gần nhất.
-  3. Cân bằng chuỗi đáp án: `maxConsecutiveSameAnswer <= 3` (không để xuất hiện chuỗi A-A-A-A liên tiếp).
+### 6.2 Hệ Thống Policy Độc Lập
+Toàn bộ tham số kiểm duyệt được trích xuất thành policy cấu hình, không hard-code:
 
-### 6.3 Content Fingerprint
-* Hàm băm kiểm tra duy nhất trước khi render:
-  $$\text{Fingerprint} = \text{SHA256}(\text{mechanicId} + \text{sortedProductIds} + \text{hookId} + \text{voiceId} + \text{themeId} + \text{answerId})$$
-* Nếu phát hiện Fingerprint đã tồn tại trong `data/fingerprints/history.json` $\to$ Từ chối render, kích hoạt Curator chọn tổ hợp mới.
+```typescript
+// src/core/policy/types.ts
+
+export interface DiversityPolicy {
+  cooldownProductTuple: number;      // Mặc định: 50 videos
+  cooldownHeroSku: number;           // Mặc định: 10 videos
+  maxConsecutiveSameAnswer: number;  // Mặc định: 3 videos
+  targetAnswerRatio: number;         // Mặc định: 0.5 (50%)
+  answerRatioTolerance: number;      // Mặc định: 0.05 (±5%)
+}
+
+export interface AudioPolicy {
+  targetLufs: number;                // Mặc định: -14.0 LUFS
+  lufsTolerance: number;             // Mặc định: ±2.0 LUFS
+  maxTruePeakDbTp: number;           // Mặc định: -1.0 dBTP
+  maxSilenceDurationSec: number;     // Mặc định: 1.2s
+  duckingRatio: number;              // Mặc định: 0.3 (hạ 70%)
+}
+
+export interface LayoutPolicy {
+  safeZoneTop: number;               // Mặc định: 150px
+  safeZoneBottom: number;            // Mặc định: 1480px
+  cardMaxWidth: number;              // Mặc định: 400px
+  gutter: number;                    // Mặc định: 60px
+}
+
+export const DEFAULT_DIVERSITY_POLICY: DiversityPolicy = {
+  cooldownProductTuple: 50,
+  cooldownHeroSku: 10,
+  maxConsecutiveSameAnswer: 3,
+  targetAnswerRatio: 0.5,
+  answerRatioTolerance: 0.05,
+};
+
+export const DEFAULT_AUDIO_POLICY: AudioPolicy = {
+  targetLufs: -14.0,
+  lufsTolerance: 2.0,
+  maxTruePeakDbTp: -1.0,
+  maxSilenceDurationSec: 1.2,
+  duckingRatio: 0.3,
+};
+
+export const DEFAULT_LAYOUT_POLICY: LayoutPolicy = {
+  safeZoneTop: 150,
+  safeZoneBottom: 1480,
+  cardMaxWidth: 400,
+  gutter: 60,
+};
+```
+
+### 6.3 Two-Tier Content Fingerprint
+* **Tier 1 — ExactFingerprint:** Băm SHA256 chính xác kỹ thuật:
+  $$\text{ExactFingerprint} = \text{SHA256}(\text{mechanicId} + \text{sortedProductIds} + \text{hookId} + \text{voiceId} + \text{themeId} + \text{answerId})$$
+* **Tier 2 — SemanticFingerprint:** Băm nhận thức người xem (tránh hai video khác hook/voice nhưng cùng kịch bản cấu trúc):
+  $$\text{SemanticFingerprint} = \text{SHA256}(\text{mechanicId} + \text{productCategories} + \text{questionIntent} + \text{difficultyBand} + \text{revealStructure})$$
+* Lưu trữ tại `data/fingerprints/history.json`.
 
 ---
 
@@ -387,18 +518,15 @@ export class ForkableRng {
 
 ### 7.1 Pre-Render GameplayValidator & Leakage Audit
 Kiểm tra tại thời điểm `PresentationModel` vừa được biên dịch:
-* **No Price Leak:** Duyệt `QuestionRenderModel.entities`. Báo lỗi ngay nếu `displayPrice` chứa giá trị số nguyên của sản phẩm khi chưa đến Reveal.
+* **No Price Leak:** Duyệt `QuestionRenderModel.entities`. Đảm bảo `entity.price.kind === 'hidden'` nếu sản phẩm đó thuộc đối tượng cần đoán.
 * **No Answer Leak:** Báo lỗi nếu nhãn lựa chọn có dấu hiệu highlight màu khác biệt trước reveal.
 * **No Technical ID:** Quét regex `^p\d{3,}$` trên mọi chuỗi text người xem nhìn thấy.
 
 ### 7.2 Post-Render Video QA
-Kiểm tra tệp MP4 và WAV thành phẩm:
+Kiểm tra tệp MP4 và WAV thành phẩm theo `AudioPolicy` và `LayoutPolicy`:
 * **Structural:** Video 1080×1920 @ 30fps $\pm 0.1$, codec h264, không có khung hình đen (black frames).
-* **Acoustic Standards:**
-  * Âm lượng tích hợp: $-14\text{ LUFS} \pm 2\text{ LUFS}$ (Chuẩn TikTok/Reels).
-  * True Peak: $\le -1.0\text{ dBTP}$.
-  * Không có khoảng lặng không mong muốn $> 1.2\text{s}$.
-* **Text & Margin Audit:** Đảm bảo toàn bộ chữ nằm trong Safe Zone ($y \in [150, 1480]$) để không bị giao diện TikTok che khuất.
+* **Acoustic Standards:** Kiểm tra Integrated LUFS, True Peak, và khoảng lặng theo `AudioPolicy`.
+* **Text & Margin Audit:** Đảm bảo toàn bộ chữ nằm trong Safe Zone quy định bởi `LayoutPolicy`.
 
 ---
 
@@ -406,11 +534,11 @@ Kiểm tra tệp MP4 và WAV thành phẩm:
 
 ```text
 Phase A: Foundation Core (P0)
-  ├── 1. Khởi tạo ForkableRng (rng.fork)
-  ├── 2. Xây dựng GameState & MechanicRegistry
-  ├── 3. Định nghĩa QuestionRenderModel & RevealRenderModel (Information Security)
-  ├── 4. Xây dựng File-based ContentFingerprintStore (data/fingerprints/history.json)
-  └── 5. Xây dựng DiversityManager & Bộ kiểm soát Answer Sequence Bias
+  ├── 1. Khởi tạo ForkableRng (full object API: next, fork, int, pick, shuffle)
+  ├── 2. Xây dựng GameState & MechanicRegistry với đầy đủ Lifecycle Hooks
+  ├── 3. Định nghĩa QuestionRenderModel (Type-safe QuestionPrice) & RevealRenderModel
+  ├── 4. Khởi tạo Policy Module (DiversityPolicy, AudioPolicy, LayoutPolicy)
+  └── 5. Xây dựng File-based ContentFingerprintStore (Exact + Semantic Fingerprints)
 
 Phase B: Safety & Validation (P0)
   ├── 6. GameplayValidator & Pre-render Leakage Audit
@@ -444,9 +572,10 @@ Phase E: Continuous Learning & Optimization (P2)
 
 1. **Gate 1: Contract Typing & Leakage Proof**
    * Codebase biên dịch `tsc --noEmit` đạt 0 lỗi.
-   * Bài kiểm tra `QuestionRenderModel` chứng minh về mặt cấu trúc không thể chứa giá thật trước khi gọi `RevealRenderModel`.
-2. **Gate 2: Reproducibility & Diversity**
-   * Cùng 1 seed luôn sinh ra 100% video và audio bit-for-bit giống nhau.
-   * Batch 100 video ngẫu nhiên không có 2 video nào bị trùng Content Fingerprint; tỷ lệ đáp án A/B đạt $50\% \pm 5\%$, không có chuỗi trùng quá 3 lần liên tiếp.
+   * `QuestionRenderModel.entities` dùng `QuestionPrice`; về mặt hệ thống kiểu dữ liệu không thể chứa `actualPrice` của sản phẩm bí mật.
+2. **Gate 2: Determinism (Phân Tầng Rõ Ràng)**
+   * **GameplayState, RenderPlan, ScriptPlan:** Bit-for-bit deterministic trên cùng 1 seed.
+   * **Audio / Video Thành Phẩm:** Deterministic về mặt **semantic, cấu trúc và timing** (sai số timing $\le 0.033\text{s}$ tương đương 1 frame). Không bắt buộc binary identical do đặc thù bộ mã hóa FFmpeg và rasterizer font.
+   * Batch 100 video ngẫu nhiên không có 2 video nào bị trùng `ExactFingerprint` hoặc `SemanticFingerprint`; tỷ lệ đáp án A/B đạt $50\% \pm 5\%$ tuân theo `DiversityPolicy`.
 3. **Gate 3: Multi-Round Rendering**
    * CLI `game render --mechanic GROCERY_BASKET --mode multi` hiển thị chuẩn khay 3 món đồ, giá giỏ hàng được giấu kín trước reveal, giọng đọc MC khớp chính xác từng vòng.
