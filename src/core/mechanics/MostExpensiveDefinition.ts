@@ -23,8 +23,8 @@ export const MostExpensiveDefinition: IMechanicDefinition<MostExpensiveReveal> =
     const runnerUp = sortedByPrice[1]!;
 
     const delta = (highest.price - runnerUp.price) / highest.price;
-    if (delta < 0.02) {
-      throw new Error(`MOST_EXPENSIVE rejected due to tie or top-2 delta < 2% (${(delta * 100).toFixed(1)}%)`);
+    if (delta < 0.08) {
+      throw new Error(`MOST_EXPENSIVE rejected due to tie or top-2 delta < 8% (${(delta * 100).toFixed(1)}%)`);
     }
 
     const winningIndex = input.entities.findIndex((e) => e.productId === highest.productId);

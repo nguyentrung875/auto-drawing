@@ -43,15 +43,21 @@ export function buildAudioBed(request: AudioBedRequest): AudioBedResult {
   const bed = new Float32Array(totalFrames);
 
   const voice = readWav(request.audio.voiceWavPath);
+  const voiceStartAt = Math.max(0, request.audio.voiceStartAt);
+  const voiceDuration = request.audio.voiceDuration || voice.duration;
+  const voiceEndAt = voiceStartAt + voiceDuration;
+
   mixInto(
     bed,
     voice.samples[0]!,
     voice.sampleRate,
     sampleRate,
-    Math.max(0, request.audio.voiceStartAt),
+    voiceStartAt,
     VOICE_GAIN,
   );
 
+  const COUNTDOWN_GAINS = [0.30, 0.35, 0.42, 0.50, 0.62, 0.75];
+  let countdownTickIndex = 0;
   for (const cue of request.audio.sfxCues) {
     if (!existsSync(cue.assetPath)) {
       warnings.push({
@@ -61,16 +67,24 @@ export function buildAudioBed(request: AudioBedRequest): AudioBedResult {
       continue;
     }
     const sfx = readWav(cue.assetPath);
+    let cueGain = SFX_GAIN;
+    if (cue.type === 'countdown' || cue.type === 'tick') {
+      cueGain = COUNTDOWN_GAINS[countdownTickIndex % COUNTDOWN_GAINS.length] ?? COUNTDOWN_GAIN;
+      countdownTickIndex++;
+    } else if (cue.type === 'reveal' || cue.type === 'reveal_impact') {
+      cueGain = 0.90;
+    }
     mixInto(
       bed,
       sfx.samples[0]!,
       sfx.sampleRate,
       sampleRate,
       Math.max(0, cue.at),
-      cue.type === 'countdown' || cue.type === 'tick' ? COUNTDOWN_GAIN : SFX_GAIN,
+      cueGain,
     );
   }
 
+  const musicBed = new Float32Array(totalFrames);
   const musicPath = path.join(
     request.rootDir,
     'assets',
@@ -83,16 +97,40 @@ export function buildAudioBed(request: AudioBedRequest): AudioBedResult {
     const loopLength = Math.max(0.5, music.duration);
     let offset = 0;
     while (offset < request.totalDuration) {
-      mixInto(bed, music.samples[0]!, music.sampleRate, sampleRate, offset, musicGain);
+      mixInto(musicBed, music.samples[0]!, music.sampleRate, sampleRate, offset, musicGain);
       offset += loopLength;
     }
   } else {
     const track = synthesizeMusicBed(request.totalDuration + 0.4, sampleRate, request.audio.music.track, musicGain);
-    for (let i = 0; i < bed.length; i += 1) bed[i] += track[i]!;
+    for (let i = 0; i < musicBed.length; i += 1) musicBed[i] += track[i]!;
     warnings.push({
       code: RENDER_WARNING_CODES.MUSIC_MISSING,
       hint: `assets/music/${request.audio.music.track}.wav not found — a deterministic local bed was synthesised at volume ${musicGain}`,
     });
+  }
+
+  // Dynamic Auto-Ducking: Duck music by 75% during voice active region with 80ms attack and 200ms release
+  const attackSec = 0.08;
+  const releaseSec = 0.20;
+  const duckFloor = 0.25;
+
+  for (let i = 0; i < totalFrames; i++) {
+    const t = i / sampleRate;
+    let duckMultiplier = 1.0;
+    if (t < voiceStartAt - attackSec) {
+      duckMultiplier = 1.0;
+    } else if (t < voiceStartAt) {
+      const progress = (t - (voiceStartAt - attackSec)) / attackSec;
+      duckMultiplier = 1.0 - progress * (1.0 - duckFloor);
+    } else if (t <= voiceEndAt) {
+      duckMultiplier = duckFloor;
+    } else if (t <= voiceEndAt + releaseSec) {
+      const progress = (t - voiceEndAt) / releaseSec;
+      duckMultiplier = duckFloor + progress * (1.0 - duckFloor);
+    } else {
+      duckMultiplier = 1.0;
+    }
+    bed[i] += musicBed[i]! * duckMultiplier;
   }
 
   // Soft limiter: scale down rather than clip when the mix peaks above full scale.

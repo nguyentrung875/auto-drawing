@@ -22,6 +22,7 @@ export interface OddOneOutReveal {
   kind: 'ODD_ONE_OUT';
   oddProductId: string;
   reason: 'category' | 'brand' | 'price_outlier';
+  subType?: 'CATEGORY_OUTLIER' | 'PRICE_OUTLIER';
   explanation: string;
 }
 

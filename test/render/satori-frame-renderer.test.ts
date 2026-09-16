@@ -96,4 +96,40 @@ describe('SatoriFrameRenderer', () => {
       }
     }
   });
+
+  it('renders ONE_AWAY digit grid layout cleanly', async () => {
+    const input = await renderFixture({
+      mechanic: 'ONE_AWAY',
+      productIds: ['p001'],
+      seed: 839271,
+      rootDir: ROOT,
+    });
+
+    const renderer = new SatoriFrameRenderer();
+    const testFramesDir = path.join(ROOT, 'temp', 'test_satori_one_away');
+    if (existsSync(testFramesDir)) {
+      rmSync(testFramesDir, { recursive: true, force: true });
+    }
+    mkdirSync(testFramesDir, { recursive: true });
+
+    try {
+      const result = await renderer.renderFrames(input, {
+        config: { ...DEFAULT_RENDER_CONFIG, width: 1080, height: 1920, fps: 30 },
+        framesDir: testFramesDir,
+        width: 1080,
+        height: 1920,
+        fps: 30,
+        frameCount: 2,
+      });
+
+      expect(result.backend).toBe('satori');
+      expect(result.frameCount).toBe(2);
+      const files = readdirSync(testFramesDir).filter((f) => f.endsWith('.png'));
+      expect(files.length).toBe(2);
+    } finally {
+      if (existsSync(testFramesDir)) {
+        rmSync(testFramesDir, { recursive: true, force: true });
+      }
+    }
+  });
 });

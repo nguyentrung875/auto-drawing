@@ -34,8 +34,8 @@ export const DealOrScamDefinition: IMechanicDefinition<DealOrScamReveal> = {
       totalRounds: input.totalRounds ?? 1,
       entities: [rawEntity],
       choices: [
-        { id: 'deal', label: 'DEAL HỜI MÚC NGAY' },
-        { id: 'scam', label: 'BẪY SALE ẢO / SCAM' },
+        { id: 'deal', label: 'DEAL THẬT MÚC NGAY' },
+        { id: 'scam', label: 'BẪY GIÁ ẢO / RED FLAG' },
       ],
       answer: {
         winningChoiceId: classification,

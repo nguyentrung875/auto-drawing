@@ -50,6 +50,7 @@ export class FFmpegMuxer implements IVideoMuxer {
       '-c:a', 'aac',
       '-b:a', '128k',
       '-ar', '44100',
+      '-af', 'loudnorm=I=-16:TP=-1.5:LRA=11',
       '-movflags', '+faststart',
       '-shortest',
       request.outputPath,

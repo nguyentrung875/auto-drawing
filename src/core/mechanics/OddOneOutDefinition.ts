@@ -48,6 +48,9 @@ export const OddOneOutDefinition: IMechanicDefinition<OddOneOutReveal> = {
       explanation = `${outlier.name} có mức giá lệch hẳn so with 3 món còn lại!`;
     }
 
+    const subType: 'CATEGORY_OUTLIER' | 'PRICE_OUTLIER' =
+      reason === 'category' ? 'CATEGORY_OUTLIER' : 'PRICE_OUTLIER';
+
     const winningIndex = input.entities.findIndex((e) => e.productId === outlier!.productId);
     const winningChoiceId = LABELS[winningIndex]!;
 
@@ -70,6 +73,7 @@ export const OddOneOutDefinition: IMechanicDefinition<OddOneOutReveal> = {
           kind: 'ODD_ONE_OUT',
           oddProductId: outlier.productId,
           reason,
+          subType,
           explanation,
         },
       },
@@ -92,11 +96,17 @@ export const OddOneOutDefinition: IMechanicDefinition<OddOneOutReveal> = {
   },
 
   compileQuestion(state: GameState<OddOneOutReveal>, _themeId: VisualThemeId): QuestionRenderModel {
+    const subType = state.answer.revealPayload.subType ??
+      (state.answer.revealPayload.reason === 'category' ? 'CATEGORY_OUTLIER' : 'PRICE_OUTLIER');
+    const questionHeadline = subType === 'CATEGORY_OUTLIER'
+      ? 'Món nào KHÁC NHÓM với các món còn lại?'
+      : 'Món nào có MỨC GIÁ LỆCH HẲN?';
+
     return {
       mechanicId: 'ODD_ONE_OUT',
       roundIndex: state.roundIndex,
       totalRounds: state.totalRounds,
-      questionHeadline: 'Món nào là "KẺ LẠ" trong 4 món này?',
+      questionHeadline,
       entities: state.entities.map((item, idx) => ({
         productId: item.productId,
         name: item.name,

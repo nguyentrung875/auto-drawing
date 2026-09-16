@@ -18,8 +18,13 @@ import {
   type SceneRenderResult,
   type SceneContext,
 } from './types';
+import {
+  CANONICAL_18S_PROFILE,
+  getTimingProfileForMechanic,
+  type SceneTimingProfile,
+} from './timingProfiles';
 
-const SCENE_DURATIONS: Record<SceneName, number> = {
+export const SCENE_DURATIONS: Record<SceneName, number> = {
   hook: 2,
   product: 3,
   question: 3,
@@ -81,8 +86,8 @@ export class SceneSystem {
   render(game: GameJson, input: SceneRenderInput = {}): SceneRenderResult {
     const options = normalizeOptions(input);
     validateSceneSequence(game.scenes);
-    const timeline = options.timeline ?? buildSceneTimeline(game.scenes as SceneName[]);
-    validateSceneTimeline(game.scenes as SceneName[], timeline);
+    const timeline = options.timeline ?? buildSceneTimeline(game.scenes as SceneName[], game.metadata?.mechanic);
+    validateSceneTimeline(game.scenes as SceneName[], timeline, game.metadata?.mechanic);
     const variant = options.variant ?? game.metadata.result_variant ?? 'in_video';
     const context: SceneContext = {
       game,
@@ -174,7 +179,11 @@ export function validateSceneSequence(scenes: string[]): asserts scenes is Scene
   }
 }
 
-export function validateSceneTimeline(scenes: SceneName[], timeline: Timeline): void {
+export function validateSceneTimeline(
+  scenes: SceneName[],
+  timeline: Timeline,
+  mechanic?: string,
+): void {
   const fail = (hint: string): never => {
     throw new SceneError('E_TIMELINE_DRIFT', 'timeline', hint);
   };
@@ -182,42 +191,58 @@ export function validateSceneTimeline(scenes: SceneName[], timeline: Timeline): 
     fail(`timeline has ${timeline.slots.length} slots; expected ${scenes.length}`);
   }
 
-  let cursor = 0;
-  timeline.slots.forEach((slot, index) => {
-    const expectedType = scenes[index];
-    const expectedDuration = expectedType ? SCENE_DURATIONS[expectedType] : undefined;
-    if (slot.type !== expectedType) {
-      fail(`timeline slot ${index} is '${slot.type}'; expected '${expectedType}'`);
-    }
-    if (![slot.start, slot.duration, slot.end].every(Number.isFinite) || slot.duration <= 0) {
-      fail(`timeline slot '${slot.type}' must contain finite start/end and a positive duration`);
-    }
-    if (Math.abs(slot.start - cursor) > 0.001) {
-      fail(`timeline slot '${slot.type}' starts at ${slot.start}s; expected ${cursor}s`);
-    }
-    if (expectedDuration === undefined || Math.abs(slot.duration - expectedDuration) > 0.1) {
-      fail(`timeline slot '${slot.type}' duration ${slot.duration}s; expected ${expectedDuration}s ±0.1s`);
-    }
-    const calculatedEnd = Number((slot.start + slot.duration).toFixed(3));
-    if (Math.abs(slot.end - calculatedEnd) > 0.001) {
-      fail(`timeline slot '${slot.type}' ends at ${slot.end}s; expected ${calculatedEnd}s`);
-    }
-    cursor = slot.end;
-  });
+  const profile = getTimingProfileForMechanic(mechanic);
 
-  if (!Number.isFinite(timeline.totalDuration) || Math.abs(timeline.totalDuration - cursor) > 0.001) {
-    fail(`timeline total ${timeline.totalDuration}s does not match final slot end ${cursor}s`);
-  }
-  const expectedTotal = scenes.reduce((total, scene) => total + SCENE_DURATIONS[scene], 0);
-  if (Math.abs(timeline.totalDuration - expectedTotal) > 0.05) {
-    fail(`timeline total ${timeline.totalDuration}s; expected ${expectedTotal}s ±0.05s`);
+  // Helper to check if timeline matches a specific profile
+  const checkProfile = (expectedProfile: SceneTimingProfile): string | null => {
+    let cursor = 0;
+    for (let index = 0; index < scenes.length; index++) {
+      const expectedType = scenes[index]!;
+      const expectedDuration = expectedProfile[expectedType];
+      const slot = timeline.slots[index];
+      if (!slot || slot.type !== expectedType) {
+        return `timeline slot ${index} is '${slot?.type}'; expected '${expectedType}'`;
+      }
+      if (![slot.start, slot.duration, slot.end].every(Number.isFinite) || slot.duration <= 0) {
+        return `timeline slot '${slot.type}' must contain finite start/end and a positive duration`;
+      }
+      if (Math.abs(slot.start - cursor) > 0.001) {
+        return `timeline slot '${slot.type}' starts at ${slot.start}s; expected ${cursor}s`;
+      }
+      if (expectedDuration === undefined || Math.abs(slot.duration - expectedDuration) > 0.1) {
+        return `timeline slot '${slot.type}' duration ${slot.duration}s; expected ${expectedDuration}s ±0.1s`;
+      }
+      const calculatedEnd = Number((slot.start + slot.duration).toFixed(3));
+      if (Math.abs(slot.end - calculatedEnd) > 0.001) {
+        return `timeline slot '${slot.type}' ends at ${slot.end}s; expected ${calculatedEnd}s`;
+      }
+      cursor = slot.end;
+    }
+
+    if (!Number.isFinite(timeline.totalDuration) || Math.abs(timeline.totalDuration - cursor) > 0.001) {
+      return `timeline total ${timeline.totalDuration}s does not match final slot end ${cursor}s`;
+    }
+    if (Math.abs(timeline.totalDuration - expectedProfile.totalDuration) > 0.05) {
+      return `timeline total ${timeline.totalDuration}s; expected ${expectedProfile.totalDuration}s ±0.05s`;
+    }
+    return null;
+  };
+
+  const profileError = checkProfile(profile);
+  if (profileError !== null) {
+    // If it doesn't match the mechanic profile, check if it matches the legacy canonical 18s profile
+    const canonicalError = checkProfile(CANONICAL_18S_PROFILE);
+    if (canonicalError !== null) {
+      fail(profileError);
+    }
   }
 }
 
-export function buildSceneTimeline(scenes: SceneName[]): Timeline {
+export function buildSceneTimeline(scenes: SceneName[], mechanic?: string): Timeline {
+  const profile = getTimingProfileForMechanic(mechanic);
   let cursor = 0;
   const slots = scenes.map((type) => {
-    const duration = SCENE_DURATIONS[type];
+    const duration = profile[type] ?? SCENE_DURATIONS[type] ?? 2.0;
     const start = cursor;
     cursor = Number((cursor + duration).toFixed(3));
     return { type, duration, start, end: cursor };

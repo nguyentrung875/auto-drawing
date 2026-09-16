@@ -40,6 +40,6 @@ describe('MOST_EXPENSIVE Contract Verification', () => {
       { productId: 'p203', name: 'Món C', price: 500000, image: 'c.jpg', category: 'test' },
     ];
     const rng = new ForkableRng(1);
-    expect(() => MostExpensiveDefinition.createState({ entities: closeEntities, rng })).toThrow(/delta < 2%/);
+    expect(() => MostExpensiveDefinition.createState({ entities: closeEntities, rng })).toThrow(/delta < (2|8)%/);
   });
 });

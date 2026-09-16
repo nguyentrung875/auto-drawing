@@ -89,8 +89,8 @@ export class DecisionEngine {
     const rationale =
       classification === 'scam'
         ? discount >= 80
-          ? `Giảm giá phi thực tế ${discount}% so với giá trị thực của sản phẩm`
-          : 'Giá bán quá thấp bất thường so với phân khúc'
+          ? `Cảnh báo giá ảo: Mức giảm sốc ${discount}% bất thường so với giá trị thực (Red Flag)`
+          : 'Cảnh báo: Giá bán bất thường so với phân khúc chính hãng'
         : `Mức giảm giá hợp lý ${discount}% từ nhà phân phối chính hãng`;
 
     return {

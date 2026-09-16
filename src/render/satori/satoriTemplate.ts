@@ -94,7 +94,9 @@ export function buildSatoriVirtualDom(context: SatoriRenderContext): SatoriEleme
         renderCenterStatus(isCountdown, isReveal, countdownFormatted, strokeDashoffset, circ, game),
 
         // --- ACTION BUTTONS ---
-        renderActionButtons(game, isReveal),
+        mechanic === 'ONE_AWAY'
+          ? renderOneAwayStatus(isReveal, input.game.gameplay.answer)
+          : renderActionButtons(game, isReveal),
       ],
     },
   };
@@ -191,17 +193,7 @@ function renderQuestion(game: RenderGameView, mechanic: string, isReveal: boolea
                 children: 'ĐÁP ÁN CHÍNH XÁC ĐÃ LỘ DIỆN!',
               },
             }
-          : {
-              type: 'div',
-              props: {
-                style: {
-                  fontSize: '32px',
-                  color: '#94a3b8',
-                  marginTop: '10px',
-                },
-                children: 'Bạn có 3 giây để đưa ra đáp án!',
-              },
-            },
+          : null,
       ],
     },
   };
@@ -449,6 +441,90 @@ function renderOneAwayCard(
               letterSpacing: '3px',
             },
             children: isReveal ? fullPrice : maskedPrice,
+          },
+        },
+        // 2-row Digit Grid placed directly below masked price
+        {
+          type: 'div',
+          props: {
+            style: {
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '12px',
+              marginTop: '20px',
+              width: '100%',
+              alignItems: 'center',
+            },
+            children: [
+              renderDigitRow(['0', '1', '2', '3', '4'], String(input.game.gameplay.answer ?? ''), isReveal),
+              renderDigitRow(['5', '6', '7', '8', '9'], String(input.game.gameplay.answer ?? ''), isReveal),
+            ],
+          },
+        },
+      ],
+    },
+  };
+}
+
+function renderDigitRow(digits: string[], winningDigit: string, isReveal: boolean): SatoriElement {
+  return {
+    type: 'div',
+    props: {
+      style: {
+        display: 'flex',
+        justifyContent: 'center',
+        gap: '14px',
+      },
+      children: digits.map((d) => {
+        const isWinner = isReveal && d === winningDigit;
+        return {
+          type: 'div',
+          props: {
+            style: {
+              width: '85px',
+              height: '70px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: '16px',
+              backgroundColor: isWinner ? '#10b981' : 'rgba(51, 65, 85, 0.8)',
+              border: isWinner ? '3px solid #34d399' : '2px solid rgba(148, 163, 184, 0.3)',
+              color: isWinner ? '#ffffff' : '#f1f5f9',
+              fontSize: '38px',
+              fontWeight: 'bold',
+            },
+            children: d,
+          },
+        };
+      }),
+    },
+  };
+}
+
+function renderOneAwayStatus(isReveal: boolean, answer: unknown): SatoriElement {
+  return {
+    type: 'div',
+    props: {
+      style: {
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        width: '940px',
+        height: '90px',
+      },
+      children: [
+        {
+          type: 'div',
+          props: {
+            style: {
+              fontSize: '36px',
+              fontWeight: 'bold',
+              color: isReveal ? '#34d399' : '#94a3b8',
+              letterSpacing: '1px',
+            },
+            children: isReveal
+              ? `🎉 CHỮ SỐ CHÍNH XÁC: ${String(answer)}!`
+              : 'CHỌN 1 CHỮ SỐ TỪ 0 ĐẾN 9',
           },
         },
       ],

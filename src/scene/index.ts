@@ -12,6 +12,14 @@ export {
 export type { SceneRenderInput, SceneRenderOptions } from './SceneSystem';
 
 export {
+  CANONICAL_18S_PROFILE,
+  MECHANIC_TIMING_PROFILES,
+  getSceneDuration,
+  getTimingProfileForMechanic,
+} from './timingProfiles';
+export type { SceneTimingProfile } from './timingProfiles';
+
+export {
   CTAScene,
   CountdownScene,
   DigitReveal,
