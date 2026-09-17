@@ -33,8 +33,9 @@ Usage:
   game config                              Resolved render config + worker pool size
 
 render / batch flags:
-  --mechanic hi_lo|most_expensive|one_away
+  --mechanic hi_lo|most_expensive|one_away|odd_one_out|guess_the_price|grocery_basket|deal_or_scam
   --products p001,p042                     Comma-separated SKU ids
+  --theme hay_chon_gia_dung|sieu_thi_gia_dinh|bep_am_noi_tro|gio_vang_san_deal|tap_hoa_vui_ve
   --seed 839271                            Deterministic seed (same seed → same answer)
   --result-variant in_video|comment        Where the answer appears
   --hidden-index 3                         ONE_AWAY: masked digit index
@@ -44,7 +45,7 @@ render / batch flags:
   --game path/to/game.json                 render: pre-authored Game JSON
 
 examples:
-  game render --mechanic hi_lo --products p001,p042 --seed 839271 --result-variant in_video
+  game render --mechanic hi_lo --products p001,p042 --theme hay_chon_gia_dung --seed 839271
   game render --products p001 --mechanic one_away --seed 123 --preview
   game batch --count 50 --mechanics hi_lo,most_expensive,one_away --result-variant comment
   game logs --gameId hi_lo_839271

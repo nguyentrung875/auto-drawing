@@ -34,6 +34,7 @@ export interface RenderStageInput {
   seed: number;
   rootDir?: string;
   exportDir?: string;
+  theme?: string;
   ttsMs?: number;
 }
 

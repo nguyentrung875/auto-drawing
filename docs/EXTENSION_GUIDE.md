@@ -231,23 +231,162 @@ Hệ thống sử dụng các file âm thanh chuẩn WAV PCM Mono/Stereo 44.1kHz
 
 ## 4. Tùy biến Giao diện & Bảng Màu (UI Theming)
 
-Hệ thống giao diện được định nghĩa tập trung tại `src/core/theme/themes.ts`. Mặc định sử dụng chủ đề **Cyberpunk Neon**:
+Hệ thống giao diện được kiến trúc tập trung, tách biệt hoàn toàn giữa logic kịch bản và phong cách hiển thị, định vị tại:
+- `src/core/theme/types.ts`: Định nghĩa interface `VisualTheme`, `ThemeColors`, `ThemeTypography`, `ThemeGeometry`.
+- `src/core/theme/themes.ts`: Danh mục `BUILTIN_THEMES` và hàm tiện ích `getTheme()`, `resolveTheme()`.
+
+Mặc định, hệ thống kích hoạt theme **`hay_chon_gia_dung`** (Sân Khấu Hãy Chọn Giá Đúng).
+
+---
+
+### 4.1. Hợp đồng Thiết kế cho Tệp Khán giả Nội trợ & Gameshow
+
+Khác với phong cách dark theme / cyberpunk dễ gây mỏi mắt trên thiết bị di động, bộ 5 UI Templates mới tuân thủ nghiêm ngặt **Homemaker High-Contrast Contract**:
+
+1. **Card sản phẩm nền trắng tuyệt đối (`cardBackground: '#ffffff'`)**:
+   - Đảm bảo ảnh sản phẩm (PNG) hiển thị trung thực màu sắc gốc, không bị ám sắc tố từ nền video.
+   - Đổ bóng mềm sâu (`cardShadow: '0 20px 35px rgba(...)'`) tạo chiều sâu thị giác nổi khối 3D.
+2. **Độ tương phản chữ tối đa (`textPrimary: '#0f172a'` hoặc `'#1c1917'`)**:
+   - Tên sản phẩm, giá tiền và thông tin khuyến mãi sử dụng màu đen than/xanh đen đậm, font chữ to đậm, giúp các bà nội trợ và người lớn tuổi đọc lướt dễ dàng trong 3–5 giây đếm ngược.
+3. **Bo góc mềm mại & Viền rực rỡ (`geometry`)**:
+   - `cardBorderRadius`: `24px` đến `32px` tạo cảm giác thân thiện, hiện đại.
+   - `cardBorderWidth`: `3px` đến `4px` với viền màu nổi bật (vàng kim, đỏ, cam, xanh ngọc).
+
+---
+
+### 4.2. Danh mục 5 UI Templates Sáng & Trực quan
+
+| Mã Theme (`id`) | Tên Giao diện | Nền Gradient | Viền & Điểm nhấn | Đặc trưng Thị giác |
+| :--- | :--- | :--- | :--- | :--- |
+| **`hay_chon_gia_dung`** *(Mặc định)* | Sân Khấu Hãy Chọn Giá Đúng | Xanh dương hoàng gia `['#1e3a8a', '#2563eb']` | Viền vàng kim `#fbbf24`, Countdown `#f59e0b` | Hiệu ứng đèn sân khấu spotlight, phong cách đài truyền hình VTV3. |
+| **`sieu_thi_gia_dinh`** | Bách Hóa & Siêu Thị Gia Đình | Xanh lá tươi mát `['#15803d', '#22c55e']` | Viền đỏ nổi `#ef4444`, Accent vàng chanh `#facc15` | Cảm giác quầy kệ siêu thị, tươi sạch, tiêu dùng thiết yếu. |
+| **`bep_am_noi_tro`** | Gian Bếp Ấm Cúng & Nội Trợ | Cam kem pastel `['#fff7ed', '#fed7aa']` | Viền cam ấm `#ea580c`, Chữ `#1c1917`, Bo góc `32px` | Nền sáng ấm cúng, cực kỳ gần gũi với đồ gia dụng, nấu nướng. |
+| **`gio_vang_san_deal`** | Đại Hội Giờ Vàng Săn Deal | Đỏ cam rực lửa `['#dc2626', '#ea580c']` | Viền vàng cam `#f59e0b`, Glow `16px`, Spotlight | Giục giã, kích thích cảm xúc sợ bỏ lỡ cơ hội (FOMO) săn sale. |
+| **`tap_hoa_vui_ve`** | Tiệm Tạp Hóa Bình Dân | Vàng chanh tươi `['#fef08a', '#facc15']` | Viền xanh teal `#0f766e`, Accent `#0f766e` | Vui vẻ, gần gũi như tiệm tạp hóa đầu ngõ khu phố. |
+
+*(Ngoài ra hệ thống vẫn duy trì 4 theme phong cách khác: `tv_game_show`, `clean_shopping`, `cyber_arcade`, `street_quiz`)*
+
+---
+
+### 4.3. Cấu trúc Dữ liệu `VisualTheme`
 
 ```typescript
-export const CYBERPUNK_THEME = {
-  background: '#0B0D17',        // Nền đen vũ trụ sâu
-  cardBg: 'rgba(18, 22, 36, 0.92)',
-  cardBorder: '#2A3352',
-  neonCyan: '#00F0FF',          // Màu nhấn thông tin, câu hỏi
-  neonPink: '#FF0055',          // Màu cảnh báo, đồng hồ đếm ngược sắp hết giờ
-  neonYellow: '#FFE600',        // Màu giá tiền, con số nổi bật
-  neonGreen: '#00FF66',         // Màu đáp án đúng khi lật mở (Reveal)
-  textPrimary: '#FFFFFF',
-  textSecondary: '#A0AEC0',
+export interface VisualTheme {
+  id: VisualThemeId;
+  name: string;
+  colors: {
+    backgroundGradient: [string, string]; // Gradient nền video 9:16
+    stageOverlay?: 'grid' | 'spotlight' | 'scanline' | 'none';
+    cardBackground: string;               // Khuyến nghị: '#ffffff'
+    cardBorder: string;                   // Màu viền thẻ sản phẩm
+    cardShadow: string;                   // Chuỗi CSS box-shadow
+    accent: string;                       // Màu nhấn chính (Huy hiệu, Button)
+    textPrimary: string;                  // Màu chữ chính (Tên sản phẩm, giá)
+    textSecondary: string;                // Màu chữ phụ (Mô tả, ghi chú)
+    countdownRing: string;                // Màu vòng tròn/thanh đếm ngược
+    revealBannerSuccess: string;          // Màu banner chúc mừng khi đúng
+    revealBannerWarning: string;          // Màu banner cảnh báo khi sai
+  };
+  typography: {
+    fontFamilyHeadline: string;           // Font tiêu đề câu hỏi (Be Vietnam Pro / Inter)
+    fontFamilyBody: string;               // Font nội dung (Inter)
+    fontFamilyPrice: string;              // Font số tiền (Montserrat / Inter)
+    textTransformHeadline: 'uppercase' | 'none';
+  };
+  geometry: {
+    cardBorderRadius: number;             // Bo góc thẻ (px)
+    cardBorderWidth: number;              // Độ dày viền thẻ (px)
+    glowIntensity: number;                // Cường độ phát sáng neon (0 - 20)
+  };
+  assets: {
+    bgmTrack: string;                     // Đường dẫn nhạc nền mặc định
+    correctSfx: string;                   // Âm thanh khi trả lời đúng
+    wrongSfx: string;                     // Âm thanh khi trả lời sai
+    countdownSfx: string;                 // Âm thanh đếm ngược
+  };
+}
+```
+
+---
+
+### 4.4. Hướng dẫn Thêm một Theme Mới
+
+Giả sử bạn muốn tạo theme **`cho_tet_que` (Chợ Tết Quê Hương)**:
+
+#### Bước 1: Mở rộng Type trong `src/core/theme/types.ts`
+```typescript
+export type VisualThemeId =
+  | 'tv_game_show'
+  | 'clean_shopping'
+  | 'cyber_arcade'
+  | 'street_quiz'
+  | 'hay_chon_gia_dung'
+  | 'sieu_thi_gia_dinh'
+  | 'bep_am_noi_tro'
+  | 'gio_vang_san_deal'
+  | 'tap_hoa_vui_ve'
+  | 'cho_tet_que'; // <-- Thêm ID mới
+```
+
+#### Bước 2: Đăng ký Theme vào `BUILTIN_THEMES` trong `src/core/theme/themes.ts`
+```typescript
+export const BUILTIN_THEMES: Record<string, VisualTheme> = {
+  // ... các theme hiện tại
+  cho_tet_que: {
+    id: 'cho_tet_que',
+    name: 'Chợ Tết Quê Hương',
+    colors: {
+      backgroundGradient: ['#b91c1c', '#7f1d1d'],
+      stageOverlay: 'spotlight',
+      cardBackground: '#ffffff',
+      cardBorder: '#f59e0b',
+      cardShadow: '0 20px 35px rgba(185, 28, 28, 0.4)',
+      accent: '#facc15',
+      textPrimary: '#0f172a',
+      textSecondary: '#475569',
+      countdownRing: '#f59e0b',
+      revealBannerSuccess: '#16a34a',
+      revealBannerWarning: '#dc2626',
+    },
+    typography: {
+      fontFamilyHeadline: 'Be Vietnam Pro',
+      fontFamilyBody: 'Inter',
+      fontFamilyPrice: 'Montserrat',
+      textTransformHeadline: 'uppercase',
+    },
+    geometry: {
+      cardBorderRadius: 28,
+      cardBorderWidth: 4,
+      glowIntensity: 12,
+    },
+    assets: {
+      bgmTrack: 'audio/bgm/gameshow_suspense.mp3',
+      correctSfx: 'audio/sfx/win_chime.wav',
+      wrongSfx: 'audio/sfx/buzzer_wrong.wav',
+      countdownSfx: 'audio/sfx/ticking_tension.wav',
+    },
+  },
 };
 ```
 
-Bạn có thể thêm các theme mới (ví dụ: `ECOMMERCE_CLEAN`, `PASTEL_MODERN`) bằng cách thêm object màu mới và inject vào `PaintContext` khi render khung hình.
+#### Bước 3: Sử dụng Theme
+- **Qua dòng lệnh CLI**:
+  ```bash
+  node bin/game.js render --mode multi --mechanic hi_lo --theme cho_tet_que --rounds 3
+  ```
+- **Qua TypeScript code**:
+  ```typescript
+  import { resolveTheme } from '../core/theme';
+
+  // Tự động resolve hoặc fallback an toàn về hay_chon_gia_dung nếu không tìm thấy
+  const theme = resolveTheme('cho_tet_que');
+  ```
+
+#### Bước 4: Viết Test Kiểm tra
+Thêm test case vào `test/core/theme/all-new-themes.test.ts` để đảm bảo theme mới đã đăng ký đầy đủ màu sắc và vượt qua kiểm thử:
+```bash
+npx vitest run test/core/theme/all-new-themes.test.ts
+```
 
 ---
 

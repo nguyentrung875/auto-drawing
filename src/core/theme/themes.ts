@@ -103,10 +103,224 @@ export const BUILTIN_THEMES: Record<string, VisualTheme> = {
       countdownSfx: 'audio/sfx/retro_beep.wav',
     },
   },
+  street_quiz: {
+    id: 'street_quiz',
+    name: 'Đố Vui Đường Phố',
+    colors: {
+      backgroundGradient: ['#0f172a', '#1e293b'],
+      stageOverlay: 'none',
+      cardBackground: '#1e293b',
+      cardBorder: '#38bdf8',
+      cardShadow: '0 10px 20px rgba(0, 0, 0, 0.4)',
+      accent: '#38bdf8',
+      textPrimary: '#ffffff',
+      textSecondary: '#94a3b8',
+      countdownRing: '#38bdf8',
+      revealBannerSuccess: '#22c55e',
+      revealBannerWarning: '#ef4444',
+    },
+    typography: {
+      fontFamilyHeadline: 'Be Vietnam Pro',
+      fontFamilyBody: 'Inter',
+      fontFamilyPrice: 'Montserrat',
+      textTransformHeadline: 'uppercase',
+    },
+    geometry: {
+      cardBorderRadius: 20,
+      cardBorderWidth: 2.5,
+      glowIntensity: 6,
+    },
+    assets: {
+      bgmTrack: 'audio/bgm/gameshow_suspense.mp3',
+      correctSfx: 'audio/sfx/win_chime.wav',
+      wrongSfx: 'audio/sfx/buzzer_wrong.wav',
+      countdownSfx: 'audio/sfx/ticking_tension.wav',
+    },
+  },
+  hay_chon_gia_dung: {
+    id: 'hay_chon_gia_dung',
+    name: 'Sân Khấu Hãy Chọn Giá Đúng',
+    colors: {
+      backgroundGradient: ['#1e3a8a', '#2563eb'],
+      stageOverlay: 'spotlight',
+      cardBackground: '#ffffff',
+      cardBorder: '#fbbf24',
+      cardShadow: '0 20px 35px rgba(0, 0, 0, 0.35)',
+      accent: '#fbbf24',
+      textPrimary: '#0f172a',
+      textSecondary: '#475569',
+      countdownRing: '#f59e0b',
+      revealBannerSuccess: '#16a34a',
+      revealBannerWarning: '#dc2626',
+    },
+    typography: {
+      fontFamilyHeadline: 'Be Vietnam Pro',
+      fontFamilyBody: 'Inter',
+      fontFamilyPrice: 'Montserrat',
+      textTransformHeadline: 'uppercase',
+    },
+    geometry: {
+      cardBorderRadius: 28,
+      cardBorderWidth: 4,
+      glowIntensity: 12,
+    },
+    assets: {
+      bgmTrack: 'audio/bgm/gameshow_suspense.mp3',
+      correctSfx: 'audio/sfx/win_chime.wav',
+      wrongSfx: 'audio/sfx/buzzer_wrong.wav',
+      countdownSfx: 'audio/sfx/ticking_tension.wav',
+    },
+  },
+  sieu_thi_gia_dinh: {
+    id: 'sieu_thi_gia_dinh',
+    name: 'Bách Hóa & Siêu Thị Gia Đình',
+    colors: {
+      backgroundGradient: ['#15803d', '#22c55e'],
+      stageOverlay: 'none',
+      cardBackground: '#ffffff',
+      cardBorder: '#ef4444',
+      cardShadow: '0 12px 24px rgba(22, 101, 52, 0.25)',
+      accent: '#facc15',
+      textPrimary: '#0f172a',
+      textSecondary: '#334155',
+      countdownRing: '#15803d',
+      revealBannerSuccess: '#15803d',
+      revealBannerWarning: '#b91c1c',
+    },
+    typography: {
+      fontFamilyHeadline: 'Inter',
+      fontFamilyBody: 'Inter',
+      fontFamilyPrice: 'Montserrat',
+      textTransformHeadline: 'none',
+    },
+    geometry: {
+      cardBorderRadius: 24,
+      cardBorderWidth: 3,
+      glowIntensity: 4,
+    },
+    assets: {
+      bgmTrack: 'audio/bgm/shopping_upbeat.mp3',
+      correctSfx: 'audio/sfx/cash_register.wav',
+      wrongSfx: 'audio/sfx/buzzer_soft.wav',
+      countdownSfx: 'audio/sfx/countdown_pop.wav',
+    },
+  },
+  bep_am_noi_tro: {
+    id: 'bep_am_noi_tro',
+    name: 'Gian Bếp Ấm Cúng & Nội Trợ',
+    colors: {
+      backgroundGradient: ['#fff7ed', '#fed7aa'],
+      stageOverlay: 'none',
+      cardBackground: '#ffffff',
+      cardBorder: '#ea580c',
+      cardShadow: '0 12px 20px rgba(194, 65, 12, 0.15)',
+      accent: '#ea580c',
+      textPrimary: '#1c1917',
+      textSecondary: '#57534e',
+      countdownRing: '#ea580c',
+      revealBannerSuccess: '#16a34a',
+      revealBannerWarning: '#ea580c',
+    },
+    typography: {
+      fontFamilyHeadline: 'Inter',
+      fontFamilyBody: 'Inter',
+      fontFamilyPrice: 'Montserrat',
+      textTransformHeadline: 'none',
+    },
+    geometry: {
+      cardBorderRadius: 32,
+      cardBorderWidth: 3,
+      glowIntensity: 0,
+    },
+    assets: {
+      bgmTrack: 'audio/bgm/shopping_upbeat.mp3',
+      correctSfx: 'audio/sfx/win_chime.wav',
+      wrongSfx: 'audio/sfx/buzzer_soft.wav',
+      countdownSfx: 'audio/sfx/ticking_tension.wav',
+    },
+  },
+  gio_vang_san_deal: {
+    id: 'gio_vang_san_deal',
+    name: 'Đại Hội Giờ Vàng Săn Deal',
+    colors: {
+      backgroundGradient: ['#dc2626', '#ea580c'],
+      stageOverlay: 'spotlight',
+      cardBackground: '#ffffff',
+      cardBorder: '#f59e0b',
+      cardShadow: '0 20px 35px rgba(220, 38, 38, 0.4)',
+      accent: '#facc15',
+      textPrimary: '#0f172a',
+      textSecondary: '#475569',
+      countdownRing: '#f59e0b',
+      revealBannerSuccess: '#16a34a',
+      revealBannerWarning: '#dc2626',
+    },
+    typography: {
+      fontFamilyHeadline: 'Be Vietnam Pro',
+      fontFamilyBody: 'Inter',
+      fontFamilyPrice: 'Montserrat',
+      textTransformHeadline: 'uppercase',
+    },
+    geometry: {
+      cardBorderRadius: 28,
+      cardBorderWidth: 4,
+      glowIntensity: 16,
+    },
+    assets: {
+      bgmTrack: 'audio/bgm/gameshow_suspense.mp3',
+      correctSfx: 'audio/sfx/cash_register.wav',
+      wrongSfx: 'audio/sfx/buzzer_wrong.wav',
+      countdownSfx: 'audio/sfx/ticking_tension.wav',
+    },
+  },
+  tap_hoa_vui_ve: {
+    id: 'tap_hoa_vui_ve',
+    name: 'Tiệm Tạp Hóa Bình Dân',
+    colors: {
+      backgroundGradient: ['#fef08a', '#facc15'],
+      stageOverlay: 'none',
+      cardBackground: '#ffffff',
+      cardBorder: '#0f766e',
+      cardShadow: '0 14px 25px rgba(15, 118, 110, 0.2)',
+      accent: '#0f766e',
+      textPrimary: '#0f172a',
+      textSecondary: '#334155',
+      countdownRing: '#0f766e',
+      revealBannerSuccess: '#0f766e',
+      revealBannerWarning: '#b91c1c',
+    },
+    typography: {
+      fontFamilyHeadline: 'Be Vietnam Pro',
+      fontFamilyBody: 'Inter',
+      fontFamilyPrice: 'Montserrat',
+      textTransformHeadline: 'none',
+    },
+    geometry: {
+      cardBorderRadius: 24,
+      cardBorderWidth: 3,
+      glowIntensity: 6,
+    },
+    assets: {
+      bgmTrack: 'audio/bgm/shopping_upbeat.mp3',
+      correctSfx: 'audio/sfx/cash_register.wav',
+      wrongSfx: 'audio/sfx/buzzer_soft.wav',
+      countdownSfx: 'audio/sfx/countdown_pop.wav',
+    },
+  },
 };
 
 export function getTheme(id: VisualThemeId): VisualTheme {
   const theme = BUILTIN_THEMES[id];
   if (!theme) throw new Error(`Unknown theme id: "${id}"`);
   return theme;
+}
+
+export function resolveTheme(themeInput?: string | VisualTheme): VisualTheme {
+  if (themeInput && typeof themeInput === 'object' && 'colors' in themeInput) {
+    return themeInput;
+  }
+  if (typeof themeInput === 'string' && BUILTIN_THEMES[themeInput]) {
+    return BUILTIN_THEMES[themeInput];
+  }
+  return BUILTIN_THEMES['hay_chon_gia_dung'] ?? BUILTIN_THEMES['tv_game_show'];
 }

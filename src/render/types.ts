@@ -208,6 +208,8 @@ export interface RenderInput {
   /** Project root used to resolve relative asset paths (default cwd). */
   rootDir?: string;
   config?: Partial<RenderConfig>;
+  /** UI visual theme: hay_chon_gia_dung | sieu_thi_gia_dinh | bep_am_noi_tro | gio_vang_san_deal | tap_hoa_vui_ve */
+  theme?: string | import('../core/theme/types').VisualTheme;
   /** Voice synthesis wall-clock time, measured by the caller for the job log. */
   ttsMs?: number;
 }

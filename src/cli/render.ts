@@ -111,7 +111,7 @@ export function parseRenderArgs(argv: string[], rootDir = process.cwd()): Render
     mode,
     rounds: rounds !== undefined ? Number(rounds) : undefined,
     timer: timer !== undefined ? Number(timer) : undefined,
-    theme: flags.get('theme') ?? flags.get('template'),
+    theme: flags.get('theme') ?? flags.get('template') ?? 'hay_chon_gia_dung',
     gameFile: flags.get('game'),
     queueDir: flags.get('queue-dir') ?? 'queue',
     rendererType: flags.get('renderer') === 'software'
@@ -237,6 +237,7 @@ export async function runRenderCommand(args: RenderArgs): Promise<RenderCommandR
           music: { track: 'tension_01', volume: 0.18 },
         },
         seed,
+        theme: args.theme,
         exportDir: args.exportDir,
         rootDir,
       } as any);
@@ -326,6 +327,7 @@ export async function runRenderCommand(args: RenderArgs): Promise<RenderCommandR
       result_variant: loaded.game.metadata.result_variant ?? 'in_video',
       status: 'pending',
       retries: 0,
+      theme: args.theme ?? (loaded.game.metadata as { theme?: string })?.theme,
     };
   } else {
     const mechanic = args.mechanic as QueueJob['mechanic'];
@@ -358,6 +360,7 @@ export async function runRenderCommand(args: RenderArgs): Promise<RenderCommandR
       status: 'pending',
       retries: 0,
       hiddenIndex: args.hiddenIndex,
+      theme: args.theme,
       batchId,
     };
   }
@@ -372,6 +375,7 @@ export async function runRenderCommand(args: RenderArgs): Promise<RenderCommandR
     seed: job.seed,
     result_variant: job.result_variant,
     hiddenIndex: job.hiddenIndex,
+    theme: job.theme,
     batchId: job.batchId,
   });
 

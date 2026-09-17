@@ -12,7 +12,7 @@ import path from 'node:path';
 import { Canvas, parseColor } from './canvas';
 import { drawImageCover, isRenderableImage, loadPng } from './image';
 import type { RenderAssetCache } from './assetCache';
-import { getTheme } from '../core/theme/themes';
+import { getTheme, resolveTheme } from '../core/theme/themes';
 import type { VisualTheme, VisualThemeId } from '../core/theme/types';
 import type { MultiRoundChallenge, ChallengeRound } from '../challenge/types';
 import type { Product } from '../product/schema';
@@ -69,6 +69,26 @@ function shade(color: string, factor: number): string {
   const { r, g, b } = parseColor(color);
   const clamp = (value: number): number => Math.max(0, Math.min(255, Math.round(value * factor)));
   return `#${[clamp(r), clamp(g), clamp(b)].map((c) => c.toString(16).padStart(2, '0')).join('')}`;
+}
+
+export function isColorLight(hex: string): boolean {
+  if (!hex) return false;
+  const clean = hex.replace('#', '');
+  let r = 0;
+  let g = 0;
+  let b = 0;
+  if (clean.length === 3) {
+    r = parseInt(clean[0] + clean[0], 16);
+    g = parseInt(clean[1] + clean[1], 16);
+    b = parseInt(clean[2] + clean[2], 16);
+  } else if (clean.length === 6) {
+    r = parseInt(clean.slice(0, 2), 16);
+    g = parseInt(clean.slice(2, 4), 16);
+    b = parseInt(clean.slice(4, 6), 16);
+  } else {
+    return false;
+  }
+  return (r * 299 + g * 587 + b * 114) / 1000 > 160;
 }
 
 function element(frame: RenderFrame, kind: string): RenderFrameElement | undefined {
@@ -1169,6 +1189,95 @@ export function paintOverlay(
 }
 
 /**
+ * Draws stage lighting trusses, spotlight beams, and floodlights for TV Gameshow atmosphere.
+ */
+export function drawStageLighting(canvas: Canvas, visualTheme: VisualTheme): void {
+  if (
+    visualTheme.colors.stageOverlay !== 'spotlight' &&
+    visualTheme.id !== 'hay_chon_gia_dung' &&
+    visualTheme.id !== 'gio_vang_san_deal'
+  ) {
+    return;
+  }
+
+  // 1. Stage overhead truss bar
+  canvas.fill(0, 0, STAGE_WIDTH, 18, '#0a0f1d', 0.95);
+  canvas.fill(0, 16, STAGE_WIDTH, 4, '#f59e0b', 0.85);
+
+  // 2. Spotlight Beams (Polygons)
+  // Left Spotlight (Gold translucent beam spreading down)
+  canvas.fillPolygon(
+    [
+      { x: 100, y: 18 },
+      { x: 180, y: 18 },
+      { x: 580, y: 1920 },
+      { x: 0, y: 1920 },
+    ],
+    '#fde047',
+    0.04,
+  );
+  // Left Spotlight Core (brighter inner beam)
+  canvas.fillPolygon(
+    [
+      { x: 125, y: 18 },
+      { x: 155, y: 18 },
+      { x: 420, y: 1920 },
+      { x: 50, y: 1920 },
+    ],
+    '#ffffff',
+    0.035,
+  );
+
+  // Right Spotlight (Gold translucent beam spreading down)
+  canvas.fillPolygon(
+    [
+      { x: 900, y: 18 },
+      { x: 980, y: 18 },
+      { x: 1080, y: 1920 },
+      { x: 500, y: 1920 },
+    ],
+    '#fde047',
+    0.04,
+  );
+  // Right Spotlight Core (brighter inner beam)
+  canvas.fillPolygon(
+    [
+      { x: 925, y: 18 },
+      { x: 955, y: 18 },
+      { x: 1030, y: 1920 },
+      { x: 660, y: 1920 },
+    ],
+    '#ffffff',
+    0.035,
+  );
+
+  // 3. Studio Ceiling Floodlights (Clusters of glowing lights on truss)
+  const leftBulbs = [
+    { x: 60, y: 40 },
+    { x: 105, y: 40 },
+    { x: 150, y: 40 },
+    { x: 82, y: 70 },
+    { x: 128, y: 70 },
+  ];
+  for (const b of leftBulbs) {
+    canvas.fillRoundRect(b.x - 14, b.y - 14, 28, 28, 14, '#fde047', 0.22);
+    canvas.fillRoundRect(b.x - 7, b.y - 7, 14, 14, 7, '#fef08a', 0.95);
+  }
+
+  const rightBulbs = [
+    { x: 930, y: 40 },
+    { x: 975, y: 40 },
+    { x: 1020, y: 40 },
+    { x: 952, y: 70 },
+    { x: 998, y: 70 },
+  ];
+  for (const b of rightBulbs) {
+    canvas.fillRoundRect(b.x - 14, b.y - 14, 28, 28, 14, '#fde047', 0.22);
+    canvas.fillRoundRect(b.x - 7, b.y - 7, 14, 14, 7, '#fef08a', 0.95);
+  }
+}
+
+/**
  * All-in-One Canvas HUD Elements (Sprint 1)
  */
 export function drawSeriesHUD(
@@ -1177,25 +1286,58 @@ export function drawSeriesHUD(
   currentRound: number,
   totalRounds = 3,
   customBadge?: { label: string; color?: string },
+  theme?: string | VisualTheme,
 ): void {
-  // 1. Series Badge or Attention Badge
-  const badgeLabel = customBadge?.label ?? `🔥 5 GIÂY ĐOÁN GIÁ · TẬP #${seriesNumber}`;
-  const badgeColor = customBadge?.color ?? ACCENT;
-  drawBadge(canvas, badgeLabel, badgeColor, 170);
+  const visualTheme = resolveTheme(theme);
+  // 1. Series Plaque
+  const badgeLabel = customBadge?.label ?? `★ 5 GIÂY ĐOÁN GIÁ · TẬP #${seriesNumber} ★`;
+  const badgeColor = customBadge?.color ?? visualTheme.colors.accent ?? ACCENT;
+
+  const plaqueW = 760;
+  const plaqueH = 74;
+  const plaqueX = Math.round((STAGE_WIDTH - plaqueW) / 2);
+  const plaqueY = 100;
+
+  // 3D Plaque Drop Shadow
+  canvas.fillRoundRect(plaqueX + 2, plaqueY + 4, plaqueW, plaqueH, 37, '#000000', 0.38);
+
+  // Plaque Body (Deep Navy with Gold tint)
+  canvas.fillRoundRect(plaqueX, plaqueY, plaqueW, plaqueH, 37, '#0f172a', 0.98);
+
+  // Outer 4px Metallic Gold Border
+  canvas.strokeRoundRect(plaqueX, plaqueY, plaqueW, plaqueH, 37, '#f59e0b', 4);
+
+  // Inner 1.5px Gold Highlight Ring
+  canvas.strokeRoundRect(plaqueX + 4, plaqueY + 4, plaqueW - 8, plaqueH - 8, 33, '#fde047', 1.5, 0.7);
+
+  // Plaque Text
+  const measured = canvas.text.layout(badgeLabel, { size: 30, weight: 800 });
+  canvas.drawText(badgeLabel, {
+    x: Math.round((STAGE_WIDTH - measured.textWidth) / 2),
+    y: plaqueY + Math.round((plaqueH - 30 * 1.25) / 2),
+    size: 30,
+    weight: 800,
+    color: badgeColor,
+    maxWidth: plaqueW - 40,
+  });
 
   // 2. Round Progress Dots
-  const dotY = 270;
+  const dotY = 196;
   const dotSpacing = 80;
   const startX = Math.round((STAGE_WIDTH - (totalRounds - 1) * dotSpacing) / 2);
   for (let i = 0; i < totalRounds; i += 1) {
     const x = startX + i * dotSpacing;
     const isCompleted = i + 1 < currentRound;
     const isCurrent = i + 1 === currentRound;
-    const color = isCurrent ? ACCENT : isCompleted ? '#22c55e' : 'rgba(248,250,252,0.3)';
+    const color = isCurrent ? (visualTheme.colors.accent ?? ACCENT) : isCompleted ? '#22c55e' : 'rgba(248,250,252,0.3)';
     const r = isCurrent ? 12 : 9;
+
+    if (isCurrent) {
+      canvas.fillRoundRect(x - r - 4, dotY - r - 4, (r + 4) * 2, (r + 4) * 2, r + 4, color, 0.3);
+    }
     canvas.fillRoundRect(x - r, dotY - r, r * 2, r * 2, r, color, 1);
     if (i < totalRounds - 1) {
-      canvas.fillRoundRect(x + 12, dotY - 2, dotSpacing - 24, 4, 2, 'rgba(248,250,252,0.2)', 1);
+      canvas.fillRoundRect(x + 14, dotY - 2, dotSpacing - 28, 4, 2, 'rgba(248,250,252,0.25)', 1);
     }
   }
 }
@@ -1206,11 +1348,13 @@ export function drawChoiceDeck(
   isRevealed: boolean,
   revealedCorrectId?: string,
   startY = 1200,
+  theme?: string | VisualTheme,
 ): { bottomY: number } {
+  const visualTheme = resolveTheme(theme);
   const isGrid = choices.length > 2;
-  const btnWidth = 440;
-  const gap = 24;
-  const btnHeight = isGrid ? 85 : 110;
+  const btnWidth = 460;
+  const gap = 36;
+  const btnHeight = isGrid ? 90 : 115;
 
   if (!isGrid) {
     const totalW = btnWidth * choices.length + gap * (choices.length - 1);
@@ -1219,18 +1363,63 @@ export function drawChoiceDeck(
     choices.forEach((choice, idx) => {
       const x = startX + idx * (btnWidth + gap);
       const isWinner = isRevealed && (choice.id === revealedCorrectId || choice.isCorrect);
-      const borderColor = isWinner ? '#22c55e' : isRevealed ? 'rgba(248,250,252,0.15)' : ACCENT;
-      const bgColor = isWinner ? 'rgba(34,197,94,0.32)' : isRevealed ? 'rgba(15,23,42,0.5)' : '#0f172a';
 
-      canvas.fillRoundRect(x, startY, btnWidth, btnHeight, 28, bgColor, 1);
-      canvas.strokeRoundRect(x, startY, btnWidth, btnHeight, 28, borderColor, isWinner ? 5 : 3, 0.95);
+      let bgColor: string;
+      let bevelColor: string;
+      let borderColor: string;
+      const isHigher = choice.id === 'higher' || choice.label.toLowerCase().includes('cao');
+      const isLower = choice.id === 'lower' || choice.label.toLowerCase().includes('thấp');
+      const icon = isHigher ? '▲ ' : isLower ? '▼ ' : '';
 
-      const labelText = `[ ${choice.id} ]  ${choice.label}`;
+      if (isRevealed) {
+        if (isWinner) {
+          bgColor = '#16a34a';
+          bevelColor = '#15803d';
+          borderColor = '#4ade80';
+        } else {
+          bgColor = 'rgba(15,23,42,0.6)';
+          bevelColor = 'rgba(15,23,42,0.9)';
+          borderColor = 'rgba(248,250,252,0.2)';
+        }
+      } else {
+        if (idx === 0 || isHigher) {
+          bgColor = '#16a34a';
+          bevelColor = '#15803d';
+          borderColor = '#fde047';
+        } else {
+          bgColor = '#ea580c';
+          bevelColor = '#c2410c';
+          borderColor = '#fde047';
+        }
+      }
+
+      // 1. 3D Drop Shadow
+      canvas.fillRoundRect(x + 3, startY + 6, btnWidth, btnHeight, 26, '#000000', 0.35);
+
+      // 2. Button Body Fill
+      canvas.fillRoundRect(x, startY, btnWidth, btnHeight, 26, bgColor, 1);
+
+      // 3. 3D Bottom Bevel
+      const bevelHeight = 14;
+      canvas.fillRoundRect(x + 4, startY + btnHeight - bevelHeight - 3, btnWidth - 8, bevelHeight, 10, bevelColor, 1);
+
+      // 4. Inner Top Gloss Highlight
+      canvas.fillRoundRect(x + 16, startY + 5, btnWidth - 32, 4, 2, '#ffffff', 0.28);
+
+      // 5. Metallic Border
+      canvas.strokeRoundRect(x, startY, btnWidth, btnHeight, 26, borderColor, isWinner ? 5 : 4);
+
+      // 6. Label Layout
+      let displayLabel = choice.label;
+      if (isHigher && !displayLabel.includes('CAO')) displayLabel = 'CAO HƠN';
+      if (isLower && !displayLabel.includes('THẤP')) displayLabel = 'THẤP HƠN';
+
+      const labelText = icon ? `${icon}${displayLabel}` : (choice.id.length <= 2 ? `[ ${choice.id} ]  ${displayLabel}` : displayLabel);
       const measured = canvas.text.layout(labelText, { size: 36, weight: 800 });
       canvas.drawText(labelText, {
         x: Math.round(x + (btnWidth - measured.textWidth) / 2),
-        y: startY + Math.round((btnHeight - 36 * 1.2) / 2),
-        color: isWinner ? '#4ade80' : isRevealed ? 'rgba(248,250,252,0.45)' : INK,
+        y: startY + Math.round((btnHeight - 10 - 36 * 1.2) / 2),
+        color: isRevealed && !isWinner ? 'rgba(248,250,252,0.45)' : '#ffffff',
         size: 36,
         weight: 800,
       });
@@ -1250,18 +1439,43 @@ export function drawChoiceDeck(
       const y = startY + row * (btnHeight + gap);
 
       const isWinner = isRevealed && (choice.id === revealedCorrectId || choice.isCorrect);
-      const borderColor = isWinner ? '#22c55e' : isRevealed ? 'rgba(248,250,252,0.15)' : ACCENT;
-      const bgColor = isWinner ? 'rgba(34,197,94,0.32)' : isRevealed ? 'rgba(15,23,42,0.5)' : '#0f172a';
 
-      canvas.fillRoundRect(x, y, btnWidth, btnHeight, 20, bgColor, 1);
-      canvas.strokeRoundRect(x, y, btnWidth, btnHeight, 20, borderColor, isWinner ? 4 : 2, 0.95);
+      let bgColor = '#1e293b';
+      let bevelColor = '#0f172a';
+      let borderColor = visualTheme.colors.accent ?? ACCENT;
+
+      if (isRevealed) {
+        if (isWinner) {
+          bgColor = '#16a34a';
+          bevelColor = '#15803d';
+          borderColor = '#4ade80';
+        } else {
+          bgColor = 'rgba(15,23,42,0.5)';
+          bevelColor = 'rgba(15,23,42,0.8)';
+          borderColor = 'rgba(248,250,252,0.15)';
+        }
+      } else {
+        borderColor = '#f59e0b';
+      }
+
+      // 1. Drop shadow
+      canvas.fillRoundRect(x + 3, y + 5, btnWidth, btnHeight, 22, '#000000', 0.35);
+      // 2. Button Body
+      canvas.fillRoundRect(x, y, btnWidth, btnHeight, 22, bgColor, 1);
+      // 3. 3D Bottom Bevel
+      const bevelHeight = 12;
+      canvas.fillRoundRect(x + 4, y + btnHeight - bevelHeight - 2, btnWidth - 8, bevelHeight, 8, bevelColor, 1);
+      // 4. Gloss
+      canvas.fillRoundRect(x + 14, y + 4, btnWidth - 28, 3, 2, '#ffffff', 0.22);
+      // 5. Border
+      canvas.strokeRoundRect(x, y, btnWidth, btnHeight, 22, borderColor, isWinner ? 5 : 3.5);
 
       const labelText = `[ ${choice.id} ]  ${choice.label}`;
       const measured = canvas.text.layout(labelText, { size: 30, weight: 800 });
       canvas.drawText(labelText, {
         x: Math.round(x + (btnWidth - measured.textWidth) / 2),
-        y: y + Math.round((btnHeight - 30 * 1.2) / 2),
-        color: isWinner ? '#4ade80' : isRevealed ? 'rgba(248,250,252,0.45)' : INK,
+        y: y + Math.round((btnHeight - 8 - 30 * 1.2) / 2),
+        color: isRevealed && !isWinner ? 'rgba(248,250,252,0.45)' : '#ffffff',
         size: 30,
         weight: 800,
       });
@@ -1278,36 +1492,46 @@ export function drawPillCountdown(
   maxSeconds = 5,
   barY = 1350,
 ): void {
-  const barW = 900;
-  const barH = 26;
+  const barW = 920;
+  const barH = 28;
   const x = Math.round((STAGE_WIDTH - barW) / 2);
 
   // Background
-  canvas.fillRoundRect(x, barY, barW, barH, 13, 'rgba(248,250,252,0.18)', 1);
+  canvas.fillRoundRect(x, barY, barW, barH, 14, 'rgba(248,250,252,0.22)', 1);
 
   // Progress ratio
   const ratio = Math.max(0, Math.min(1, secondsRemaining / maxSeconds));
   const currentW = Math.max(barH, Math.round(barW * ratio));
 
-  // Dynamic color shift: Green (>50%) -> Yellow (20-50%) -> Red (<20%)
+  // Dynamic color shift: Green (>50%) -> Yellow (25-50%) -> Red (<25%)
   let color = '#22c55e';
   if (ratio < 0.25) {
     color = '#ef4444';
   } else if (ratio < 0.55) {
-    color = '#eab308';
+    color = '#f59e0b';
   }
 
-  canvas.fillRoundRect(x, barY, currentW, barH, 13, color, 1);
+  canvas.fillRoundRect(x, barY, currentW, barH, 14, color, 1);
+  canvas.strokeRoundRect(x, barY, barW, barH, 14, '#fde047', 2, 0.85);
 
-  // Timer label
+  // Timer label: gameshow oval badge
   const timerLabel = `⏱️ Còn ${secondsRemaining.toFixed(1)}s...`;
-  const m = canvas.text.layout(timerLabel, { size: 28, weight: 700 });
+  const m = canvas.text.layout(timerLabel, { size: 28, weight: 800 });
+  const badgeW = m.textWidth + 48;
+  const badgeH = 48;
+  const badgeX = Math.round((STAGE_WIDTH - badgeW) / 2);
+  const badgeY = barY + 38;
+
+  canvas.fillRoundRect(badgeX + 2, badgeY + 3, badgeW, badgeH, 24, '#000000', 0.35);
+  canvas.fillRoundRect(badgeX, badgeY, badgeW, badgeH, 24, '#0f172a', 0.95);
+  canvas.strokeRoundRect(badgeX, badgeY, badgeW, badgeH, 24, '#f59e0b', 2.5);
+
   canvas.drawText(timerLabel, {
     x: Math.round((STAGE_WIDTH - m.textWidth) / 2),
-    y: barY + 38,
-    color: MUTED,
+    y: badgeY + Math.round((badgeH - 28 * 1.25) / 2),
+    color: '#fde047',
     size: 28,
-    weight: 700,
+    weight: 800,
   });
 }
 
@@ -1318,32 +1542,43 @@ export function drawMultiRoundProducts(
   rootDir: string,
   gameId?: string,
   assetCache?: RenderAssetCache,
+  theme?: string | VisualTheme,
 ): void {
+  const visualTheme = resolveTheme(theme);
+  const isLightCard = isColorLight(visualTheme.colors.cardBackground);
+  const cardBg = visualTheme.colors.cardBackground ?? '#ffffff';
+  const cardBorder = visualTheme.colors.cardBorder ?? '#f59e0b';
+  const cardRadius = visualTheme.geometry.cardBorderRadius ?? 28;
+  const textColor = isLightCard ? '#0f172a' : INK;
+  const subtextColor = isLightCard ? '#475569' : MUTED;
   const products = round.products;
   const count = products.length;
 
   if (count === 1) {
-    // Single Product Card (720x720 at y=440)
-    const cardX = Math.round((STAGE_WIDTH - 720) / 2);
-    const cardY = 440;
-    const cardW = 720;
+    // Single Product Card (740x720 at y=430)
+    const cardX = Math.round((STAGE_WIDTH - 740) / 2);
+    const cardY = 430;
+    const cardW = 740;
     const cardH = 720;
 
-    canvas.fillRoundRect(cardX, cardY, cardW, cardH, 36, '#0f172a', 1);
+    // 3D Drop Shadow
+    canvas.fillRoundRect(cardX + 4, cardY + 8, cardW, cardH, cardRadius, '#000000', 0.35);
+    // Card Body
+    canvas.fillRoundRect(cardX, cardY, cardW, cardH, cardRadius, cardBg, 1);
     canvas.strokeRoundRect(
       cardX,
       cardY,
       cardW,
       cardH,
-      36,
-      phase === 'reveal' ? 'rgba(34,197,94,0.4)' : CARD_BORDER,
-      4,
+      cardRadius,
+      phase === 'reveal' ? '#22c55e' : cardBorder,
+      5,
     );
 
     const firstProduct = products[0]!;
     const pad = 24;
     const imageW = cardW - pad * 2;
-    const imageH = 480;
+    const imageH = 460;
     const imageX = cardX + pad;
     const imageY = cardY + pad;
 
@@ -1356,17 +1591,19 @@ export function drawMultiRoundProducts(
           : (isRenderableImage(firstProduct.image, rootDir) ? loadPng(imagePath) : null))
       : null;
 
+    canvas.fillRoundRect(imageX, imageY, imageW, imageH, 20, isLightCard ? '#f1f5f9' : '#1e293b', 1);
+    canvas.strokeRoundRect(imageX, imageY, imageW, imageH, 20, isLightCard ? '#e2e8f0' : 'rgba(255,255,255,0.08)', 2);
+
     if (loaded) {
-      drawImageCover(canvas, loaded, { x: imageX, y: imageY, width: imageW, height: imageH }, 24);
+      drawImageCover(canvas, loaded, { x: imageX, y: imageY, width: imageW, height: imageH }, 20);
     } else {
-      canvas.fillRoundRect(imageX, imageY, imageW, imageH, 24, '#1e293b', 1);
       const placeholderText = (firstProduct.productId || 'SAN PHAM').toUpperCase();
       canvas.drawText(placeholderText, {
         x: imageX + Math.round(imageW / 2),
         y: imageY + Math.round(imageH / 2) - 20,
         size: 40,
         weight: 700,
-        color: 'rgba(248,250,252,0.6)',
+        color: subtextColor,
         align: 'center',
         maxWidth: imageW - 40,
       });
@@ -1381,7 +1618,7 @@ export function drawMultiRoundProducts(
         y: imageY + 16 + Math.round((badgeH - 22 * 1.2) / 2),
         size: 22,
         weight: 800,
-        color: ACCENT,
+        color: '#fbbf24',
         align: 'center',
         maxWidth: badgeW - 20,
       });
@@ -1391,15 +1628,15 @@ export function drawMultiRoundProducts(
     if (firstProduct.name) {
       const nameMetrics = canvas.drawText(firstProduct.name, {
         x: Math.round(STAGE_WIDTH / 2),
-        y: cardY + 530,
-        size: 34,
-        weight: 700,
-        color: INK,
+        y: cardY + 500,
+        size: 32,
+        weight: 800,
+        color: textColor,
         align: 'center',
         maxWidth: cardW - 60,
         lineHeight: 1.2,
       });
-      nameHeight = nameMetrics.height;
+      nameHeight = nameMetrics ? nameMetrics.height : 38;
     }
 
     let statusLabel: string | undefined;
@@ -1416,43 +1653,63 @@ export function drawMultiRoundProducts(
     }
 
     if (statusLabel) {
-      const statusLabelY = Math.min(cardY + cardH - 45, Math.max(cardY + 630, cardY + 530 + nameHeight + 10));
+      const pillW = 400;
+      const pillH = 58;
+      const pillX = Math.round((STAGE_WIDTH - pillW) / 2);
+      const minPillY = cardY + 610;
+      const dynamicPillY = cardY + 500 + nameHeight + 16;
+      const pillY = Math.min(cardY + cardH - pillH - 16, Math.max(minPillY, dynamicPillY));
+      const isWin = phase === 'reveal';
+
+      canvas.fillRoundRect(pillX, pillY, pillW, pillH, 16, isWin ? (isLightCard ? '#dcfce7' : 'rgba(34,197,94,0.22)') : (isLightCard ? '#fef3c7' : 'rgba(251,191,36,0.18)'), 1);
+      canvas.strokeRoundRect(pillX, pillY, pillW, pillH, 16, isWin ? '#22c55e' : '#f59e0b', 2.5);
+
       canvas.drawText(statusLabel, {
         x: Math.round(STAGE_WIDTH / 2),
-        y: statusLabelY,
-        size: 32,
+        y: pillY + Math.round((pillH - 28 * 1.25) / 2),
+        size: 28,
         weight: 800,
-        color: phase === 'reveal' ? '#22c55e' : ACCENT,
+        color: isWin ? (isLightCard ? '#15803d' : '#4ade80') : (isLightCard ? '#b45309' : '#fbbf24'),
         align: 'center',
-        maxWidth: cardW - 60,
+        maxWidth: pillW - 20,
       });
     }
   } else if (count === 2) {
     // 2 Products Side-by-Side (HI_LO)
     const [pA, pB] = products as [Product, Product];
-    const cardW = 450;
+    const cardW = 460;
     const cardH = 720;
-    const gap = 60;
+    const gap = 40;
     const startX = Math.round((STAGE_WIDTH - (cardW * 2 + gap)) / 2);
-    const cardY = 440;
+    const cardY = 430;
 
-    // Card A (Reference product)
+    // --- CARD A (Reference product) ---
     const xA = startX;
-    canvas.fillRoundRect(xA, cardY, cardW, cardH, 28, '#0f172a', 1);
-    canvas.strokeRoundRect(xA, cardY, cardW, cardH, 28, CARD_BORDER, 3);
+    canvas.fillRoundRect(xA + 4, cardY + 8, cardW, cardH, cardRadius, '#000000', 0.35);
+    canvas.fillRoundRect(xA, cardY, cardW, cardH, cardRadius, cardBg, 1);
+    canvas.strokeRoundRect(xA, cardY, cardW, cardH, cardRadius, cardBorder, 5);
+
     // Badge MÓN A
-    canvas.fillRoundRect(xA + 16, cardY + 16, 170, 40, 10, ACCENT, 0.9);
+    const badgeW = 200;
+    const badgeH = 42;
+    canvas.fillRoundRect(xA + 16, cardY + 16, badgeW, badgeH, 12, '#f59e0b', 1);
     canvas.drawText('MÓN A (GỐC)', {
-      x: xA + 16 + 85,
-      y: cardY + 16 + 10,
+      x: xA + 16 + Math.round(badgeW / 2),
+      y: cardY + 16 + Math.round((badgeH - 20 * 1.2) / 2),
       size: 20,
       weight: 800,
-      color: '#000000',
+      color: '#ffffff',
       align: 'center',
     });
-    // Image A
+
+    // Image A Container
     const imgWA = cardW - 32;
     const imgHA = 420;
+    const imgXA = xA + 16;
+    const imgYA = cardY + 68;
+    canvas.fillRoundRect(imgXA, imgYA, imgWA, imgHA, 18, isLightCard ? '#f1f5f9' : '#1e293b', 1);
+    canvas.strokeRoundRect(imgXA, imgYA, imgWA, imgHA, 18, isLightCard ? '#e2e8f0' : 'rgba(255,255,255,0.08)', 2);
+
     const imgPathA = pA.image ? path.resolve(rootDir, pA.image) : undefined;
     const loadedA = imgPathA
       ? (assetCache
@@ -1460,55 +1717,68 @@ export function drawMultiRoundProducts(
           : (isRenderableImage(pA.image, rootDir) ? loadPng(imgPathA) : null))
       : null;
     if (loadedA) {
-      drawImageCover(canvas, loadedA, { x: xA + 16, y: cardY + 68, width: imgWA, height: imgHA }, 18);
+      drawImageCover(canvas, loadedA, { x: imgXA, y: imgYA, width: imgWA, height: imgHA }, 18);
     } else {
-      canvas.fillRoundRect(xA + 16, cardY + 68, imgWA, imgHA, 18, '#1e293b', 1);
       canvas.drawText(pA.productId.toUpperCase(), {
         x: xA + Math.round(cardW / 2),
         y: cardY + 250,
         size: 32,
         weight: 700,
-        color: MUTED,
+        color: subtextColor,
         align: 'center',
       });
     }
+
     // Name A
     canvas.drawText(pA.name, {
       x: xA + Math.round(cardW / 2),
       y: cardY + 510,
       size: 26,
-      weight: 700,
-      color: INK,
+      weight: 800,
+      color: textColor,
       align: 'center',
       maxWidth: cardW - 30,
       lineHeight: 1.2,
     });
-    // Price A (Always shown)
+
+    // Price A Pill Badge
+    const pillWA = 280;
+    const pillHA = 62;
+    const pillXA = xA + Math.round((cardW - pillWA) / 2);
+    const pillYA = cardY + 625;
+    canvas.fillRoundRect(pillXA, pillYA, pillWA, pillHA, 16, isLightCard ? '#fef3c7' : 'rgba(251,191,36,0.18)', 1);
+    canvas.strokeRoundRect(pillXA, pillYA, pillWA, pillHA, 16, '#f59e0b', 2.5);
     canvas.drawText(`${pA.price.toLocaleString('vi-VN')}₫`, {
       x: xA + Math.round(cardW / 2),
-      y: cardY + 630,
-      size: 34,
+      y: pillYA + Math.round((pillHA - 32 * 1.25) / 2),
+      size: 32,
       weight: 800,
-      color: ACCENT,
+      color: isLightCard ? '#b45309' : '#fbbf24',
       align: 'center',
     });
 
-    // Card B (Guess product)
+    // --- CARD B (Guess product) ---
     const xB = startX + cardW + gap;
     const isWin = phase === 'reveal';
-    canvas.fillRoundRect(xB, cardY, cardW, cardH, 28, '#0f172a', 1);
-    canvas.strokeRoundRect(xB, cardY, cardW, cardH, 28, isWin ? '#22c55e' : CARD_BORDER, isWin ? 4 : 3);
+    canvas.fillRoundRect(xB + 4, cardY + 8, cardW, cardH, cardRadius, '#000000', 0.35);
+    canvas.fillRoundRect(xB, cardY, cardW, cardH, cardRadius, cardBg, 1);
+    canvas.strokeRoundRect(xB, cardY, cardW, cardH, cardRadius, isWin ? '#22c55e' : cardBorder, isWin ? 6 : 5);
+
     // Badge MÓN B
-    canvas.fillRoundRect(xB + 16, cardY + 16, 180, 40, 10, isWin ? '#22c55e' : '#38bdf8', 0.9);
+    canvas.fillRoundRect(xB + 16, cardY + 16, badgeW, badgeH, 12, isWin ? '#22c55e' : '#2563eb', 1);
     canvas.drawText('MÓN B (ĐOÁN)', {
-      x: xB + 16 + 90,
-      y: cardY + 16 + 10,
+      x: xB + 16 + Math.round(badgeW / 2),
+      y: cardY + 16 + Math.round((badgeH - 20 * 1.2) / 2),
       size: 20,
       weight: 800,
-      color: '#000000',
+      color: '#ffffff',
       align: 'center',
     });
-    // Image B
+
+    // Image B Container
+    canvas.fillRoundRect(xB + 16, imgYA, imgWA, imgHA, 18, isLightCard ? '#f1f5f9' : '#1e293b', 1);
+    canvas.strokeRoundRect(xB + 16, imgYA, imgWA, imgHA, 18, isLightCard ? '#e2e8f0' : 'rgba(255,255,255,0.08)', 2);
+
     const imgPathB = pB.image ? path.resolve(rootDir, pB.image) : undefined;
     const loadedB = imgPathB
       ? (assetCache
@@ -1516,66 +1786,89 @@ export function drawMultiRoundProducts(
           : (isRenderableImage(pB.image, rootDir) ? loadPng(imgPathB) : null))
       : null;
     if (loadedB) {
-      drawImageCover(canvas, loadedB, { x: xB + 16, y: cardY + 68, width: imgWA, height: imgHA }, 18);
+      drawImageCover(canvas, loadedB, { x: xB + 16, y: imgYA, width: imgWA, height: imgHA }, 18);
     } else {
-      canvas.fillRoundRect(xB + 16, cardY + 68, imgWA, imgHA, 18, '#1e293b', 1);
       canvas.drawText(pB.productId.toUpperCase(), {
         x: xB + Math.round(cardW / 2),
         y: cardY + 250,
         size: 32,
         weight: 700,
-        color: MUTED,
+        color: subtextColor,
         align: 'center',
       });
     }
+
     // Name B
     canvas.drawText(pB.name, {
       x: xB + Math.round(cardW / 2),
       y: cardY + 510,
       size: 26,
-      weight: 700,
-      color: INK,
+      weight: 800,
+      color: textColor,
       align: 'center',
       maxWidth: cardW - 30,
       lineHeight: 1.2,
     });
-    // Price B (Masked during play, revealed during reveal)
-    const priceBLabel = phase === 'reveal' ? `${pB.price.toLocaleString('vi-VN')}₫` : '??? ₫';
-    canvas.drawText(priceBLabel, {
-      x: xB + Math.round(cardW / 2),
-      y: cardY + 630,
-      size: 34,
-      weight: 800,
-      color: phase === 'reveal' ? '#22c55e' : '#fbbf24',
-      align: 'center',
-    });
+
+    // Price B Pill Badge
+    const pillWB = 280;
+    const pillHB = 62;
+    const pillXB = xB + Math.round((cardW - pillWB) / 2);
+    const pillYB = cardY + 625;
+    if (phase === 'reveal') {
+      canvas.fillRoundRect(pillXB, pillYB, pillWB, pillHB, 16, isLightCard ? '#dcfce7' : 'rgba(34,197,94,0.22)', 1);
+      canvas.strokeRoundRect(pillXB, pillYB, pillWB, pillHB, 16, '#22c55e', 3);
+      canvas.drawText(`${pB.price.toLocaleString('vi-VN')}₫`, {
+        x: xB + Math.round(cardW / 2),
+        y: pillYB + Math.round((pillHB - 32 * 1.25) / 2),
+        size: 32,
+        weight: 800,
+        color: isLightCard ? '#15803d' : '#4ade80',
+        align: 'center',
+      });
+    } else {
+      canvas.fillRoundRect(pillXB, pillYB, pillWB, pillHB, 16, isLightCard ? '#eff6ff' : 'rgba(59,130,246,0.2)', 1);
+      canvas.strokeRoundRect(pillXB, pillYB, pillWB, pillHB, 16, '#3b82f6', 2.5);
+      canvas.drawText('? GIÁ BÍ MẬT ?', {
+        x: xB + Math.round(cardW / 2),
+        y: pillYB + Math.round((pillHB - 28 * 1.25) / 2),
+        size: 28,
+        weight: 800,
+        color: isLightCard ? '#1d4ed8' : '#60a5fa',
+        align: 'center',
+      });
+    }
   } else if (count === 3) {
     // 3 Products Tray (GROCERY_BASKET)
-    const cardW = 300;
-    const cardH = 700;
-    const gap = 30;
+    const cardW = 310;
+    const cardH = 720;
+    const gap = 25;
     const startX = Math.round((STAGE_WIDTH - (cardW * 3 + gap * 2)) / 2);
-    const cardY = 450;
+    const cardY = 430;
 
     products.forEach((p, i) => {
       const x = startX + i * (cardW + gap);
-      canvas.fillRoundRect(x, cardY, cardW, cardH, 24, '#0f172a', 1);
-      canvas.strokeRoundRect(x, cardY, cardW, cardH, 24, CARD_BORDER, 3);
+      canvas.fillRoundRect(x + 3, cardY + 6, cardW, cardH, 22, '#000000', 0.32);
+      canvas.fillRoundRect(x, cardY, cardW, cardH, 22, cardBg, 1);
+      canvas.strokeRoundRect(x, cardY, cardW, cardH, 22, cardBorder, 4);
 
       // Badge item number
-      canvas.fillRoundRect(x + 12, cardY + 12, 100, 36, 8, ACCENT, 0.9);
+      canvas.fillRoundRect(x + 12, cardY + 12, 110, 36, 10, '#f59e0b', 1);
       canvas.drawText(`MÓN #${i + 1}`, {
-        x: x + 12 + 50,
+        x: x + 12 + 55,
         y: cardY + 12 + 8,
         size: 18,
         weight: 800,
-        color: '#000000',
+        color: '#ffffff',
         align: 'center',
       });
 
-      // Image
+      // Image Container
       const imgW = cardW - 24;
       const imgH = 380;
+      canvas.fillRoundRect(x + 12, cardY + 56, imgW, imgH, 16, isLightCard ? '#f1f5f9' : '#1e293b', 1);
+      canvas.strokeRoundRect(x + 12, cardY + 56, imgW, imgH, 16, isLightCard ? '#e2e8f0' : 'rgba(255,255,255,0.08)', 2);
+
       const imgPath = p.image ? path.resolve(rootDir, p.image) : undefined;
       const loaded = imgPath
         ? (assetCache
@@ -1585,13 +1878,12 @@ export function drawMultiRoundProducts(
       if (loaded) {
         drawImageCover(canvas, loaded, { x: x + 12, y: cardY + 56, width: imgW, height: imgH }, 16);
       } else {
-        canvas.fillRoundRect(x + 12, cardY + 56, imgW, imgH, 16, '#1e293b', 1);
         canvas.drawText(p.productId.toUpperCase(), {
           x: x + Math.round(cardW / 2),
           y: cardY + 220,
           size: 24,
           weight: 700,
-          color: MUTED,
+          color: subtextColor,
           align: 'center',
         });
       }
@@ -1601,32 +1893,38 @@ export function drawMultiRoundProducts(
         x: x + Math.round(cardW / 2),
         y: cardY + 460,
         size: 22,
-        weight: 700,
-        color: INK,
+        weight: 800,
+        color: textColor,
         align: 'center',
         maxWidth: cardW - 20,
         lineHeight: 1.2,
       });
 
-      // Price
+      // Price Pill
+      const pillW = cardW - 32;
+      const pillH = 54;
+      const pillX = x + 16;
+      const pillY = cardY + 630;
+      canvas.fillRoundRect(pillX, pillY, pillW, pillH, 14, isLightCard ? '#fef3c7' : 'rgba(251,191,36,0.18)', 1);
+      canvas.strokeRoundRect(pillX, pillY, pillW, pillH, 14, '#f59e0b', 2);
       canvas.drawText(`${p.price.toLocaleString('vi-VN')}₫`, {
         x: x + Math.round(cardW / 2),
-        y: cardY + 610,
-        size: 28,
+        y: pillY + Math.round((pillH - 26 * 1.25) / 2),
+        size: 26,
         weight: 800,
-        color: ACCENT,
+        color: isLightCard ? '#b45309' : '#fbbf24',
         align: 'center',
       });
     });
   } else {
     // 4 Products 2x2 Grid (MOST_EXPENSIVE, ODD_ONE_OUT)
     const cols = 2;
-    const cardW = 450;
-    const cardH = 340;
-    const gapX = 60;
-    const gapY = 24;
+    const cardW = 460;
+    const cardH = 345;
+    const gapX = 40;
+    const gapY = 20;
     const startX = Math.round((STAGE_WIDTH - (cardW * 2 + gapX)) / 2);
-    const startY = 440;
+    const startY = 430;
     const letters = ['A', 'B', 'C', 'D'];
 
     products.slice(0, 4).forEach((p, i) => {
@@ -1642,23 +1940,27 @@ export function drawMultiRoundProducts(
           round.correctAnswer === p.productId ||
           round.choices.find((c) => c.id === letter)?.isCorrect);
 
-      canvas.fillRoundRect(x, y, cardW, cardH, 20, isWinner ? 'rgba(34,197,94,0.18)' : '#0f172a', 1);
-      canvas.strokeRoundRect(x, y, cardW, cardH, 20, isWinner ? '#22c55e' : CARD_BORDER, isWinner ? 4 : 2);
+      canvas.fillRoundRect(x + 3, y + 5, cardW, cardH, 20, '#000000', 0.3);
+      canvas.fillRoundRect(x, y, cardW, cardH, 20, cardBg, 1);
+      canvas.strokeRoundRect(x, y, cardW, cardH, 20, isWinner ? '#22c55e' : cardBorder, isWinner ? 5 : 3.5);
 
       // Badge letter
-      canvas.fillRoundRect(x + 12, y + 12, 48, 48, 12, isWinner ? '#22c55e' : ACCENT, 1);
+      canvas.fillRoundRect(x + 12, y + 12, 48, 48, 12, isWinner ? '#22c55e' : '#f59e0b', 1);
       canvas.drawText(letter, {
         x: x + 12 + 24,
         y: y + 12 + 10,
         size: 26,
         weight: 800,
-        color: '#000000',
+        color: '#ffffff',
         align: 'center',
       });
 
       // Product Image
       const imgW = cardW - 24;
       const imgH = 180;
+      canvas.fillRoundRect(x + 12, y + 68, imgW, imgH, 14, isLightCard ? '#f1f5f9' : '#1e293b', 1);
+      canvas.strokeRoundRect(x + 12, y + 68, imgW, imgH, 14, isLightCard ? '#e2e8f0' : 'rgba(255,255,255,0.08)', 2);
+
       const imgPath = p.image ? path.resolve(rootDir, p.image) : undefined;
       const loaded = imgPath
         ? (assetCache
@@ -1668,13 +1970,12 @@ export function drawMultiRoundProducts(
       if (loaded) {
         drawImageCover(canvas, loaded, { x: x + 12, y: y + 68, width: imgW, height: imgH }, 14);
       } else {
-        canvas.fillRoundRect(x + 12, y + 68, imgW, imgH, 14, '#1e293b', 1);
         canvas.drawText(p.productId.toUpperCase(), {
           x: x + Math.round(cardW / 2),
           y: y + 150,
           size: 22,
           weight: 700,
-          color: MUTED,
+          color: subtextColor,
           align: 'center',
         });
       }
@@ -1684,8 +1985,8 @@ export function drawMultiRoundProducts(
         x: x + Math.round(cardW / 2),
         y: y + 260,
         size: 20,
-        weight: 700,
-        color: INK,
+        weight: 800,
+        color: textColor,
         align: 'center',
         maxWidth: cardW - 24,
         lineHeight: 1.15,
@@ -1698,7 +1999,7 @@ export function drawMultiRoundProducts(
           y: y + 302,
           size: 22,
           weight: 800,
-          color: isWinner ? '#4ade80' : MUTED,
+          color: isWinner ? '#16a34a' : subtextColor,
           align: 'center',
         });
       }
@@ -1722,21 +2023,18 @@ export function paintMultiRoundFrame(
   timeSeconds: number,
   options?: MultiRoundPaintOptions,
 ): void {
-  const visualTheme: VisualTheme =
-    typeof options?.theme === 'object'
-      ? options.theme
-      : getTheme((options?.theme as VisualThemeId) ?? 'tv_game_show');
+  const visualTheme: VisualTheme = resolveTheme(options?.theme);
 
   const bgTop = visualTheme.colors.backgroundGradient[0] ?? '#0b0f19';
   const bgBottom = visualTheme.colors.backgroundGradient[1] ?? '#020617';
   const themeAccent = visualTheme.colors.accent ?? ACCENT;
-  const cardBg = visualTheme.colors.cardBackground ?? '#161d2e';
-  const cardBorder = visualTheme.colors.cardBorder ?? 'rgba(251,191,36,0.3)';
-  const cardRadius = visualTheme.geometry.cardBorderRadius ?? 24;
 
   // 1. Clears background with gradient
   canvas.fillGradientV(0, 0, canvas.width, canvas.height, bgTop, bgBottom, 1);
   canvas.fill(0, 0, canvas.width, 10, themeAccent, 0.9);
+
+  // 1b. Stage Lighting Overlay (Spotlights & Floodlights)
+  drawStageLighting(canvas, visualTheme);
 
   // 2. Finds active slot in scene.getTimeline()
   const timeline = scene.getTimeline();
@@ -1749,7 +2047,7 @@ export function paintMultiRoundFrame(
 
   // 3. Hook phase (0s - 1.5s)
   if (slot.type === 'hook') {
-    drawSeriesHUD(canvas, scene.challenge.seriesNumber, 1, scene.challenge.rounds.length);
+    drawSeriesHUD(canvas, scene.challenge.seriesNumber, 1, scene.challenge.rounds.length, undefined, visualTheme);
     drawBadge(canvas, '🔥 THỬ THÁCH 5 GIÂY', DANGER, 380);
 
     const hookQuestion =
@@ -1813,30 +2111,45 @@ export function paintMultiRoundFrame(
       round.roundIndex,
       scene.challenge.rounds.length,
       customBadge,
+      visualTheme,
     );
 
-    // Question box at y=320
-    const boxY = 320;
-    const boxWidth = 940;
-    const boxHeight = 96;
+    // Question box (Golden Marquee Banner)
+    const boxY = 245;
+    const boxWidth = 960;
     const boxX = Math.round((STAGE_WIDTH - boxWidth) / 2);
 
-    canvas.fillRoundRect(boxX, boxY, boxWidth, boxHeight, cardRadius, cardBg, 0.95);
-    canvas.strokeRoundRect(boxX, boxY, boxWidth, boxHeight, cardRadius, cardBorder, 2);
+    const measuredQ = canvas.text.layout(round.question, {
+      size: 32,
+      weight: 800,
+      maxWidth: boxWidth - 60,
+      lineHeight: 1.25,
+    });
+    const boxHeight = Math.max(105, Math.round(measuredQ.height + 36));
 
+    // 3D Shadow
+    canvas.fillRoundRect(boxX + 3, boxY + 6, boxWidth, boxHeight, 24, '#000000', 0.35);
+    // Box Background (Deep Marquee Blue)
+    canvas.fillRoundRect(boxX, boxY, boxWidth, boxHeight, 24, '#1e3a8a', 0.98);
+    // 4px Metallic Gold Border + inner glow
+    canvas.strokeRoundRect(boxX, boxY, boxWidth, boxHeight, 24, '#f59e0b', 4);
+    canvas.strokeRoundRect(boxX + 4, boxY + 4, boxWidth - 8, boxHeight - 8, 20, '#fde047', 1.5, 0.7);
+
+    const qTextY = boxY + Math.round((boxHeight - measuredQ.height) / 2);
     canvas.drawText(round.question, {
       x: Math.round(STAGE_WIDTH / 2),
-      y: boxY + Math.round((boxHeight - 34 * 1.25) / 2),
-      size: 34,
-      weight: 700,
-      color: INK,
+      y: qTextY,
+      size: 32,
+      weight: 800,
+      color: '#ffffff',
       align: 'center',
-      maxWidth: boxWidth - 40,
+      maxWidth: boxWidth - 60,
+      lineHeight: 1.25,
     });
 
     const rootDir = options?.rootDir ?? process.cwd();
     // Multi-Round Product(s) Display (supports 1, 2, 3, 4 products per round)
-    drawMultiRoundProducts(canvas, round, phase, rootDir, scene.challenge.gameId, options?.assetCache);
+    drawMultiRoundProducts(canvas, round, phase, rootDir, scene.challenge.gameId, options?.assetCache, visualTheme);
 
     // Choice deck starting at y=1200
     const deckResult = drawChoiceDeck(
@@ -1845,6 +2158,7 @@ export function paintMultiRoundFrame(
       phase === 'reveal',
       String(round.correctAnswer),
       1200,
+      visualTheme,
     );
 
     const countdownY = deckResult.bottomY + 30;
@@ -1859,12 +2173,16 @@ export function paintMultiRoundFrame(
     // If reveal phase: highlight winning choice with green border and show reveal text / actual price
     if (phase === 'reveal') {
       const revealBannerY = countdownY;
-      const revealBannerW = 920;
-      const revealBannerH = 110;
+      const revealBannerW = 940;
+      const revealBannerH = 115;
       const revealX = Math.round((STAGE_WIDTH - revealBannerW) / 2);
 
-      canvas.fillRoundRect(revealX, revealBannerY, revealBannerW, revealBannerH, 24, 'rgba(34,197,94,0.18)', 1);
-      canvas.strokeRoundRect(revealX, revealBannerY, revealBannerW, revealBannerH, 24, '#22c55e', 3);
+      // 3D Shadow
+      canvas.fillRoundRect(revealX + 3, revealBannerY + 5, revealBannerW, revealBannerH, 26, '#000000', 0.35);
+      // Emerald Body
+      canvas.fillRoundRect(revealX, revealBannerY, revealBannerW, revealBannerH, 26, '#15803d', 0.98);
+      // Gold Border
+      canvas.strokeRoundRect(revealX, revealBannerY, revealBannerW, revealBannerH, 26, '#fde047', 4);
 
       const revealText =
         round.revealText ||
@@ -1876,7 +2194,7 @@ export function paintMultiRoundFrame(
         y: revealBannerY + Math.round((revealBannerH - fontSize * 1.25) / 2),
         size: fontSize,
         weight: 800,
-        color: '#22c55e',
+        color: '#ffffff',
         align: 'center',
         maxWidth: revealBannerW - 40,
         lineHeight: 1.2,
@@ -1893,7 +2211,7 @@ export function paintMultiRoundFrame(
       scene.challenge.rounds.find((r) => r.roundIndex === nextRoundIndex) ??
       scene.challenge.rounds[hookIndex];
 
-    drawSeriesHUD(canvas, scene.challenge.seriesNumber, nextRoundIndex, scene.challenge.rounds.length);
+    drawSeriesHUD(canvas, scene.challenge.seriesNumber, nextRoundIndex, scene.challenge.rounds.length, undefined, visualTheme);
 
     const bannerW = 960;
     const bannerH = 320;
@@ -1927,6 +2245,8 @@ export function paintMultiRoundFrame(
       scene.challenge.seriesNumber,
       scene.challenge.rounds.length + 1,
       scene.challenge.rounds.length,
+      undefined,
+      visualTheme,
     );
 
     // 3 stars (⭐⭐⭐)

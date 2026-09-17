@@ -1,4 +1,13 @@
-export type VisualThemeId = 'tv_game_show' | 'clean_shopping' | 'cyber_arcade' | 'street_quiz';
+export type VisualThemeId =
+  | 'tv_game_show'
+  | 'clean_shopping'
+  | 'cyber_arcade'
+  | 'street_quiz'
+  | 'hay_chon_gia_dung'
+  | 'sieu_thi_gia_dinh'
+  | 'bep_am_noi_tro'
+  | 'gio_vang_san_deal'
+  | 'tap_hoa_vui_ve';
 
 export interface ThemeColors {
   backgroundGradient: [string, string];

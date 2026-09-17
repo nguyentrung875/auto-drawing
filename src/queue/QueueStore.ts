@@ -19,6 +19,7 @@ export interface EnqueueInput {
   seed: number;
   result_variant?: 'in_video' | 'comment';
   hiddenIndex?: number;
+  theme?: string;
   batchId?: string;
 }
 
@@ -62,6 +63,7 @@ export class QueueStore {
       retries: 0,
       enqueuedAt: (input as { enqueuedAt?: number }).enqueuedAt ?? Date.now(),
       hiddenIndex: input.hiddenIndex,
+      theme: input.theme,
       batchId: input.batchId,
     };
     const target = this.jobPath(job.jobId);

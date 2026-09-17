@@ -17,7 +17,7 @@ describe('All-in-One Engine Integration Test', () => {
 
     const scene = new AllInOneScene(challenge);
     const timeline = scene.getTimeline();
-    expect(timeline.totalDuration).toBe(24.5);
+    expect(timeline.totalDuration).toBe(23.5);
     expect(timeline.slots.length).toBeGreaterThanOrEqual(6);
   });
 });

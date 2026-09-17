@@ -88,22 +88,28 @@ Lệnh trên sẽ thực thi chuỗi:
 Hệ thống cung cấp file thực thi CLI thông qua `bin/game.js` (tự động chạy trực tiếp bằng `tsx`).
 
 ### 5.1. Render 1 Video Multi-Round (Khuyến nghị cho TikTok / Reels)
-Chạy thử game **Hi-Lo (Cao Hơn hay Thấp Hơn)** với 3 vòng thi, mỗi vòng 5 giây:
+Chạy thử game **Hi-Lo (Cao Hơn hay Thấp Hơn)** với 3 vòng thi, mỗi vòng 5 giây, sử dụng giao diện gameshow "Hãy Chọn Giá Đúng":
 
 ```bash
-# Mặc định sử dụng Satori Frame Renderer (siêu nhẹ & keyframe caching nhanh gấp 3.5x)
-node bin/game.js render --mode multi --mechanic hi_lo --rounds 3 --timer 5.0 --seed 839271
+# Mặc định sử dụng Satori Frame Renderer & theme hay_chon_gia_dung (thẻ trắng, tương phản cao)
+node bin/game.js render --mode multi --mechanic hi_lo --rounds 3 --timer 5.0 --theme hay_chon_gia_dung --seed 839271
 
-# Hoặc chỉ định rõ renderer nếu muốn:
-# --renderer satori   (mặc định)
-# --renderer software (phương án fallback thuần CPU pixel)
+# Hoặc tùy chọn các tham số nếu muốn:
+# --renderer satori        (mặc định, siêu nhẹ & keyframe caching nhanh gấp 3.5x)
+# --renderer software      (phương án fallback thuần CPU pixel)
+# --theme <theme_id>       (mặc định: hay_chon_gia_dung)
+#   + hay_chon_gia_dung    : Sân khấu gameshow Hãy Chọn Giá Đúng (Xanh dương - Vàng gold)
+#   + sieu_thi_gia_dinh    : Bách hóa & Siêu thị gia đình (Xanh lá - Đỏ tươi)
+#   + bep_am_noi_tro       : Gian bếp ấm cúng & nội trợ (Cam kem pastel)
+#   + gio_vang_san_deal    : Đại hội giờ vàng săn deal (Đỏ cam giật gân)
+#   + tap_hoa_vui_ve       : Tiệm tạp hóa bình dân (Vàng chanh - Xanh teal)
 ```
 
 **Quá trình thực thi sẽ hiển thị tiến độ:**
 1. `[challenge]` Curating 3 rounds using DSL `g1_hi_lo` (seed 839271).
 2. `[scene]` Building timeline slots: Series Hook (1.0s) -> Round 1 (5.0s play + 2.0s reveal) -> MicroHook -> Round 2 -> Round 3 -> Scorecard (1.5s).
 3. `[audio]` Synthesizing Edge TTS voiceovers, mixing tick SFX, and ducking tension BGM.
-4. `[render]` Painting ~735 frames (30 FPS) with `scenePainter` & `RenderAssetCache`.
+4. `[render]` Painting ~735 frames (30 FPS) with `scenePainter` & `RenderAssetCache` (Theme: `hay_chon_gia_dung`).
 5. `[mux]` FFmpeg combining PNG sequence + WAV audio bed into `export/g1_hi_lo_839271.mp4`.
 6. `[caption]` Generating `export/g1_hi_lo_839271.caption.json`.
 
@@ -111,19 +117,22 @@ Video thành phẩm sẽ nằm tại:
 - **Video MP4**: `export/g1_hi_lo_839271.mp4`
 - **Metadata/Caption**: `export/g1_hi_lo_839271.caption.json`
 
-### 5.2. Render các Game Mechanics khác
+### 5.2. Render các Game Mechanics & UI Templates khác
 ```bash
-# Game 2: Tìm sản phẩm đắt nhất (4 sản phẩm mỗi vòng)
-node bin/game.js render --mode multi --mechanic most_expensive --rounds 3 --seed 123456
+# Game 2: Tìm sản phẩm đắt nhất (4 sản phẩm) với theme Siêu Thị Gia Đình
+node bin/game.js render --mode multi --mechanic most_expensive --theme sieu_thi_gia_dinh --rounds 3 --seed 123456
 
-# Game 41: Deal Hời hay Bẫy Scam (Phân tích giá sale sốc)
-node bin/game.js render --mode multi --mechanic deal_or_scam --rounds 3 --seed 777888
+# Game 41: Deal Hời hay Bẫy Scam với theme Giờ Vàng Săn Deal
+node bin/game.js render --mode multi --mechanic deal_or_scam --theme gio_vang_san_deal --rounds 3 --seed 777888
 
-# Game 7: Giỏ hàng siêu thị (Bài toán Knapsack đủ tiền hay cháy túi)
-node bin/game.js render --mode multi --mechanic grocery_basket --rounds 2 --seed 999111
+# Game 7: Giỏ hàng siêu thị (Bài toán Knapsack) với theme Bếp Ấm Nội Trợ
+node bin/game.js render --mode multi --mechanic grocery_basket --theme bep_am_noi_tro --rounds 2 --seed 999111
 
-# Game 9: Đoán khoảng giá
-node bin/game.js render --mode multi --mechanic guess_the_price --rounds 3 --seed 456789
+# Game 5: Đoán chữ số bị che với theme Tiệm Tạp Hóa Bình Dân
+node bin/game.js render --mode multi --mechanic one_away --theme tap_hoa_vui_ve --rounds 3 --seed 555888
+
+# Game 9: Đoán khoảng giá với theme Sân Khấu Hãy Chọn Giá Đúng
+node bin/game.js render --mode multi --mechanic guess_the_price --theme hay_chon_gia_dung --rounds 3 --seed 456789
 ```
 
 ### 5.3. Xem trước (Preview) không cần render video
@@ -149,10 +158,11 @@ Mở trình duyệt truy cập: **`http://localhost:3000`** (hoặc `http://loca
 ### Các phân hệ chính trong Studio:
 1. **Game Creator**:
    - Chọn Game Mechanic từ danh sách 7 game.
+   - Chọn **Mẫu Giao diện UI Theme** từ 5 templates sáng tối ưu cho nội trợ (`hay_chon_gia_dung`, `sieu_thi_gia_dinh`, `bep_am_noi_tro`, `gio_vang_san_deal`, `tap_hoa_vui_ve`).
    - Chọn thủ công danh sách SKU hoặc để hệ thống tự động bốc ngẫu nhiên tương thích.
    - Tùy chỉnh seed ngẫu nhiên, biến thể hiển thị đáp án (`in_video` hoặc `comment`).
 2. **Interactive Preview**:
-   - Khung hình 9:16 tỉ lệ chuẩn di động.
+   - Khung hình 9:16 tỉ lệ chuẩn di động, áp dụng trực quan theme đã chọn (màu nền, viền card trắng, font chữ, countdown ring).
    - Thanh trượt timeline kéo đến từng mốc thời gian để kiểm tra hiển thị.
 3. **Live Server-Sent Events (SSE) Render**:
    - Bấm nút **"Render Video MP4"** để backend kích hoạt tiến trình render ngầm.
@@ -166,10 +176,12 @@ Mở trình duyệt truy cập: **`http://localhost:3000`** (hoặc `http://loca
 Để vận hành kênh affiliate tự động xuất 50–100 video mỗi ngày:
 
 ```bash
-node bin/game.js batch --count 50 --mechanics hi_lo,deal_or_scam,most_expensive,grocery_basket
+# Render 50 video xoay vòng mechanics và áp dụng theme chuẩn Hãy Chọn Giá Đúng
+node bin/game.js batch --count 50 --mechanics hi_lo,deal_or_scam,most_expensive,grocery_basket --theme hay_chon_gia_dung
 ```
 
 ### Đặc tính Batch Runner:
+- **Hỗ trợ Tùy biến Theme**: Chỉ định `--theme <id>` để áp dụng đồng bộ cho cả đợt sản xuất (mặc định: `hay_chon_gia_dung`).
 - **Fail-Forward**: Nếu 1 video gặp sự cố (ví dụ SKU bị thiếu ảnh), tiến trình ghi nhận lỗi vào log và tiếp tục render video tiếp theo mà không làm crash cả batch.
 - **Deduplication / Fingerprint**: Tự động hash kết hợp sản phẩm để tránh trùng lặp nội dung giữa các video liên tiếp.
 - **Batch Report**: Báo cáo tổng kết hiệu năng, tỷ lệ thành công/thất bại, thời gian trung bình mỗi video được ghi tại `export/batch-<timestamp>/batch_report.json`.

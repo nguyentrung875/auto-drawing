@@ -278,6 +278,7 @@ export class JobRunner {
         seed: job.seed,
         rootDir: this.rootDir,
         exportDir: this.exportDir,
+        theme: job.theme,
         ttsMs,
       });
 

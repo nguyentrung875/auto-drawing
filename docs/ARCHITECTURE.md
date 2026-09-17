@@ -68,7 +68,7 @@ Dự án áp dụng quy tắc phụ thuộc 1 chiều nghiêm ngặt (được k
 | **`definitions`** | Khai báo Game DSL (7 mechanics: g1, g2, g3, g5, g7, g9, g41) quy định layout, thời gian, số SKU. | `g1_hi_lo.ts`, `g41_deal_or_scam.ts`... |
 | **`scene`** | Xây dựng trục thời gian (Timeline slots: Hook, Play, Reveal, MicroHook, Scorecard). | `AllInOneScene.ts`, `Timeline.ts` |
 | **`audio`** | Tổng hợp âm thanh đa tầng: Edge TTS tiếng Việt, SFX đếm ngược/reveal, auto-ducking nhạc nền. | `EdgeTtsEngine.ts`, `MultiRoundAudioComposer.ts` |
-| **`render`** | Kết xuất đồ hoạ 1080×1920: Satori SVG/Resvg native với keyframe caching (mặc định), Software Canvas fallback, cache ảnh in-memory, muxing MP4 H.264. | `satoriFrameRenderer.ts`, `softwareFrameRenderer.ts`, `scenePainter.ts`, `RenderAssetCache.ts`, `ffmpeg.ts` |
+| **`render`** | Kết xuất đồ hoạ 1080×1920: Satori SVG/Resvg native với keyframe caching (mặc định), Software Canvas fallback, cache ảnh in-memory, quản lý VisualTheme (5 UI templates sáng), muxing MP4 H.264. | `satoriFrameRenderer.ts`, `softwareFrameRenderer.ts`, `scenePainter.ts`, `RenderAssetCache.ts`, `themes.ts`, `ffmpeg.ts` |
 | **`queue`** | Quản lý hàng đợi job file-based không cần Redis/RabbitMQ. | `QueueStore.ts`, `QueueJob.ts` |
 | **`observability`** | Logging chuẩn JSON Lines, đo lường thời gian từng stage, xuất báo cáo batch. | `BatchReporter.ts`, `timing.ts` |
 | **`studio`** | Giao diện Next.js 15 Web Studio trực quan, xem trước HTML, live stream SSE render. | `studio/src/app/api/*` |
@@ -293,6 +293,26 @@ Khung hình di động TikTok/Shorts có độ phân giải **1080 × 1920**. C�
 - **2 Sản phẩm** (`hi_lo`): 2 thẻ đối xứng đặt dọc hoặc đặt ngang với nhãn "MÓN A" (Mốc so sánh) và "MÓN B" (Cần đoán).
 - **3 Sản phẩm** (`grocery_basket`): Layout giỏ hàng 3 tầng hiển thị kèm giá tiền và thanh ngân sách.
 - **4 Sản phẩm** (`most_expensive`, `odd_one_out`): Lưới 2×2 trực quan (A, B, C, D) với nhãn phân định rõ ràng.
+
+### 7.4. Hệ thống Mẫu Giao diện Đồ Họa (Visual Theme Engine)
+
+Hệ thống theme được tách lớp độc lập khỏi logic bài toán (`challenge`) và timeline (`scene`), cho phép thay đổi toàn bộ diện mạo video mà không làm thay đổi câu hỏi, đáp án hay luồng âm thanh:
+
+1. **Homemaker High-Contrast Contract (Hợp đồng Tương phản Cao)**:
+   - **Thẻ Card Nền Trắng (`cardBackground: '#ffffff'`)**: Toàn bộ thẻ sản phẩm được chuẩn hóa nền trắng thuần khiết. Điều này giúp ảnh sản phẩm (PNG) nổi bật tự nhiên, không bị ám sắc tố hoặc chìm vào nền video tối màu.
+   - **Typography Chống Mỏi Mắt**: Tiêu đề câu hỏi, tên sản phẩm và mức giá sử dụng tông màu đậm (`textPrimary: '#0f172a'` hoặc `'#1c1917'`) với kích thước chữ lớn, viền stroke tương phản cao, tối ưu cho người lớn tuổi và các bà nội trợ xem trên màn hình smartphone nhỏ.
+   - **Đổ Bóng Đa Lớp (Multi-layer Drop Shadows)**: Thẻ sản phẩm có `cardShadow: '0 20px 35px rgba(...)'`, tạo cảm giác thẻ "nổi" trên mặt sân khấu.
+2. **5 UI Templates Sẵn sàng Triển khai**:
+   - `hay_chon_gia_dung` (Mặc định): Sân khấu gameshow Hãy Chọn Giá Đúng (Xanh dương hoàng gia - Vàng gold kim loại, spotlight).
+   - `sieu_thi_gia_dinh`: Bách Hóa & Siêu Thị Gia Đình (Nền xanh lá tươi mát, thẻ viền đỏ nổi bật, thân thuộc và tin cậy).
+   - `bep_am_noi_tro`: Gian Bếp Ấm Cúng & Nội Trợ (Tông cam kem ấm áp pastel, bo góc 32px mềm mại).
+   - `gio_vang_san_deal`: Đại Hội Giờ Vàng Săn Deal (Đỏ cam rực lửa, đèn spotlight, kích thích mua sắm).
+   - `tap_hoa_vui_ve`: Tiệm Tạp Hóa Bình Dân (Nền vàng chanh rực rỡ phối viền xanh ngọc teal, vui nhộn và bình dân).
+3. **Cơ chế Phân giải & Fallback An toàn (`resolveTheme`)**:
+   - Tự động nhận diện chuỗi định danh theme (string ID) hoặc object `VisualTheme` tùy biến.
+   - Fallback an toàn về `hay_chon_gia_dung` nếu chuỗi ID không khớp với bất kỳ theme nào trong hệ thống, đảm bảo tiến trình render không bao giờ bị gián đoạn.
+4. **Tích hợp Native Satori Virtual DOM**:
+   - Các thuộc tính gradient nền, spotlight radial mask, viền thẻ, shadow và countdown SVG ring được liên kết trực tiếp vào Virtual DOM của Satori, cho phép render SVG siêu tốc đạt 30 FPS với zero runtime layout shifts.
 
 ---
 

@@ -27,14 +27,23 @@ Hệ thống **Modular Monolith** (TypeScript, Node.js ≥ 22) sản xuất vide
    - Tự động hạ âm lượng nhạc nền (Audio Ducking) khi có giọng đọc.
    - Hiệu ứng âm thanh (SFX) đếm ngược dồn dập và tiếng chuông reo/pháo hoa khi công bố đáp án.
 
-   - **Bộ Renderer Tối ưu & Không phụ thuộc Browser**:
-     - **Satori Frame Renderer (Mặc định)**: Sử dụng Satori & Rust engine (`@resvg/resvg-js`) siêu nhẹ (~17MB RAM), tích hợp **Smart Keyframe Caching** (nhận diện trạng thái scene để loại trừ render SVG trùng lặp, tăng tốc độ render gấp 3.5x–5x).
-     - **Software Frame Renderer**: Bộ rasterizer thuần pixel CPU làm phương án dự phòng deterministic.
-     - **Zero Browser Overhead**: Loại bỏ hoàn toàn Puppeteer/Chromium, tiết kiệm hàng trăm MB RAM và triệt tiêu độ trễ mạng CDP.
+4. **Bộ Renderer Tối ưu & Không phụ thuộc Browser**:
+   - **Satori Frame Renderer (Mặc định)**: Sử dụng Satori & Rust engine (`@resvg/resvg-js`) siêu nhẹ (~17MB RAM), tích hợp **Smart Keyframe Caching** (nhận diện trạng thái scene để loại trừ render SVG trùng lặp, tăng tốc độ render gấp 3.5x–5x).
+   - **Software Frame Renderer**: Bộ rasterizer thuần pixel CPU làm phương án dự phòng deterministic.
+   - **Zero Browser Overhead**: Loại bỏ hoàn toàn Puppeteer/Chromium, tiết kiệm hàng trăm MB RAM và triệt tiêu độ trễ mạng CDP.
 
 5. **An toàn Dữ liệu & Tiếp thị Liên kết (Data Integrity)**:
    - **Zero Data Invention**: Renderer tuyệt đối không tự bịa giá hoặc đoán mò đáp án; dữ liệu được xác thực chặt chẽ qua Two-layer Validator.
    - **Pixel-Scan Guard**: Tự động quét kiểm tra từng frame sau render để đảm bảo link affiliate không bao giờ bị lộ vào video (chỉ xuất hiện trong `caption.json` hoặc comment theo chuẩn chống vi phạm chính sách nền tảng).
+
+6. **Hệ thống 5 UI Templates Sáng & Trực quan (High-Contrast Homemaker UI Templates)**:
+   - **Tối ưu thị giác cho khán giả truyền hình & nội trợ**: Thiết kế theo phong cách gameshow "Hãy Chọn Giá Đúng", giải quyết triệt để vấn đề màn hình tối mỏi mắt. Thẻ card sản phẩm nền trắng `#ffffff`, viền bo mềm mại nổi khối, độ tương phản cao, chữ số to đậm chống mỏi mắt khi xem trên smartphone.
+   - **5 Mẫu Template Sẵn sàng Triển khai**:
+     - 🎯 `hay_chon_gia_dung` (Mặc định): Sân khấu gameshow Hãy Chọn Giá Đúng (Xanh dương hoàng gia - Vàng gold kim loại, đèn spotlight).
+     - 🛒 `sieu_thi_gia_dinh`: Bách Hóa & Siêu Thị Gia Đình (Nền xanh lá tươi mát, thẻ viền đỏ nổi bật, thân thuộc và tin cậy).
+     - 🍳 `bep_am_noi_tro`: Gian Bếp Ấm Cúng & Nội Trợ (Tông cam kem ấm áp pastel, bo góc 32px mềm mại, gần gũi với việc nội trợ).
+     - ⚡ `gio_vang_san_deal`: Đại Hội Giờ Vàng Săn Deal (Đỏ cam rực lửa, đèn spotlight, giục giã và kích thích tâm lý săn sale).
+     - 🏪 `tap_hoa_vui_ve`: Tiệm Tạp Hóa Bình Dân (Nền vàng chanh rực rỡ phối viền xanh ngọc teal, vui nhộn và bình dân).
 
 ---
 
@@ -87,14 +96,21 @@ npm run verify
 ### 1. Dòng lệnh CLI (`bin/game.js`)
 
 #### A. Xuất 1 Video Multi-Round Hoàn chỉnh
-Chạy kịch bản 3 vòng chơi với cơ chế `hi_lo`:
+Chạy kịch bản 3 vòng chơi với cơ chế `hi_lo` cùng giao diện sân khấu Hãy Chọn Giá Đúng:
 ```bash
-node bin/game.js render --mode multi --mechanic hi_lo --rounds 3 --timer 5.0 --seed 839271
+node bin/game.js render --mode multi --mechanic hi_lo --rounds 3 --timer 5.0 --theme hay_chon_gia_dung --seed 839271
 ```
 *Tùy chọn:*
 - `--mechanic`: Một trong 7 cơ chế (`hi_lo`, `most_expensive`, `odd_one_out`, `one_away`, `grocery_basket`, `guess_the_price`, `deal_or_scam`).
 - `--rounds`: Số vòng chơi (mặc định: `3`).
 - `--timer`: Số giây đếm ngược mỗi vòng (mặc định: `5.0`).
+- `--theme`: Mẫu giao diện UI (mặc định: `hay_chon_gia_dung`). Danh sách các mẫu:
+  - `hay_chon_gia_dung`: Sân khấu Hãy Chọn Giá Đúng (Xanh dương hoàng gia - Vàng gold kim loại, spotlight)
+  - `sieu_thi_gia_dinh`: Bách Hóa & Siêu Thị Gia Đình (Xanh lá tươi mát - Đỏ tươi)
+  - `bep_am_noi_tro`: Gian Bếp Ấm Cúng & Nội Trợ (Cam kem pastel ấm áp)
+  - `gio_vang_san_deal`: Đại Hội Giờ Vàng Săn Deal (Đỏ cam rực lửa, spotlight)
+  - `tap_hoa_vui_ve`: Tiệm Tạp Hóa Bình Dân (Vàng chanh - Xanh teal vui nhộn)
+  - *(Các mẫu phong cách retro/arcade khác: `tv_game_show`, `clean_shopping`, `cyber_arcade`, `street_quiz`)*
 - `--seed`: Số nguyên ngẫu nhiên để tái lập video (deterministic).
 - `--renderer`: Bộ kết xuất khung hình: `satori` (mặc định — siêu nhẹ, cực nhanh với keyframe cache) hoặc `software` (fallback thuần CPU).
 - `--exportDir`: Thư mục chứa video MP4 xuất ra (mặc định: `export/`).
@@ -296,6 +312,53 @@ await audioComposer.composeAudio(challenge, timeline, {
   musicVolume: 0.18,        // Âm lượng nền (0.0 - 1.0)
 });
 ```
+
+---
+
+### 4. Tùy biến Mẫu Giao diện (UI Theming)
+
+Hệ thống quản lý bảng màu và giao diện tập trung tại `src/core/theme/themes.ts`. Bạn có thể dễ dàng định nghĩa thêm theme mới tuân theo interface `VisualTheme`:
+
+```typescript
+import { BUILTIN_THEMES, VisualTheme } from './src/core/theme';
+
+export const TET_HOLIDAY_THEME: VisualTheme = {
+  id: 'tet_holiday' as any,
+  name: 'Chợ Tết Truyền Thống',
+  colors: {
+    backgroundGradient: ['#b91c1c', '#7f1d1d'],
+    stageOverlay: 'spotlight',
+    cardBackground: '#ffffff', // Card nền trắng tương phản cao chuẩn nội trợ
+    cardBorder: '#f59e0b',
+    cardShadow: '0 20px 35px rgba(185, 28, 28, 0.4)',
+    accent: '#facc15',
+    textPrimary: '#0f172a',    // Chữ đậm dễ đọc
+    textSecondary: '#475569',
+    countdownRing: '#f59e0b',
+    revealBannerSuccess: '#16a34a',
+    revealBannerWarning: '#dc2626',
+  },
+  typography: {
+    fontFamilyHeadline: 'Be Vietnam Pro',
+    fontFamilyBody: 'Inter',
+    fontFamilyPrice: 'Montserrat',
+    textTransformHeadline: 'uppercase',
+  },
+  geometry: {
+    cardBorderRadius: 28,
+    cardBorderWidth: 4,
+    glowIntensity: 12,
+  },
+  assets: {
+    bgmTrack: 'audio/bgm/gameshow_suspense.mp3',
+    correctSfx: 'audio/sfx/win_chime.wav',
+    wrongSfx: 'audio/sfx/buzzer_wrong.wav',
+    countdownSfx: 'audio/sfx/ticking_tension.wav',
+  },
+};
+```
+
+Sau đó sử dụng trực tiếp qua CLI: `--theme tet_holiday` hoặc chi tiết hơn tại **[docs/EXTENSION_GUIDE.md](docs/EXTENSION_GUIDE.md)**.
 
 ---
 

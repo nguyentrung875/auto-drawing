@@ -21,6 +21,7 @@ export const queueJobSchema = z.object({
   /** Ordering key for FIFO polling (ms epoch); defaults to file mtime. */
   enqueuedAt: z.number().int().optional(),
   hiddenIndex: z.number().int().optional(),
+  theme: z.string().optional(),
   batchId: z.string().optional(),
   videoPath: z.string().optional(),
   captionPath: z.string().optional(),
