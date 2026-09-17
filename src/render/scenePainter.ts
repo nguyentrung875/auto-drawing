@@ -1176,10 +1176,12 @@ export function drawSeriesHUD(
   seriesNumber: number,
   currentRound: number,
   totalRounds = 3,
+  customBadge?: { label: string; color?: string },
 ): void {
-  // 1. Series Badge
-  const badgeLabel = `🔥 5 GIÂY ĐOÁN GIÁ · TẬP #${seriesNumber}`;
-  drawBadge(canvas, badgeLabel, ACCENT, 170);
+  // 1. Series Badge or Attention Badge
+  const badgeLabel = customBadge?.label ?? `🔥 5 GIÂY ĐOÁN GIÁ · TẬP #${seriesNumber}`;
+  const badgeColor = customBadge?.color ?? ACCENT;
+  drawBadge(canvas, badgeLabel, badgeColor, 170);
 
   // 2. Round Progress Dots
   const dotY = 270;
@@ -1792,7 +1794,26 @@ export function paintMultiRoundFrame(
     if (!round) return;
 
     // Round header dots and series badge
-    drawSeriesHUD(canvas, scene.challenge.seriesNumber, round.roundIndex, scene.challenge.rounds.length);
+    let customBadge: { label: string; color?: string } | undefined;
+    if (round.roundIndex === scene.challenge.rounds.length && scene.challenge.rounds.length > 1) {
+      customBadge = {
+        label: round.microHook ? `⚠️ ${round.microHook.replace(/^[⚠️⚡]\s*/, '')}` : '⚠️ CÂU CUỐI: 90% ĐOÁN SAI!',
+        color: DANGER,
+      };
+    } else if (round.microHook) {
+      customBadge = {
+        label: `⚡ ${round.microHook.replace(/^[⚠️⚡]\s*/, '')}`,
+        color: '#f97316',
+      };
+    }
+
+    drawSeriesHUD(
+      canvas,
+      scene.challenge.seriesNumber,
+      round.roundIndex,
+      scene.challenge.rounds.length,
+      customBadge,
+    );
 
     // Question box at y=320
     const boxY = 320;

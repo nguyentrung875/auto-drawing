@@ -4,18 +4,11 @@ import { fileURLToPath } from 'node:url';
 import { existsSync, statSync, rmSync } from 'node:fs';
 import { renderFixture, probeVideoInfo, scanForBurn } from '../helpers/render';
 import { RenderEngine } from '../../src/render/RenderEngine';
-import { findBrowserExecutable } from '../../src/render/browserFrameRenderer';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 
-describe('E2E High-Quality 1080x1920 Browser Video Render', () => {
+describe('E2E High-Quality 1080x1920 Satori Video Render', () => {
   it('renders a full vertical MP4 with 1080x1920 resolution, audio track, and clean safe area', async () => {
-    const browserExec = findBrowserExecutable();
-    if (!browserExec) {
-      console.log('Skipping E2E browser test: No Chrome/Edge binary found.');
-      return;
-    }
-
     const exportDir = `${ROOT}/temp/e2e_export_${Date.now()}`;
     const tempDir = `${ROOT}/temp/e2e_tmp_${Date.now()}`;
 
@@ -31,7 +24,7 @@ describe('E2E High-Quality 1080x1920 Browser Video Render', () => {
     const engine = new RenderEngine({
       rootDir: ROOT,
       config: {
-        frameRenderer: 'browser',
+        frameRenderer: 'satori',
       },
     });
 

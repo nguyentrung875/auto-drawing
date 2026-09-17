@@ -12,6 +12,7 @@ Tài liệu này cung cấp quy trình từng bước từ thiết lập môi tr
 | **Node.js** | `>= 22.12.0` | Node.js LTS v22.x | Bắt buộc hỗ trợ các tính năng native buffer & ES modules |
 | **npm** | `>= 10.0.0` | npm đi kèm Node.js v22 | |
 | **FFmpeg** | `>= 5.0` (libx264, aac) | FFmpeg 6.x / 7.x với static build | Bắt buộc có trong system `PATH` hoặc qua biến `FFMPEG_PATH` |
+| **Trình duyệt** | Không yêu cầu | Không yêu cầu | 100% Zero Browser Dependencies (không cần Chrome/Puppeteer) |
 | **RAM** | 8 GB | 16 GB - 32 GB | Khi render batch song song nhiều workers |
 | **Ổ đĩa trống** | 5 GB SSD | 50 GB+ SSD NVMe | Chứa frame PNG tạm thời (`temp/`) và video xuất (`export/`) |
 | **Internet** | Kết nối ổn định | Băng thông >= 20 Mbps | Dùng khi sinh giọng đọc trực tuyến Microsoft Edge Neural TTS |
@@ -90,7 +91,12 @@ Hệ thống cung cấp file thực thi CLI thông qua `bin/game.js` (tự độ
 Chạy thử game **Hi-Lo (Cao Hơn hay Thấp Hơn)** với 3 vòng thi, mỗi vòng 5 giây:
 
 ```bash
+# Mặc định sử dụng Satori Frame Renderer (siêu nhẹ & keyframe caching nhanh gấp 3.5x)
 node bin/game.js render --mode multi --mechanic hi_lo --rounds 3 --timer 5.0 --seed 839271
+
+# Hoặc chỉ định rõ renderer nếu muốn:
+# --renderer satori   (mặc định)
+# --renderer software (phương án fallback thuần CPU pixel)
 ```
 
 **Quá trình thực thi sẽ hiển thị tiến độ:**

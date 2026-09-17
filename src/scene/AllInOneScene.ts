@@ -20,9 +20,8 @@ export class AllInOneScene {
 
     // N Rounds with Instant Countdown
     const revealDuration = 2.0;
-    const microHookDuration = 0.5;
 
-    this.challenge.rounds.forEach((round, idx) => {
+    this.challenge.rounds.forEach((round) => {
       // Play / Instant Countdown period: exactly round.timerSeconds (minimum 5.0s, no 2.5s lag)
       const playDuration = Math.max(5.0, round.timerSeconds);
       slots.push({
@@ -41,17 +40,6 @@ export class AllInOneScene {
         end: currentTime + revealDuration,
       });
       currentTime += revealDuration;
-
-      // Micro-hook transition between rounds (0.5s)
-      if (idx < this.challenge.rounds.length - 1) {
-        slots.push({
-          type: `micro_hook_${idx + 1}`,
-          duration: microHookDuration,
-          start: currentTime,
-          end: currentTime + microHookDuration,
-        });
-        currentTime += microHookDuration;
-      }
     });
 
     // Scorecard & CTA (1.5s)

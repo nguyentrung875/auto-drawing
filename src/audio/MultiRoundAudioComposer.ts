@@ -73,12 +73,20 @@ export class MultiRoundAudioComposer {
     for (const round of challenge.rounds) {
       const playSlot = timeline.slots.find((s) => s.type === `round_${round.roundIndex}_play`);
       const revealSlot = timeline.slots.find((s) => s.type === `round_${round.roundIndex}_reveal`);
-      const microSlot = timeline.slots.find((s) => s.type === `micro_hook_${round.roundIndex}`);
 
       if (playSlot) {
-        // Voice starts 100ms after round begins
+        // Transition cue when entering round 2+ to punctuate the new challenge
+        if (round.roundIndex > 1) {
+          sfxCues.push({
+            type: 'transition',
+            at: Number(playSlot.start.toFixed(3)),
+            assetPath: sfxAsset('transition', rootDir),
+          });
+        }
+
+        // Voice starts 100ms after round begins; integrates spoken micro-hook if present
         const voiceStartAt = Number((playSlot.start + 0.1).toFixed(3));
-        const script = round.question;
+        const script = round.microHook ? `${round.microHook} ${round.question}` : round.question;
         const maxDuration = Math.max(1.5, playSlot.duration - 0.5);
 
         voicePlans.push({
@@ -119,14 +127,6 @@ export class MultiRoundAudioComposer {
           type: 'reveal',
           at: Number(revealSlot.start.toFixed(3)),
           assetPath: sfxAsset('reveal', rootDir),
-        });
-      }
-
-      if (microSlot) {
-        sfxCues.push({
-          type: 'transition',
-          at: Number(microSlot.start.toFixed(3)),
-          assetPath: sfxAsset('transition', rootDir),
         });
       }
     }

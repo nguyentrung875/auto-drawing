@@ -17,7 +17,6 @@ import { QueueStore } from '../queue/QueueStore';
 import type { QueueJob } from '../queue/schema';
 import type { BatchJobSummary } from '../observability/types';
 import { createRenderStage, runJobWithRenderEngine } from './pipeline';
-import { findBrowserExecutable } from '../render/browserFrameRenderer';
 
 export interface RenderArgs {
   mechanic?: string;
@@ -37,7 +36,7 @@ export interface RenderArgs {
   exportDir?: string;
   logsDir?: string;
   renderer?: RenderStagePort;
-  rendererType?: 'browser' | 'software' | 'satori';
+  rendererType?: 'software' | 'satori';
   keepQueueFile?: boolean;
 }
 
@@ -115,13 +114,9 @@ export function parseRenderArgs(argv: string[], rootDir = process.cwd()): Render
     theme: flags.get('theme') ?? flags.get('template'),
     gameFile: flags.get('game'),
     queueDir: flags.get('queue-dir') ?? 'queue',
-    rendererType: flags.get('renderer') === 'satori'
-      ? 'satori'
-      : flags.get('renderer') === 'software'
-        ? 'software'
-        : flags.get('renderer') === 'browser'
-          ? 'browser'
-          : (findBrowserExecutable() ? 'browser' : 'software'),
+    rendererType: flags.get('renderer') === 'software'
+      ? 'software'
+      : 'satori',
     rootDir,
   };
 }

@@ -154,6 +154,11 @@ export class SatoriFrameRenderer implements IFrameRenderer {
       style: f.style,
     }));
 
+    const revealSlot = input.timeline?.slots?.find((s) => s.type === 'reveal');
+    const revealAt = input.audio?.revealAt ?? revealSlot?.start ?? 11.0;
+    const frameBufferCache = new Map<string, Buffer>();
+    let uniqueRenders = 0;
+
     try {
       for (let frameIndex = 0; frameIndex < totalFrames; frameIndex++) {
         if (context.deadlineAt && Date.now() > context.deadlineAt) {
@@ -168,23 +173,35 @@ export class SatoriFrameRenderer implements IFrameRenderer {
         const frameFilename = `frame_${String(frameIndex + 1).padStart(5, '0')}.png`;
         const framePath = path.join(context.framesDir, frameFilename);
 
-        // A. Generate Virtual DOM node
-        const vdom = buildSatoriVirtualDom({
-          input,
-          timeSec,
-          productImages,
-        });
+        const isReveal = timeSec >= revealAt;
+        const isCountdown = timeSec >= 8.0 && timeSec < revealAt;
+        const cacheKey = isCountdown
+          ? `cd_${(Math.max(0, revealAt - timeSec)).toFixed(1)}_${Math.round(((revealAt - timeSec) / 3.0) * 30)}`
+          : (isReveal ? 'reveal' : 'intro');
 
-        // B. Satori: Convert VDOM to SVG string
-        const svg = await satori(vdom as any, {
-          width,
-          height,
-          fonts: satoriFonts,
-        });
+        let pngBuffer = frameBufferCache.get(cacheKey);
 
-        // C. Resvg: Rasterize SVG to PNG Buffer
-        const resvg = new Resvg(svg, resvgOptions);
-        const pngBuffer = resvg.render().asPng();
+        if (!pngBuffer) {
+          // A. Generate Virtual DOM node
+          const vdom = buildSatoriVirtualDom({
+            input,
+            timeSec,
+            productImages,
+          });
+
+          // B. Satori: Convert VDOM to SVG string
+          const svg = await satori(vdom as any, {
+            width,
+            height,
+            fonts: satoriFonts,
+          });
+
+          // C. Resvg: Rasterize SVG to PNG Buffer
+          const resvg = new Resvg(svg, resvgOptions);
+          pngBuffer = resvg.render().asPng();
+          frameBufferCache.set(cacheKey, pngBuffer);
+          uniqueRenders++;
+        }
 
         // D. Write frame to disk
         writeFileSync(framePath, pngBuffer);

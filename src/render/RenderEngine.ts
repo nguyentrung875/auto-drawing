@@ -20,7 +20,6 @@ import { RENDER_ERROR_CODES, RENDER_WARNING_CODES, RenderError } from './errors'
 import { FFmpegMuxer } from './ffmpeg';
 import { assertNoAffiliateBurn } from './pixelScan';
 import { SoftwareFrameRenderer } from './softwareFrameRenderer';
-import { BrowserFrameRenderer } from './browserFrameRenderer';
 import { SatoriFrameRenderer } from './satoriFrameRenderer';
 import {
   DEFAULT_RENDER_CONFIG,
@@ -98,9 +97,6 @@ export class RenderEngine {
     if (this.options.frameRenderer) return this.options.frameRenderer;
     if (config.frameRenderer === 'satori') {
       return new SatoriFrameRenderer();
-    }
-    if (config.frameRenderer === 'browser') {
-      return new BrowserFrameRenderer();
     }
     if (config.frameRenderer === 'motion-canvas') {
       warnings.push({

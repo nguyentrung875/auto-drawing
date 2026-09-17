@@ -143,8 +143,8 @@ export interface RenderConfig {
   preset: string;
   /** External ffmpeg binary; falls back to `FFMPEG_PATH` then `PATH`. */
   ffmpegPath?: string;
-  /** Frame renderer backend. `software` is the built-in rasterizer, `browser` is Chromium headless, `satori` is the ultra-lightweight Satori+resvg renderer. */
-  frameRenderer?: 'software' | 'motion-canvas' | 'browser' | 'satori';
+  /** Frame renderer backend. `satori` is the ultra-lightweight Satori+resvg renderer (default), `software` is the built-in rasterizer. */
+  frameRenderer?: 'satori' | 'software' | 'motion-canvas';
   /** Soft budget for the render stage (AD-8 / Story 4.1: ≤45s). */
   renderBudgetMs?: number;
   /** Hard timeout for the frame stage (AD-10: Motion Canvas 90s). */
@@ -162,7 +162,7 @@ export const DEFAULT_RENDER_CONFIG: RenderConfig = {
   codec: 'libx264',
   crf: 18,
   preset: 'fast',
-  frameRenderer: 'software',
+  frameRenderer: 'satori',
   renderBudgetMs: 45_000,
   frameTimeoutMs: 90_000,
   encodeTimeoutMs: 120_000,

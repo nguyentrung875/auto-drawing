@@ -45,7 +45,6 @@ export {
   type RenderWarning,
 } from './types';
 export { SoftwareFrameRenderer } from './softwareFrameRenderer';
-export { BrowserFrameRenderer, findBrowserExecutable } from './browserFrameRenderer';
 export { SatoriFrameRenderer } from './satoriFrameRenderer';
 export { FFmpegMuxer, probeVideo, type ProbeResult } from './ffmpeg';
 export { buildAudioBed, AUDIO_BED_SAMPLE_RATE, type AudioBedRequest } from './audioBed';

@@ -68,7 +68,7 @@ Dự án áp dụng quy tắc phụ thuộc 1 chiều nghiêm ngặt (được k
 | **`definitions`** | Khai báo Game DSL (7 mechanics: g1, g2, g3, g5, g7, g9, g41) quy định layout, thời gian, số SKU. | `g1_hi_lo.ts`, `g41_deal_or_scam.ts`... |
 | **`scene`** | Xây dựng trục thời gian (Timeline slots: Hook, Play, Reveal, MicroHook, Scorecard). | `AllInOneScene.ts`, `Timeline.ts` |
 | **`audio`** | Tổng hợp âm thanh đa tầng: Edge TTS tiếng Việt, SFX đếm ngược/reveal, auto-ducking nhạc nền. | `EdgeTtsEngine.ts`, `MultiRoundAudioComposer.ts` |
-| **`render`** | Kết xuất đồ hoạ 2D pixel buffer (Canvas), nạp cache ảnh, vẽ UI Cyberpunk 9:16. | `scenePainter.ts`, `RenderAssetCache.ts`, `canvas.ts`, `ffmpeg.ts` |
+| **`render`** | Kết xuất đồ hoạ 1080×1920: Satori SVG/Resvg native với keyframe caching (mặc định), Software Canvas fallback, cache ảnh in-memory, muxing MP4 H.264. | `satoriFrameRenderer.ts`, `softwareFrameRenderer.ts`, `scenePainter.ts`, `RenderAssetCache.ts`, `ffmpeg.ts` |
 | **`queue`** | Quản lý hàng đợi job file-based không cần Redis/RabbitMQ. | `QueueStore.ts`, `QueueJob.ts` |
 | **`observability`** | Logging chuẩn JSON Lines, đo lường thời gian từng stage, xuất báo cáo batch. | `BatchReporter.ts`, `timing.ts` |
 | **`studio`** | Giao diện Next.js 15 Web Studio trực quan, xem trước HTML, live stream SSE render. | `studio/src/app/api/*` |
@@ -258,11 +258,24 @@ Video viral đòi hỏi trải nghiệm âm thanh sống động và phân tần
 
 ---
 
-## 7. Động cơ Đồ hoạ & Bố cục 9:16 (`scenePainter.ts`)
+## 7. Động cơ Đồ hoạ & Bố cục 9:16 (`src/render/`)
 
-Mọi khung hình được vẽ trực tiếp trên bộ nhớ pixel thông qua **Pure Software 2D Canvas**:
+Hệ thống cung cấp cơ chế kết xuất khung hình pluggable (`IFrameRenderer`) tối ưu hoá cho hiệu năng và độ ổn định cao:
 
-### 7.1. Tiêu chuẩn Safe Zone 9:16
+### 7.1. Kiến trúc Bộ Kết xuất Khung hình (Frame Renderers)
+
+1. **Satori Frame Renderer (`satoriFrameRenderer.ts` — Mặc định / Primary)**:
+   - **Cơ chế**: Sinh Virtual DOM kịch bản `1080×1920` $\rightarrow$ Satori biên dịch sang SVG $\rightarrow$ Rust native engine (`@resvg/resvg-js`) rasterize sang buffer PNG.
+   - **Smart Keyframe Caching**: Trong video 18s (540 frames), hầu hết các phân cảnh (Hook, Question, Reveal, Scorecard) đều là đồ hoạ tĩnh. Hệ thống tự động nhận diện trạng thái và lưu bộ đệm frame PNG đã render. Chỉ khi đến phân cảnh đếm ngược (Countdown tick/ring animation), Satori mới tính toán lại SVG.
+   - **Hiệu quả**: Giảm số lần sinh SVG từ 540 lần xuống còn ~35 lần, giúp tốc độ render video 18s chỉ mất **dưới 20 giây** với mức tiêu thụ RAM cực thấp (~17MB heap).
+2. **Software Frame Renderer (`softwareFrameRenderer.ts` — Fallback)**:
+   - **Cơ chế**: Bộ rasterizer 2D Canvas thuần TypeScript/JavaScript (không cần font hệ thống hay native binary).
+   - Sử dụng cơ chế mẫu keyframe phân đoạn để đảm bảo tính tất định (deterministic) 100% trên mọi nền tảng.
+3. **Zero Browser Overhead**:
+   - Dự án **loại bỏ hoàn toàn Puppeteer / Headless Chromium** ra khỏi kiến trúc render video.
+   - Tiết kiệm hơn 500MB RAM, loại bỏ hoàn toàn độ trễ giao tiếp CDP qua WebSocket, không lo lỗi crash trình duyệt ngầm khi chạy batch hàng loạt.
+
+### 7.2. Tiêu chuẩn Safe Zone 9:16
 Khung hình di động TikTok/Shorts có độ phân giải **1080 × 1920**. Các vùng nguy hiểm bị che bởi UI của nền tảng:
 - `y < 360px`: Thanh tìm kiếm, nút chuyển tab (Following/For You), tên camera filter.
 - `y > 1580px`: Caption văn bản, hashtags, audio marquee quay tròn, nút Home/Shop.
@@ -275,7 +288,7 @@ Khung hình di động TikTok/Shorts có độ phân giải **1080 × 1920**. C�
 - **Choice Deck Buttons**: `startY = 1200px`, kết thúc tại `bottomY <= 1520px`.
 - **Countdown Pill / Reveal Banner**: Đặt tại `bottomY + 25px` (luôn <= 1560px).
 
-### 7.2. Hỗ trợ Layout Sản phẩm Đa dạng
+### 7.3. Hỗ trợ Layout Sản phẩm Đa dạng
 - **1 Sản phẩm** (`deal_or_scam`, `one_away`, `guess_the_price`): Thẻ sản phẩm lớn chính giữa `580×580`, hiệu ứng glow neon.
 - **2 Sản phẩm** (`hi_lo`): 2 thẻ đối xứng đặt dọc hoặc đặt ngang với nhãn "MÓN A" (Mốc so sánh) và "MÓN B" (Cần đoán).
 - **3 Sản phẩm** (`grocery_basket`): Layout giỏ hàng 3 tầng hiển thị kèm giá tiền và thanh ngân sách.

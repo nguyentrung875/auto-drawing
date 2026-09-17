@@ -142,11 +142,15 @@ describe('AllInOneScene Timeline and Layout Generation', () => {
     expect(round1Play?.start).toBe(1.0);
     expect(round1Play?.duration).toBe(5.0);
 
-    // Round 3 play lasts 6.0s (matching round 3's timerSeconds)
+    // Round 3 play starts at 15.0s and lasts 6.0s (matching round 3's timerSeconds)
     const round3Play = timeline.slots.find((s) => s.type === 'round_3_play');
+    expect(round3Play?.start).toBe(15.0);
     expect(round3Play?.duration).toBe(6.0);
 
-    // Total duration: 1.0 + (5+2) + 0.5 + (5+2) + 0.5 + (6+2) + 1.5 = 25.5s
-    expect(timeline.totalDuration).toBe(25.5);
+    // Micro-hook slots are removed for seamless transition
+    expect(timeline.slots.some((s) => s.type.startsWith('micro_hook_'))).toBe(false);
+
+    // Total duration: 1.0 + (5+2) + (5+2) + (6+2) + 1.5 = 24.5s (no 0.5s dead time pauses)
+    expect(timeline.totalDuration).toBe(24.5);
   });
 });

@@ -52,6 +52,7 @@ describe('MultiRoundAudioComposer', () => {
         roundIndex: 2,
         type: 'wtf_reveal',
         question: 'Giá của củ sạc này là bao nhiêu?',
+        microHook: '⚠️ CÂU CUỐI: 95% người đoán sai!',
         products: [
           {
             productId: 'p002',
@@ -102,7 +103,11 @@ describe('MultiRoundAudioComposer', () => {
     expect(plan.voicePlans[0]?.startAt).toBe(1.1); // hook 1.0s + 0.1s
     expect(plan.voicePlans[0]?.script).toContain('Giá sản phẩm này');
 
-    // SFX cues include intro, ticks, reveal, and micro-hook
+    // Round 2 integrates spoken microHook
+    expect(plan.voicePlans[1]?.script).toContain('⚠️ CÂU CUỐI: 95% người đoán sai!');
+    expect(plan.voicePlans[1]?.script).toContain('Giá của củ sạc này');
+
+    // SFX cues include intro, ticks, reveal, and round transition
     expect(plan.sfxCues.some((c) => c.type === 'tick' || c.type === 'countdown')).toBe(true);
     expect(plan.sfxCues.some((c) => c.type === 'reveal')).toBe(true);
     expect(plan.sfxCues.some((c) => c.type === 'transition')).toBe(true);

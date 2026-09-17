@@ -150,7 +150,7 @@ describe('paintMultiRoundFrame', () => {
     expect(() => paintMultiRoundFrame(revealCanvas, scene, 7.0)).not.toThrow();
     expect(revealCanvas.paintedText.some((t) => t.value.includes('Giá chính xác: 29K'))).toBe(true);
 
-    // 8.2s: Micro-hook 1
+    // 8.2s: Round 2 Play with Attention Micro-Hook Badge
     const microCanvas = new Canvas(1080, 1920);
     expect(() => paintMultiRoundFrame(microCanvas, scene, 8.2)).not.toThrow();
     expect(microCanvas.paintedText.some((t) => t.value.includes('xoắn não'))).toBe(true);
