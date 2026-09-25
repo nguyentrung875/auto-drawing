@@ -88,30 +88,28 @@ sequenceDiagram
     participant Curator as ChallengeCurator
     participant Scene as AllInOneScene
     participant Audio as MultiRoundAudioComposer
-    participant Painter as ScenePainter & AssetCache
+    participant Satori as SatoriFrameRenderer
     participant Muxer as FFmpegMuxer
     
-    User->>CLI: runRenderCommand({ mechanic: 'hi_lo', rounds: 3, timer: 5.0, seed: 839271 })
+    User->>CLI: runRenderCommand({ mechanic: 'hi_lo', rounds: 3, timer: 4.0, theme: 'dai_hoi_sieu_thi', seed: 839271 })
     CLI->>Catalog: resolveProducts() (nạp SKU từ products/*.json)
     Catalog-->>CLI: Product[] catalog
     
-    CLI->>Curator: curate(dsl, catalog, seed, { totalRounds: 3, timerSeconds: 5.0 })
-    Note over Curator: 1. Lọc sản phẩm qua EligibilityFilter<br/>2. Phân loại round (Confidence -> Tension -> WTF)<br/>3. Tính đáp án đúng bằng NumericEngine<br/>4. Chấm điểm tâm lý ViralScorer
+    CLI->>Curator: curate(dsl, catalog, seed, { totalRounds: 3, timerSeconds: 4.0 })
+    Note over Curator: 1. Lọc sản phẩm qua EligibilityFilter<br/>2. Phân bổ kịch bản (Confidence -> Tension -> WTF)<br/>3. Tính đáp án đúng bằng NumericEngine<br/>4. Chấm điểm viral vector
     Curator-->>CLI: MultiRoundChallenge
     
     CLI->>Scene: new AllInOneScene(challenge)
-    Scene-->>CLI: timeline (Total duration: 24.5s, 735 frames @ 30 FPS)
+    Scene-->>CLI: timeline (Total duration: 20.5s, 615 frames @ 30 FPS)
     
     par Xử lý Âm thanh & Khung hình song song
         CLI->>Audio: composeAudio(challenge, timeline, options)
         Note over Audio: Edge-TTS synthesis -> Mix SFX cues -> Loop BGM -> Auto-ducking (-75%) -> Soft limiter
         Audio-->>CLI: master_audio.wav
-    and Render Khung hình Canvas
-        loop Từng frame từ 0 đến 735 (tại timeSeconds)
-            CLI->>Painter: paintMultiRoundFrame(canvas, scene, timeSeconds, { assetCache })
-            Note over Painter: drawSeriesHUD -> drawCyberpunkQuestionBox -> drawMultiRoundProducts (via AssetCache) -> drawChoiceDeck -> drawPillCountdown
-            Painter-->>CLI: PNG Buffer -> Ghi temp/<jobId>/frames/frame_%05d.png
-        end
+    and Render Khung hình (SatoriFrameRenderer)
+        CLI->>Satori: renderSceneFrames(scene, options)
+        Note over Satori: 1. Sinh Satori Virtual DOM 4 giai đoạn<br/>2. Smart Keyframe Caching (Hook, Play, Reveal, Scorecard)<br/>3. Resvg Rust Native render PNG buffer
+        Satori-->>CLI: Ghi frames temp/<jobId>/frames/frame_%05d.png
     end
     
     CLI->>Muxer: mux({ framesPattern, audioPath, outputPath, fps: 30, crf: 18 })
@@ -150,7 +148,7 @@ export interface ChallengeRound {
   products: Product[];                        // 1..4 sản phẩm xuất hiện trong vòng
   choices: ChallengeChoice[];                 // Các phương án lựa chọn
   correctAnswer: string | number;             // Mã hoặc giá trị đáp án chính xác
-  timerSeconds: number;                       // Thời gian đếm ngược (>= 5.0s)
+  timerSeconds: number;                       // Thời gian đếm ngược (>= 1.0s, linh hoạt N rounds x M seconds)
   scoreVector: ChallengeScoreVector;          // Vector tâm lý viral 10 chiều
   revealText: string;                         // Chuỗi công bố khi lật mở đáp án
 }
@@ -210,31 +208,31 @@ export class RenderAssetCache {
 
 ## 5. Timeline & Scene System (`src/scene/AllInOneScene.ts`)
 
-Mỗi video Multi-Round được chia thành một chuỗi các `TimelineSlot` liên tục không có khoảng chết (Zero Dead Air):
+Mỗi video Multi-Round được chia thành một chuỗi các `TimelineSlot` liên tục không có khoảng chết (Zero Dead Air) và dựng trực tiếp qua Satori Virtual DOM:
 
 ```
 ┌──────────┬──────────────────────┬──────────────────────┬─────────────┬───────────┐
 │ Hook     │ Round 1              │ Round 2              │ Round N     │ Scorecard │
-│ (1.0s)   │ Play: 5.0s | Rev: 2s │ Play: 5.0s | Rev: 2s │ ...         │ & CTA 1.5s│
+│ (~2.0s)  │ Play: M.s | Rev: 2s  │ Play: M.s | Rev: 2s  │ ...         │ & CTA 2.5s│
 └──────────┴──────────────────────┴──────────────────────┴─────────────┴───────────┘
 ```
 
-1. **Series Hook (0.0s – 1.0s)**: Xuất hiện huy hiệu series, logo kênh và nhạc giật gân thu hút sự chú ý trong 1 giây đầu tiên của feed lướt.
+1. **Supermarket Hook (0.0s – ~2.0s)**: Xuất hiện biển hiệu siêu thị Pop-Art, banner nổ *"THỬ THÁCH GIỜ VÀNG"*, khung xem trước sản phẩm vòng 1 và nút *"BẮT ĐẦU CHƠI NGAY"*.
 2. **Các Round Chơi (Rounds 1..N)**:
-   - **Play Phase (`round.timerSeconds`, tối thiểu 5.0s)**:
-     - Câu hỏi xuất hiện ngay lập tức tại `t = 0.0s`.
-     - Giọng đọc AI cất lên tại `t = 0.1s`.
-     - Thanh đếm ngược Pill Countdown co lại dần và đổi màu (Xanh -> Vàng -> Đỏ).
-     - Âm thanh SFX tick đếm ngược tăng dần âm lượng và tần số.
-   - **Reveal Phase (2.0s)**:
-     - Thanh đếm ngược biến mất.
-     - Lựa chọn đúng phát sáng neon xanh lá cây.
-     - Banner Reveal chúc mừng bung ra ở giữa màn hình.
-     - Hiệu ứng âm thanh Reveal SFX kích hoạt.
-   - **Micro-Hook (0.5s)**:
-     - Xuất hiện giữa các round (trừ round cuối) để tạo đà kích thích người xem chuẩn bị sang round tiếp theo.
-3. **Scorecard & CTA (1.5s)**:
-   - Tổng kết số câu trả lời và câu kêu gọi hành động: *"Bạn đúng được bao nhiêu câu? Comment ngay bên dưới để nhận mã giảm giá!"*
+   - **Play Phase (`round.timerSeconds`, hỗ trợ linh hoạt từ 1.0s trở lên: 3.0s, 4.0s, 5.0s...)**:
+     - Huy hiệu "CÂU X/N" và tiêu đề thử thách xuất hiện tức thì.
+     - Khung thẻ sản phẩm phóng to tối đa an toàn (Safe Zone), ảnh sắc nét, giá ẩn bằng sticker Pop-Art.
+     - Bảng đồng hồ LED kỹ thuật số đếm ngược thời gian thực (`⏰ CÒN M.m GIÂY`).
+     - Giọng đọc AI cất lên đồng bộ với âm thanh SFX tick đếm ngược dồn dập.
+   - **Reveal Phase (~2.0s)**:
+     - Lật mở giá niêm yết thật trên thẻ sản phẩm.
+     - Highlight viền vàng và nhãn WINNER cho đáp án chính xác.
+     - Đồng hồ LED đổi sang trạng thái `✔ CHỐT! ĐÃ LỘ DIỆN ĐÁP ÁN!`.
+     - Banner xanh giải thích kết quả chi tiết kèm âm thanh chuông reo/kèn chiến thắng.
+3. **Scorecard & CTA (~2.5s)**:
+   - Biển tổng kết thử thách siêu thị với 3 ngôi sao vàng vector SVG.
+   - Thống kê tỷ số từng câu hỏi với icon tích xanh vector.
+   - Nút kêu gọi hành động (CTA): *"BÌNH LUẬN ĐIỂM SỐ CỦA BẠN!"*.
 
 ---
 
@@ -275,42 +273,45 @@ Hệ thống cung cấp cơ chế kết xuất khung hình pluggable (`IFrameRen
    - Dự án **loại bỏ hoàn toàn Puppeteer / Headless Chromium** ra khỏi kiến trúc render video.
    - Tiết kiệm hơn 500MB RAM, loại bỏ hoàn toàn độ trễ giao tiếp CDP qua WebSocket, không lo lỗi crash trình duyệt ngầm khi chạy batch hàng loạt.
 
-### 7.2. Tiêu chuẩn Safe Zone 9:16
+### 7.2. Tiêu chuẩn Safe Zone 9:16 & Giới Hạn Tối Đa An Toàn (Maximum Safe Limits)
 Khung hình di động TikTok/Shorts có độ phân giải **1080 × 1920**. Các vùng nguy hiểm bị che bởi UI của nền tảng:
 - `y < 360px`: Thanh tìm kiếm, nút chuyển tab (Following/For You), tên camera filter.
 - `y > 1580px`: Caption văn bản, hashtags, audio marquee quay tròn, nút Home/Shop.
 - `x > 920px`: Cột nút tương tác (Avatar chủ kênh, Tim, Bình luận, Bookmark, Share).
 
-**Quy chuẩn bố cục của Auto-Drawing:**
+**Quy chuẩn bố cục & Giới hạn kích thước thẻ (Max Safe Limits):**
 - **HUD Series**: `y = 120px` (nằm gọn phía trên cùng).
 - **Question Box**: `y = 220px` (bắt đầu vùng an toàn).
-- **Product Showcase Area**: `y = 480px – 1180px` (vùng trung tâm thị giác mạnh nhất).
-- **Choice Deck Buttons**: `startY = 1200px`, kết thúc tại `bottomY <= 1520px`.
-- **Countdown Pill / Reveal Banner**: Đặt tại `bottomY + 25px` (luôn <= 1560px).
+- **Product Showcase Area**: `y = 440px – 1180px` (vùng trung tâm thị giác mạnh nhất).
+  - **Game 2 Thẻ (`hi_lo`)**: Ảnh sản phẩm phóng to lên **`260×260px`** (+87% diện tích ảnh), chiều cao thẻ **`325px`**.
+  - **Game 3 Thẻ (`most_expensive`, `grocery_basket`)**: Ảnh sản phẩm **`220×220px`** (+34% diện tích ảnh), chiều cao thẻ **`255px`**, khoảng cách giữa các thẻ 18px. Đáy thẻ thứ 3 dừng tại **`y ≈ 1101px`**, an toàn tuyệt đối trước vạch giới hạn **`y = 1200px`** của banner reveal.
+  - **Game 1 Thẻ (`one_away`, `deal_or_scam`, `guess_the_price`)**: Ảnh sản phẩm **`430×430px`** (+28% diện tích ảnh), chiều rộng thẻ **`940px`**, viền Pop-Art 6px nổi khối.
+- **Choice Deck Buttons**: Bố trí tương tác ngay dưới khu vực sản phẩm.
+- **Countdown LED / Status Banner**: Bảng LED kỹ thuật số `⏰ CÒN M.m GIÂY` hoặc `✔ CHỐT! ĐÃ LỘ DIỆN ĐÁP ÁN!` nằm an toàn trên mốc `y = 1480px`.
 
 ### 7.3. Hỗ trợ Layout Sản phẩm Đa dạng
-- **1 Sản phẩm** (`deal_or_scam`, `one_away`, `guess_the_price`): Thẻ sản phẩm lớn chính giữa `580×580`, hiệu ứng glow neon.
-- **2 Sản phẩm** (`hi_lo`): 2 thẻ đối xứng đặt dọc hoặc đặt ngang với nhãn "MÓN A" (Mốc so sánh) và "MÓN B" (Cần đoán).
-- **3 Sản phẩm** (`grocery_basket`): Layout giỏ hàng 3 tầng hiển thị kèm giá tiền và thanh ngân sách.
-- **4 Sản phẩm** (`most_expensive`, `odd_one_out`): Lưới 2×2 trực quan (A, B, C, D) với nhãn phân định rõ ràng.
+- **1 Sản phẩm** (`deal_or_scam`, `one_away`, `guess_the_price`): Thẻ sản phẩm lớn chính giữa `940px`, ảnh `430×430px`, sticker Pop-Art ấn tượng.
+- **2 Sản phẩm** (`hi_lo`): 2 thẻ đối xứng xếp dọc với ảnh `260×260px`, nhãn "MÓN A" (Mốc so sánh) và "MÓN B" (Cần đoán).
+- **3 Sản phẩm** (`grocery_basket`, `most_expensive`): Layout 3 tầng với ảnh `220×220px`, thẻ `255px`, căn lề chuẩn xác trước banner reveal.
+- **4 Sản phẩm** (`odd_one_out`): Lưới 2×2 trực quan (A, B, C, D) với nhãn phân định rõ ràng.
 
 ### 7.4. Hệ thống Mẫu Giao diện Đồ Họa (Visual Theme Engine)
 
 Hệ thống theme được tách lớp độc lập khỏi logic bài toán (`challenge`) và timeline (`scene`), cho phép thay đổi toàn bộ diện mạo video mà không làm thay đổi câu hỏi, đáp án hay luồng âm thanh:
 
-1. **Homemaker High-Contrast Contract (Hợp đồng Tương phản Cao)**:
-   - **Thẻ Card Nền Trắng (`cardBackground: '#ffffff'`)**: Toàn bộ thẻ sản phẩm được chuẩn hóa nền trắng thuần khiết. Điều này giúp ảnh sản phẩm (PNG) nổi bật tự nhiên, không bị ám sắc tố hoặc chìm vào nền video tối màu.
-   - **Typography Chống Mỏi Mắt**: Tiêu đề câu hỏi, tên sản phẩm và mức giá sử dụng tông màu đậm (`textPrimary: '#0f172a'` hoặc `'#1c1917'`) với kích thước chữ lớn, viền stroke tương phản cao, tối ưu cho người lớn tuổi và các bà nội trợ xem trên màn hình smartphone nhỏ.
-   - **Đổ Bóng Đa Lớp (Multi-layer Drop Shadows)**: Thẻ sản phẩm có `cardShadow: '0 20px 35px rgba(...)'`, tạo cảm giác thẻ "nổi" trên mặt sân khấu.
-2. **5 UI Templates Sẵn sàng Triển khai**:
-   - `hay_chon_gia_dung` (Mặc định): Sân khấu gameshow Hãy Chọn Giá Đúng (Xanh dương hoàng gia - Vàng gold kim loại, spotlight).
+1. **Flagship Pop-Art Supermarket Theme (`dai_hoi_sieu_thi` — Mặc định CLI)**:
+   - **Phong cách Pop-Art Truyện Tranh**: Nền vàng chanh rực rỡ `#fef08a`, viền đen đậm 4-6px `#0f172a`, sticker nổ góc thẻ và bảng LED kỹ thuật số.
+   - **100% Vector SVG Icons**: Sử dụng vector SVG thuần cho toàn bộ icon (sao vàng, đồng hồ, dấu tích, xe đẩy, tia chớp) thay cho Unicode emoji, loại trừ 100% rủi ro thiếu glyph (tofu `[ ]`) trên Windows.
+   - **4 Giai Đoạn Hoàn Chỉnh**: Tích hợp chặt chẽ Hook (biển hiệu siêu thị), Play (đếm ngược LED), Reveal (lật mở giá), Scorecard (3 sao vàng, bảng recap).
+2. **Bộ UI Templates Sân Khấu Homemaker**:
+   - `hay_chon_gia_dung`: Sân khấu gameshow Hãy Chọn Giá Đúng (Xanh dương hoàng gia - Vàng gold kim loại, spotlight).
    - `sieu_thi_gia_dinh`: Bách Hóa & Siêu Thị Gia Đình (Nền xanh lá tươi mát, thẻ viền đỏ nổi bật, thân thuộc và tin cậy).
    - `bep_am_noi_tro`: Gian Bếp Ấm Cúng & Nội Trợ (Tông cam kem ấm áp pastel, bo góc 32px mềm mại).
    - `gio_vang_san_deal`: Đại Hội Giờ Vàng Săn Deal (Đỏ cam rực lửa, đèn spotlight, kích thích mua sắm).
    - `tap_hoa_vui_ve`: Tiệm Tạp Hóa Bình Dân (Nền vàng chanh rực rỡ phối viền xanh ngọc teal, vui nhộn và bình dân).
 3. **Cơ chế Phân giải & Fallback An toàn (`resolveTheme`)**:
    - Tự động nhận diện chuỗi định danh theme (string ID) hoặc object `VisualTheme` tùy biến.
-   - Fallback an toàn về `hay_chon_gia_dung` nếu chuỗi ID không khớp với bất kỳ theme nào trong hệ thống, đảm bảo tiến trình render không bao giờ bị gián đoạn.
+   - Fallback an toàn về `dai_hoi_sieu_thi` nếu không tìm thấy theme chỉ định.
 4. **Tích hợp Native Satori Virtual DOM**:
    - Các thuộc tính gradient nền, spotlight radial mask, viền thẻ, shadow và countdown SVG ring được liên kết trực tiếp vào Virtual DOM của Satori, cho phép render SVG siêu tốc đạt 30 FPS với zero runtime layout shifts.
 

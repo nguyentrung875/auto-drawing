@@ -7,11 +7,12 @@ export type VisualThemeId =
   | 'sieu_thi_gia_dinh'
   | 'bep_am_noi_tro'
   | 'gio_vang_san_deal'
-  | 'tap_hoa_vui_ve';
+  | 'tap_hoa_vui_ve'
+  | 'dai_hoi_sieu_thi';
 
 export interface ThemeColors {
   backgroundGradient: [string, string];
-  stageOverlay?: 'grid' | 'spotlight' | 'scanline' | 'none';
+  stageOverlay?: 'grid' | 'spotlight' | 'scanline' | 'sunburst' | 'none';
   cardBackground: string;
   cardBorder: string;
   cardShadow: string;

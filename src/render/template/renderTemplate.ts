@@ -42,6 +42,7 @@ export function generateRenderHtml(input: RenderInput): string {
   const { game, timeline, sceneData, products, diversification, rootDir } = input;
   const mechanic = game.metadata.mechanic;
   const bgColor = diversification?.bgColor ?? '#0f172a';
+  const themeId = (typeof input.theme === 'string' ? input.theme : (input.theme as { id?: string } | undefined)?.id) ?? (game.metadata as { theme?: string }).theme ?? '';
   const isOneAway = mechanic === 'ONE_AWAY';
   const isMostExpensive = mechanic === 'MOST_EXPENSIVE';
   const isHiLo = mechanic === 'HI_LO';
@@ -362,11 +363,125 @@ export function generateRenderHtml(input: RenderInput): string {
     width: 0%;
     z-index: 100;
   }
+  /* ── DAI HOI SIEU THI: Pop-Art Supermarket Overrides ─────────────────── */
+  #stage[data-theme="dai_hoi_sieu_thi"] {
+    /* Sunburst tia nắng via CSS conic-gradient */
+    background: conic-gradient(
+      from 0deg at 50% 50%,
+      #FEF08A 0deg, #FDE68A 18deg,
+      #FEF08A 18deg, #FDE68A 36deg,
+      #FEF08A 36deg, #FDE68A 54deg,
+      #FEF08A 54deg, #FDE68A 72deg,
+      #FEF08A 72deg, #FDE68A 90deg,
+      #FEF08A 90deg, #FDE68A 108deg,
+      #FEF08A 108deg, #FDE68A 126deg,
+      #FEF08A 126deg, #FDE68A 144deg,
+      #FEF08A 144deg, #FDE68A 162deg,
+      #FEF08A 162deg, #FDE68A 180deg,
+      #FEF08A 180deg, #FDE68A 198deg,
+      #FEF08A 198deg, #FDE68A 216deg,
+      #FEF08A 216deg, #FDE68A 234deg,
+      #FEF08A 234deg, #FDE68A 252deg,
+      #FEF08A 252deg, #FDE68A 270deg,
+      #FEF08A 270deg, #FDE68A 288deg,
+      #FEF08A 288deg, #FDE68A 306deg,
+      #FEF08A 306deg, #FDE68A 324deg,
+      #FEF08A 324deg, #FDE68A 342deg,
+      #FEF08A 342deg, #FDE68A 360deg
+    );
+  }
+  #stage[data-theme="dai_hoi_sieu_thi"] .badge-mechanic {
+    background: #DC2626;
+    border: 4px solid #0f172a;
+    color: #FACC15;
+    font-size: 22px;
+    font-weight: 900;
+    letter-spacing: 2px;
+  }
+  #stage[data-theme="dai_hoi_sieu_thi"] .hook-title {
+    color: #DC2626;
+    text-shadow: 3px 3px 0px #0f172a;
+    font-size: 44px;
+  }
+  #stage[data-theme="dai_hoi_sieu_thi"] .question-box {
+    background: #ffffff;
+    border: 7px solid #0f172a;
+    border-radius: 20px;
+    color: #0f172a;
+  }
+  #stage[data-theme="dai_hoi_sieu_thi"] .card {
+    background: #ffffff;
+    border: 6px solid #0f172a;
+    border-radius: 22px;
+  }
+  #stage[data-theme="dai_hoi_sieu_thi"] .card-hilo {
+    width: 460px;
+    min-height: 680px;
+  }
+  #stage[data-theme="dai_hoi_sieu_thi"] .card-oneaway {
+    width: 620px;
+    min-height: 720px;
+  }
+  #stage[data-theme="dai_hoi_sieu_thi"] .card-img-wrap {
+    background: #ffffff;
+    border: 4px solid #0f172a;
+  }
+  #stage[data-theme="dai_hoi_sieu_thi"] .card-name {
+    color: #0f172a;
+    font-size: 28px;
+    font-weight: 900;
+  }
+  #stage[data-theme="dai_hoi_sieu_thi"] .card-price-pill {
+    background: #FACC15;
+    border: 4px solid #0f172a;
+    color: #0f172a;
+    font-size: 36px;
+    font-weight: 900;
+    border-radius: 12px;
+  }
+  #stage[data-theme="dai_hoi_sieu_thi"] .card-price-secret {
+    background: #DC2626;
+    border: 4px solid #0f172a;
+    color: #ffffff;
+    font-size: 32px;
+    font-weight: 900;
+    border-radius: 12px;
+  }
+  #stage[data-theme="dai_hoi_sieu_thi"] .cta-banner {
+    background: #DC2626;
+    border: 4px solid #0f172a;
+    color: #FACC15;
+    font-size: 32px;
+    font-weight: 900;
+    letter-spacing: 2px;
+  }
+  #stage[data-theme="dai_hoi_sieu_thi"] .countdown-ring-fill {
+    stroke: #DC2626;
+  }
+  #stage[data-theme="dai_hoi_sieu_thi"] .countdown-number {
+    color: #DC2626;
+    text-shadow: 3px 3px 0px #0f172a;
+  }
+  #stage[data-theme="dai_hoi_sieu_thi"] .result-banner {
+    background: linear-gradient(135deg, #16A34A, #15803D);
+    border: 5px solid #0f172a;
+    font-size: 44px;
+    font-weight: 900;
+  }
+  /* Simulated LED bulbs via body::before on light stages */
+  #stage[data-theme="dai_hoi_sieu_thi"] .orb-1 {
+    background: #DC2626;
+    opacity: 0.08;
+  }
+  #stage[data-theme="dai_hoi_sieu_thi"] .orb-2 {
+    background: #16A34A;
+    opacity: 0.08;
+  }
 </style>
 </head>
 <body>
 
-<div id="stage">
+<div id="stage" data-theme="${themeId}">
   <div class="orb orb-1"></div>
   <div class="orb orb-2"></div>
 

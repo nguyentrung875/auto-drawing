@@ -372,7 +372,7 @@ export const BUILTIN_THEMES: Record<string, VisualTheme> = {
 #### Bước 3: Sử dụng Theme
 - **Qua dòng lệnh CLI**:
   ```bash
-  node bin/game.js render --mode multi --mechanic hi_lo --theme cho_tet_que --rounds 3
+  node bin/game.js render --mechanic hi_lo --theme cho_tet_que --rounds 3 --timer 4.0
   ```
 - **Qua TypeScript code**:
   ```typescript

@@ -22,7 +22,7 @@ export class ChallengeCurator {
   ): MultiRoundChallenge {
     // Dynamic Round Count & Timer Customization
     const targetRoundCount = options?.totalRounds ? Math.max(1, options.totalRounds) : dsl.rounds.length;
-    const roundTimer = options?.timerSeconds !== undefined ? Math.max(5.0, options.timerSeconds) : undefined;
+    const roundTimer = options?.timerSeconds !== undefined ? Math.max(1.0, options.timerSeconds) : undefined;
 
     let effectiveRoundSpecs = dsl.rounds.map((r) => ({ ...r }));
     if (targetRoundCount !== dsl.rounds.length) {
@@ -63,7 +63,7 @@ export class ChallengeCurator {
     }
 
     for (const spec of effectiveRoundSpecs) {
-      spec.timerSeconds = roundTimer !== undefined ? roundTimer : Math.max(5.0, spec.timerSeconds ?? 5.0);
+      spec.timerSeconds = roundTimer !== undefined ? roundTimer : Math.max(1.0, spec.timerSeconds ?? 5.0);
     }
 
     // Layer 1: Eligibility Filter

@@ -212,6 +212,8 @@ export interface RenderInput {
   theme?: string | import('../core/theme/types').VisualTheme;
   /** Voice synthesis wall-clock time, measured by the caller for the job log. */
   ttsMs?: number;
+  /** Multi-round challenge definition for continuous N-round videos */
+  challenge?: import('../challenge/types').MultiRoundChallenge;
 }
 
 export interface RenderOutput {

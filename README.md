@@ -17,9 +17,10 @@ Hệ thống **Modular Monolith** (TypeScript, Node.js ≥ 22) sản xuất vide
    - **G9: Guess The Price (`guess_the_price`)**: Đoán khoảng giá thực tế của sản phẩm.
    - **G41: Deal Or Scam (`deal_or_scam`)**: Phân tích giá sale sốc — DEAL HỜI chính hãng hay BẪY SALE ẢO?
 
-2. **Dynamic Multi-Round Engine**:
-   - Tùy biến linh hoạt số vòng thi (`--rounds 2..5`) và thời lượng đếm ngược (`--timer 5.0..10.0s`).
-   - Cấu trúc tâm lý học kịch bản 3 hồi: *Confidence Builder* (vòng 1 dễ tạo đà) → *Tension Creator* (vòng 2 sít sao) → *WTF Reveal* (vòng cuối bẻ lái cảm xúc).
+2. **Dynamic Multi-Round Engine (Chuẩn Hóa Toàn Diện)**:
+   - CLI Render (`node bin/game.js render`) vận hành **100% chế độ Multi-Round** với pipeline đồng bộ hiện đại, loại bỏ hoàn toàn mã legacy single-round.
+   - Hỗ trợ tùy biến linh hoạt **$N$ vòng thi** (`--rounds <N>`, mặc định: `3`) và **$M$ giây đếm ngược mỗi vòng** (`--timer <M>`, hỗ trợ mọi mốc thời gian từ 1.0s trở lên: 3.0s, 4.0s, 5.0s...).
+   - Cấu trúc tâm lý học kịch bản 3 hồi: *Confidence Builder* (vòng 1 tạo đà) → *Tension Creator* (vòng 2 kịch tính) → *WTF Reveal* (vòng cuối bẻ lái cảm xúc).
    - Nhịp dựng không khoảng chết (*Zero Dead Air*): Vòng đếm ngược kích hoạt ngay tức thì khi câu hỏi xuất hiện.
 
 3. **Hệ thống Âm thanh Đa tầng (Multi-layer Audio Bed)**:
@@ -36,14 +37,14 @@ Hệ thống **Modular Monolith** (TypeScript, Node.js ≥ 22) sản xuất vide
    - **Zero Data Invention**: Renderer tuyệt đối không tự bịa giá hoặc đoán mò đáp án; dữ liệu được xác thực chặt chẽ qua Two-layer Validator.
    - **Pixel-Scan Guard**: Tự động quét kiểm tra từng frame sau render để đảm bảo link affiliate không bao giờ bị lộ vào video (chỉ xuất hiện trong `caption.json` hoặc comment theo chuẩn chống vi phạm chính sách nền tảng).
 
-6. **Hệ thống 5 UI Templates Sáng & Trực quan (High-Contrast Homemaker UI Templates)**:
-   - **Tối ưu thị giác cho khán giả truyền hình & nội trợ**: Thiết kế theo phong cách gameshow "Hãy Chọn Giá Đúng", giải quyết triệt để vấn đề màn hình tối mỏi mắt. Thẻ card sản phẩm nền trắng `#ffffff`, viền bo mềm mại nổi khối, độ tương phản cao, chữ số to đậm chống mỏi mắt khi xem trên smartphone.
-   - **5 Mẫu Template Sẵn sàng Triển khai**:
-     - 🎯 `hay_chon_gia_dung` (Mặc định): Sân khấu gameshow Hãy Chọn Giá Đúng (Xanh dương hoàng gia - Vàng gold kim loại, đèn spotlight).
-     - 🛒 `sieu_thi_gia_dinh`: Bách Hóa & Siêu Thị Gia Đình (Nền xanh lá tươi mát, thẻ viền đỏ nổi bật, thân thuộc và tin cậy).
-     - 🍳 `bep_am_noi_tro`: Gian Bếp Ấm Cúng & Nội Trợ (Tông cam kem ấm áp pastel, bo góc 32px mềm mại, gần gũi với việc nội trợ).
-     - ⚡ `gio_vang_san_deal`: Đại Hội Giờ Vàng Săn Deal (Đỏ cam rực lửa, đèn spotlight, giục giã và kích thích tâm lý săn sale).
-     - 🏪 `tap_hoa_vui_ve`: Tiệm Tạp Hóa Bình Dân (Nền vàng chanh rực rỡ phối viền xanh ngọc teal, vui nhộn và bình dân).
+6. **Giao Diện Satori Pop-Art Siêu Thị & Bộ Homemaker UI Templates**:
+   - **Flagship Mới: `dai_hoi_sieu_thi` (Mặc định cho CLI Render)**: Thiết kế Pop-Art truyện tranh tươi sáng, kích thước khung thẻ và ảnh sản phẩm được mở rộng cực đại trong Safe-Zone (+87% diện tích ảnh cho 2 thẻ, +34% cho 3 thẻ). Đầy đủ 4 giai đoạn kịch bản:
+     - *Hook Phase (~2.0s)*: Biển hiệu siêu thị, banner nổ "THỬ THÁCH GIỜ VÀNG", xem trước sản phẩm & nút bắt đầu.
+     - *Play Phase ($M$s)*: Huy hiệu "CÂU X/N", đồng hồ LED digital thời gian thực (`⏰ CÒN M.m GIÂY`), thẻ ẩn giá Pop-Art, action buttons.
+     - *Reveal Phase (~2.0s)*: Lật giá niêm yết, viền vàng highlight chiến thắng, trạng thái LED `✔ CHỐT ĐƠN!`.
+     - *Scorecard / Outro (~2.5s)*: Biển tổng kết, 3 sao vàng vector, bảng điểm từng câu, nút kêu gọi hành động (CTA).
+   - **100% Vector SVG Sắc Nét**: Toàn bộ icon (sao, đồng hồ, dấu tích, xe đẩy) được dựng bằng SVG vector thuần, triệt tiêu hoàn toàn lỗi font ô vuông (tofu `[ ]`) trên Windows.
+   - **5 Mẫu Template Sân Khấu Sẵn Sàng**: `hay_chon_gia_dung`, `sieu_thi_gia_dinh`, `bep_am_noi_tro`, `gio_vang_san_deal`, `tap_hoa_vui_ve`.
 
 ---
 
@@ -96,15 +97,16 @@ npm run verify
 ### 1. Dòng lệnh CLI (`bin/game.js`)
 
 #### A. Xuất 1 Video Multi-Round Hoàn chỉnh
-Chạy kịch bản 3 vòng chơi với cơ chế `hi_lo` cùng giao diện sân khấu Hãy Chọn Giá Đúng:
+Chạy kịch bản 3 vòng chơi với cơ chế `hi_lo` cùng giao diện Satori Pop-Art Siêu Thị (`dai_hoi_sieu_thi`):
 ```bash
-node bin/game.js render --mode multi --mechanic hi_lo --rounds 3 --timer 5.0 --theme hay_chon_gia_dung --seed 839271
+node bin/game.js render --mechanic hi_lo --rounds 3 --timer 4.0 --theme dai_hoi_sieu_thi --seed 839271
 ```
 *Tùy chọn:*
 - `--mechanic`: Một trong 7 cơ chế (`hi_lo`, `most_expensive`, `odd_one_out`, `one_away`, `grocery_basket`, `guess_the_price`, `deal_or_scam`).
-- `--rounds`: Số vòng chơi (mặc định: `3`).
-- `--timer`: Số giây đếm ngược mỗi vòng (mặc định: `5.0`).
-- `--theme`: Mẫu giao diện UI (mặc định: `hay_chon_gia_dung`). Danh sách các mẫu:
+- `--rounds`: Số vòng chơi $N$ (mặc định: `3`).
+- `--timer`: Số giây đếm ngược mỗi vòng $M$ (mặc định: `5.0`, hỗ trợ từ `1.0s` trở lên: e.g. `3.0`, `4.0`, `5.0`).
+- `--theme`: Mẫu giao diện UI (mặc định: `dai_hoi_sieu_thi`). Danh sách các mẫu:
+  - `dai_hoi_sieu_thi` (Mặc định): Đại Hội Siêu Thị Giờ Vàng (Pop-Art truyện tranh rực rỡ, thẻ to chuẩn Safe Zone, đồng hồ LED)
   - `hay_chon_gia_dung`: Sân khấu Hãy Chọn Giá Đúng (Xanh dương hoàng gia - Vàng gold kim loại, spotlight)
   - `sieu_thi_gia_dinh`: Bách Hóa & Siêu Thị Gia Đình (Xanh lá tươi mát - Đỏ tươi)
   - `bep_am_noi_tro`: Gian Bếp Ấm Cúng & Nội Trợ (Cam kem pastel ấm áp)
@@ -114,6 +116,7 @@ node bin/game.js render --mode multi --mechanic hi_lo --rounds 3 --timer 5.0 --t
 - `--seed`: Số nguyên ngẫu nhiên để tái lập video (deterministic).
 - `--renderer`: Bộ kết xuất khung hình: `satori` (mặc định — siêu nhẹ, cực nhanh với keyframe cache) hoặc `software` (fallback thuần CPU).
 - `--exportDir`: Thư mục chứa video MP4 xuất ra (mặc định: `export/`).
+- `--preview`: Xuất file preview HTML xem trước layout mà không render MP4.
 
 #### B. Xuất Video Hàng loạt qua đêm (Batch Mode)
 Sản xuất 50 video tự động với worker pool song song:

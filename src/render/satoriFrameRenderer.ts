@@ -14,6 +14,7 @@ import { Resvg } from '@resvg/resvg-js';
 import { buildSatoriVirtualDom } from './satori/satoriTemplate';
 import { SoftwareFrameRenderer } from './softwareFrameRenderer';
 import { RENDER_ERROR_CODES, RenderError } from './errors';
+import { AllInOneScene } from '../scene/AllInOneScene';
 import type {
   FrameRenderContext,
   FrameRenderResult,
@@ -119,12 +120,14 @@ export class SatoriFrameRenderer implements IFrameRenderer {
 
     // 1. Pre-load all product images into memory as Base64 Data URIs once
     const productImages = new Map<string, string | null>();
-    const allProducts = input.products ?? (input.game.entities ?? []).map((e) => ({
-      productId: e.productId,
-      name: e.name ?? '',
-      price: e.price ?? 0,
-      image: e.image ?? `assets/${e.productId}.png`,
-    }));
+    const allProducts = input.challenge
+      ? input.challenge.rounds.flatMap((r) => r.products)
+      : (input.products ?? (input.game.entities ?? []).map((e) => ({
+          productId: e.productId,
+          name: e.name ?? '',
+          price: e.price ?? 0,
+          image: e.image ?? `assets/${e.productId}.png`,
+        })));
 
     for (const p of allProducts) {
       if (!productImages.has(p.productId)) {
@@ -154,6 +157,9 @@ export class SatoriFrameRenderer implements IFrameRenderer {
       style: f.style,
     }));
 
+    const multiScene = input.challenge ? new AllInOneScene(input.challenge) : null;
+    const multiTimeline = multiScene ? multiScene.getTimeline() : null;
+
     const revealSlot = input.timeline?.slots?.find((s) => s.type === 'reveal');
     const revealAt = input.audio?.revealAt ?? revealSlot?.start ?? 11.0;
     const frameBufferCache = new Map<string, Buffer>();
@@ -173,11 +179,34 @@ export class SatoriFrameRenderer implements IFrameRenderer {
         const frameFilename = `frame_${String(frameIndex + 1).padStart(5, '0')}.png`;
         const framePath = path.join(context.framesDir, frameFilename);
 
-        const isReveal = timeSec >= revealAt;
-        const isCountdown = timeSec >= 8.0 && timeSec < revealAt;
-        const cacheKey = isCountdown
-          ? `cd_${(Math.max(0, revealAt - timeSec)).toFixed(1)}_${Math.round(((revealAt - timeSec) / 3.0) * 30)}`
-          : (isReveal ? 'reveal' : 'intro');
+        let cacheKey: string;
+        if (multiScene && multiTimeline) {
+          const slot = multiTimeline.slots.find((s) => timeSec >= s.start && timeSec < s.end) ??
+                       multiTimeline.slots[multiTimeline.slots.length - 1];
+          if (slot?.type === 'hook') {
+            cacheKey = 'hook';
+          } else if (slot?.type === 'scorecard') {
+            cacheKey = 'scorecard';
+          } else {
+            const current = multiScene.getCurrentRound(timeSec);
+            if (current) {
+              if (current.phase === 'reveal') {
+                cacheKey = `r${current.round.roundIndex}_reveal`;
+              } else {
+                const remaining = Math.max(0, current.round.timerSeconds - current.phaseTime);
+                cacheKey = `r${current.round.roundIndex}_cd_${remaining.toFixed(1)}`;
+              }
+            } else {
+              cacheKey = `t_${Math.floor(timeSec)}`;
+            }
+          }
+        } else {
+          const isReveal = timeSec >= revealAt;
+          const isCountdown = timeSec >= 8.0 && timeSec < revealAt;
+          cacheKey = isCountdown
+            ? `cd_${(Math.max(0, revealAt - timeSec)).toFixed(1)}_${Math.round(((revealAt - timeSec) / 3.0) * 30)}`
+            : (isReveal ? 'reveal' : 'intro');
+        }
 
         let pngBuffer = frameBufferCache.get(cacheKey);
 

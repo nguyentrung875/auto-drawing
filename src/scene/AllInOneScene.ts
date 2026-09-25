@@ -22,8 +22,8 @@ export class AllInOneScene {
     const revealDuration = 2.0;
 
     this.challenge.rounds.forEach((round) => {
-      // Play / Instant Countdown period: exactly round.timerSeconds (minimum 5.0s, no 2.5s lag)
-      const playDuration = Math.max(5.0, round.timerSeconds);
+      // Play / Instant Countdown period: exactly round.timerSeconds (minimum 1.0s)
+      const playDuration = Math.max(1.0, round.timerSeconds);
       slots.push({
         type: `round_${round.roundIndex}_play`,
         duration: playDuration,

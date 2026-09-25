@@ -111,7 +111,7 @@ export function parseRenderArgs(argv: string[], rootDir = process.cwd()): Render
     mode,
     rounds: rounds !== undefined ? Number(rounds) : undefined,
     timer: timer !== undefined ? Number(timer) : undefined,
-    theme: flags.get('theme') ?? flags.get('template') ?? 'hay_chon_gia_dung',
+    theme: flags.get('theme') ?? flags.get('template') ?? 'dai_hoi_sieu_thi',
     gameFile: flags.get('game'),
     queueDir: flags.get('queue-dir') ?? 'queue',
     rendererType: flags.get('renderer') === 'software'
@@ -123,7 +123,6 @@ export function parseRenderArgs(argv: string[], rootDir = process.cwd()): Render
 
 /** Execute `game render`; returns everything the CLI adapter prints. */
 export async function runRenderCommand(args: RenderArgs): Promise<RenderCommandResult> {
-  const { loadGameJson } = await import('./gameFile');
   const rootDir = args.rootDir;
   if (!args.mechanic && !args.gameFile) {
     return {
@@ -131,316 +130,212 @@ export async function runRenderCommand(args: RenderArgs): Promise<RenderCommandR
       error: {
         code: 'E_GAME_LOGIC_INVALID',
         field: 'mechanic',
-        hint: 'pass --mechanic hi_lo|most_expensive|one_away (or --game <file.json>)',
+        hint: 'pass --mechanic hi_lo|most_expensive|one_away|odd_one_out|guess_the_price|grocery_basket|deal_or_scam',
       },
     };
   }
-  const explicitProductsPassed = args.productIds.length > 0;
-  if (!explicitProductsPassed && !args.gameFile) {
-    const { ProductProvider } = await import('../product/ProductProvider');
-    const provider = new ProductProvider(path.resolve(rootDir, 'products'), { watch: false });
-    const all = provider.getAll();
-    const needed =
-      args.mechanic === 'GROCERY_BASKET'
-        ? 3
-        : args.mechanic === 'MOST_EXPENSIVE' || args.mechanic === 'ODD_ONE_OUT'
-          ? 4
-          : args.mechanic === 'HI_LO'
-            ? 2
-            : 1;
-    args.productIds = all.slice(0, needed).map((p) => p.productId);
-  }
 
-  const isMulti =
-    !args.gameFile &&
-    args.mode !== 'single' &&
-    (args.mode === 'multi' ||
-      args.rounds !== undefined ||
-      args.timer !== undefined ||
-      !explicitProductsPassed ||
-      args.mechanic === 'GUESS_THE_PRICE' ||
-      args.mechanic === 'GROCERY_BASKET' ||
-      args.mechanic === 'DEAL_OR_SCAM');
+  const { ProductProvider } = await import('../product/ProductProvider');
+  const { ChallengeCurator } = await import('../challenge/ChallengeCurator');
+  const { AllInOneScene } = await import('../scene/AllInOneScene');
+  const { MultiRoundAudioComposer } = await import('../audio/MultiRoundAudioComposer');
+  const { SatoriFrameRenderer } = await import('../render/satoriFrameRenderer');
+  const { SoftwareFrameRenderer } = await import('../render/softwareFrameRenderer');
+  const { FFmpegMuxer } = await import('../render/ffmpeg');
+  const { DEFAULT_RENDER_CONFIG } = await import('../render/types');
 
-  if (isMulti) {
-    const seed = Number.isFinite(args.seed) ? (args.seed as number) : 839271;
-    const { ProductProvider } = await import('../product/ProductProvider');
-    const { ChallengeCurator } = await import('../challenge/ChallengeCurator');
-    const { AllInOneScene } = await import('../scene/AllInOneScene');
-    const { MultiRoundAudioComposer } = await import('../audio/MultiRoundAudioComposer');
-    const { g9Definition } = await import('../definitions/g9_guess_the_price');
-    const { g7Definition } = await import('../definitions/g7_grocery_basket');
-    const { g41Definition } = await import('../definitions/g41_deal_or_scam');
-    const { g1Definition } = await import('../definitions/g1_hi_lo');
-    const { g2Definition } = await import('../definitions/g2_most_expensive');
-    const { g5Definition } = await import('../definitions/g5_one_away');
-    const { g3Definition } = await import('../definitions/g3_odd_one_out');
-    const { Canvas } = await import('../render/canvas');
-    const { encodePng } = await import('../render/png');
-    const { paintMultiRoundFrame } = await import('../render/scenePainter');
-    const { RenderAssetCache } = await import('../render/assetCache');
-    const { FFmpegMuxer } = await import('../render/ffmpeg');
-    const { DEFAULT_RENDER_CONFIG } = await import('../render/types');
+  const { g9Definition } = await import('../definitions/g9_guess_the_price');
+  const { g7Definition } = await import('../definitions/g7_grocery_basket');
+  const { g41Definition } = await import('../definitions/g41_deal_or_scam');
+  const { g1Definition } = await import('../definitions/g1_hi_lo');
+  const { g2Definition } = await import('../definitions/g2_most_expensive');
+  const { g5Definition } = await import('../definitions/g5_one_away');
+  const { g3Definition } = await import('../definitions/g3_odd_one_out');
 
-    const provider = new ProductProvider(path.resolve(rootDir, 'products'), { watch: false });
-    const products = provider.getAll();
-    const curator = new ChallengeCurator();
-
-    const DSL_MAP: Record<string, any> = {
-      GUESS_THE_PRICE: g9Definition,
-      GROCERY_BASKET: g7Definition,
-      DEAL_OR_SCAM: g41Definition,
-      HI_LO: g1Definition,
-      MOST_EXPENSIVE: g2Definition,
-      ONE_AWAY: g5Definition,
-      ODD_ONE_OUT: g3Definition,
-    };
-    const dsl = (args.mechanic && DSL_MAP[args.mechanic]) ?? g9Definition;
-    const challenge = curator.curate(dsl, products, seed, {
-      totalRounds: args.rounds,
-      timerSeconds: args.timer,
-    });
-    const scene = new AllInOneScene(challenge);
-    const timeline = scene.getTimeline();
-
-    const jobId = `job_multi_${randomUUID()}`;
-    const gameId = challenge.gameId;
-    const exportDir = path.resolve(rootDir, args.exportDir ?? 'export');
-    const tempDir = path.resolve(rootDir, 'temp', jobId);
-    const framesDir = path.join(tempDir, 'frames');
-    mkdirSync(framesDir, { recursive: true });
-    mkdirSync(exportDir, { recursive: true });
-
-    const fps = 30;
-    const frameCount = Math.round(timeline.totalDuration * fps);
-
-    if (args.renderer) {
-      const outcome = await args.renderer.render({
-        jobId,
-        game: {
-          metadata: { gameId, mechanic: (args.mechanic ?? 'GUESS_THE_PRICE') as any, seed },
-          content: { title: challenge.title },
-          gameplay: {},
-          entities: challenge.rounds.flatMap((r) => r.products),
-          publishing: { caption: challenge.title, hashtags: ['#game', '#multi'] },
-        },
-        timeline: { slots: timeline.slots, totalDuration: timeline.totalDuration },
-        frames: [],
-        audio: {
-          voiceWavPath: '',
-          voiceStartAt: 0,
-          voiceDuration: 0,
-          duration: timeline.totalDuration,
-          revealAt: 0,
-          syncDelta: 0,
-          sfxCues: [],
-          music: { track: 'tension_01', volume: 0.18 },
-        },
-        seed,
-        theme: args.theme,
-        exportDir: args.exportDir,
-        rootDir,
-      } as any);
-
-      return {
-        exitCode: outcome.warnings?.some((w) => w.code.startsWith('E_')) ? 1 : 0,
-        jobId,
-        videoPath: outcome.videoPath,
-        captionPath: outcome.captionPath,
-        renderMs: outcome.timings?.renderMs,
-      };
-    }
-
-    const startMs = performance.now();
-    const assetCache = new RenderAssetCache();
-    try {
-      for (let i = 0; i < frameCount; i += 1) {
-        const timeSeconds = i / fps;
-        const canvas = new Canvas(1080, 1920);
-        paintMultiRoundFrame(canvas, scene, timeSeconds, { rootDir, assetCache, theme: args.theme });
-        const png = encodePng({ width: 1080, height: 1920, data: canvas.data });
-        writeFileSync(path.join(framesDir, `frame_${String(i + 1).padStart(5, '0')}.png`), png);
-      }
-    } catch (error) {
-      console.error('[render] Frame generation failed:', error);
-      throw error;
-    }
-
-    const audioPath = path.join(tempDir, 'audio.wav');
-    const audioComposer = new MultiRoundAudioComposer();
-    await audioComposer.composeAudio(challenge, timeline, {
-      rootDir,
-      outputPath: audioPath,
-      musicTrack: 'tension_01',
-      musicVolume: 0.18,
-    });
-
-    const videoPath = path.join(exportDir, `${gameId}_${seed}.mp4`);
-    const muxer = new FFmpegMuxer();
-    await muxer.mux({
-      framesPattern: path.join(framesDir, 'frame_%05d.png'),
-      fps,
-      audioWavPath: audioPath,
-      outputPath: videoPath,
-      cc: DEFAULT_RENDER_CONFIG,
-      timeoutMs: 120000,
-    });
-
-    const captionPath = path.join(exportDir, `${gameId}_${seed}.caption.json`);
-    writeFileSync(
-      captionPath,
-      JSON.stringify(
-        {
-          caption: `${challenge.title} 🔥 ${challenge.rounds.length} vòng chơi đỉnh cao!`,
-          hashtags: [`#${challenge.gameId}`, '#multiround', '#viral', '#game'],
-          affiliate_link: challenge.rounds[0]?.products[0]?.affiliate_link ?? '',
-        },
-        null,
-        2,
-      ) + '\n',
-    );
-
-    rmSync(tempDir, { recursive: true, force: true });
-    const renderMs = Math.round(performance.now() - startMs);
-
-    return {
-      exitCode: 0,
-      jobId,
-      videoPath,
-      captionPath,
-      renderMs,
-      summary: `Successfully rendered ${timeline.totalDuration.toFixed(1)}s multi-round ${challenge.gameId} video to ${videoPath}`,
-    };
-  }
-
-  const batchId = `single_${Date.now().toString(36)}`;
-  let job: QueueJob;
-  if (args.gameFile) {
-    const loaded = loadGameJson(path.resolve(rootDir, args.gameFile));
-    if (!loaded.ok) return { exitCode: 1, error: loaded.error };
-    job = {
-      jobId: `job_${randomUUID()}`,
-      gameId: loaded.game.metadata.gameId,
-      mechanic: loaded.game.metadata.mechanic,
-      productIds: loaded.game.entities.map((entity) => entity.productId),
-      seed: loaded.game.metadata.seed,
-      result_variant: loaded.game.metadata.result_variant ?? 'in_video',
-      status: 'pending',
-      retries: 0,
-      theme: args.theme ?? (loaded.game.metadata as { theme?: string })?.theme,
-    };
-  } else {
-    const mechanic = args.mechanic as QueueJob['mechanic'];
-    const expected =
-      mechanic === 'GROCERY_BASKET'
-        ? 3
-        : mechanic === 'HI_LO'
-          ? 2
-          : mechanic === 'ONE_AWAY' || mechanic === 'GUESS_THE_PRICE' || mechanic === 'DEAL_OR_SCAM'
-            ? 1
-            : undefined;
-    if (expected !== undefined && args.productIds.length !== expected) {
-      return {
-        exitCode: 1,
-        error: {
-          code: 'E_GAME_LOGIC_INVALID',
-          field: 'entities',
-          hint: `${mechanic} needs exactly ${expected} product(s), got ${args.productIds.length}`,
-        },
-      };
-    }
-    const seed = Number.isFinite(args.seed) ? (args.seed as number) : 839271;
-    job = {
-      jobId: `job_${randomUUID()}`,
-      gameId: `${mechanic.toLowerCase()}_${seed}`,
-      mechanic,
-      productIds: args.productIds,
-      seed,
-      result_variant: args.resultVariant ?? 'in_video',
-      status: 'pending',
-      retries: 0,
-      hiddenIndex: args.hiddenIndex,
-      theme: args.theme,
-      batchId,
-    };
-  }
-
-  // 1. Enqueue: the queue file is the single source of truth (AD-9).
-  const store = new QueueStore(path.resolve(rootDir, args.queueDir));
-  store.enqueue({
-    jobId: job.jobId,
-    gameId: job.gameId,
-    mechanic: job.mechanic,
-    productIds: job.productIds,
-    seed: job.seed,
-    result_variant: job.result_variant,
-    hiddenIndex: job.hiddenIndex,
-    theme: job.theme,
-    batchId: job.batchId,
-  });
-
-  // 2. Poll → pipeline → status transition.
-  store.update(job, { status: 'running' });
-  const outcome = await runJobWithRenderEngine({
-    job,
-    rootDir,
-    exportDir: args.exportDir,
-    logsDir: args.logsDir,
-    renderer: args.renderer ?? (args.rendererType ? createRenderStage(rootDir, { frameRenderer: args.rendererType }) : undefined),
-    startedAt: undefined,
-  });
-  store.update(job, {
-    status: outcome.status,
-    videoPath: outcome.videoPath,
-    captionPath: outcome.captionPath,
-    code: outcome.error?.code,
-    filter: outcome.error?.filter,
-    cause: outcome.error?.cause,
-  });
-
-  const summary: BatchJobSummary = {
-    jobId: outcome.jobId,
-    gameId: outcome.gameId,
-    mechanic: outcome.mechanic,
-    status: outcome.status,
-    code: outcome.error?.code,
-    filter: outcome.error?.filter,
-    videoPath: outcome.videoPath,
-    renderMs: outcome.log.render_ms,
-    fileSize: outcome.fileSize,
+  const DSL_MAP: Record<string, any> = {
+    GUESS_THE_PRICE: g9Definition,
+    GROCERY_BASKET: g7Definition,
+    DEAL_OR_SCAM: g41Definition,
+    HI_LO: g1Definition,
+    MOST_EXPENSIVE: g2Definition,
+    ONE_AWAY: g5Definition,
+    ODD_ONE_OUT: g3Definition,
   };
-  const exportDir = path.resolve(rootDir, args.exportDir ?? 'export');
-  const report = BatchReporter.build({
-    batchId,
-    outputDir: exportDir,
-    jobs: [summary],
-    workerPoolMax: 1,
-    startedAt: Date.now() - outcome.log.total_ms,
-  });
-  const reportPath = BatchReporter.write(report, exportDir);
 
-  if (outcome.status === 'failed') {
+  const mechanicKey = args.mechanic ?? 'HI_LO';
+  const dsl = DSL_MAP[mechanicKey] ?? g1Definition;
+
+  const explicitProductsPassed = args.productIds.length > 0;
+  const neededPerRound = dsl.inputs.countPerRound;
+  if (explicitProductsPassed && args.productIds.length < neededPerRound) {
     return {
       exitCode: 1,
       error: {
-        code: outcome.error?.code ?? 'E_UNKNOWN',
-        field: outcome.error?.field,
-        hint: outcome.error?.hint,
+        code: 'E_GAME_LOGIC_INVALID',
+        field: 'entities',
+        hint: `${mechanicKey} needs at least ${neededPerRound} product(s), got ${args.productIds.length}`,
       },
-      jobId: outcome.jobId,
-      reportPath,
-      summary: BatchReporter.formatSummary(report),
     };
   }
 
+  const provider = new ProductProvider(path.resolve(rootDir, 'products'), { watch: false });
+  let products = provider.getAll();
+  if (explicitProductsPassed) {
+    const specifiedProducts = args.productIds
+      .map((id) => provider.get(id))
+      .filter((p): p is NonNullable<typeof p> => p !== null);
+    if (specifiedProducts.length > 0) {
+      const remainingCatalog = products.filter((p) => !args.productIds.includes(p.productId));
+      products = [...specifiedProducts, ...remainingCatalog];
+    }
+  }
+
+  const seed = Number.isFinite(args.seed) ? (args.seed as number) : 839271;
+  const curator = new ChallengeCurator();
+  const challenge = curator.curate(dsl, products, seed, {
+    totalRounds: args.rounds,
+    timerSeconds: args.timer,
+  });
+
+  const scene = new AllInOneScene(challenge);
+  const timeline = scene.getTimeline();
+
+  const jobId = `job_multi_${randomUUID()}`;
+  const gameId = challenge.gameId;
+  const exportDir = path.resolve(rootDir, args.exportDir ?? 'export');
+  const tempDir = path.resolve(rootDir, 'temp', jobId);
+  const framesDir = path.join(tempDir, 'frames');
+  mkdirSync(framesDir, { recursive: true });
+  mkdirSync(exportDir, { recursive: true });
+
+  const fps = 30;
+  const frameCount = Math.round(timeline.totalDuration * fps);
+
+  if (args.renderer) {
+    const outcome = await args.renderer.render({
+      jobId,
+      game: {
+        metadata: { gameId, mechanic: (args.mechanic ?? 'HI_LO') as any, seed },
+        content: { title: challenge.title },
+        gameplay: {},
+        entities: challenge.rounds.flatMap((r) => r.products),
+        publishing: { caption: challenge.title, hashtags: ['#game', '#multi'] },
+      },
+      timeline: { slots: timeline.slots, totalDuration: timeline.totalDuration },
+      frames: [],
+      audio: {
+        voiceWavPath: '',
+        voiceStartAt: 0,
+        voiceDuration: 0,
+        duration: timeline.totalDuration,
+        revealAt: 0,
+        syncDelta: 0,
+        sfxCues: [],
+        music: { track: 'tension_01', volume: 0.18 },
+      },
+      seed,
+      theme: args.theme ?? 'dai_hoi_sieu_thi',
+      exportDir: args.exportDir,
+      rootDir,
+    } as any);
+
+    return {
+      exitCode: outcome.warnings?.some((w) => w.code.startsWith('E_')) ? 1 : 0,
+      jobId,
+      videoPath: outcome.videoPath,
+      captionPath: outcome.captionPath,
+      renderMs: outcome.timings?.renderMs,
+      summary: `Successfully rendered ${timeline.totalDuration.toFixed(1)}s multi-round ${challenge.gameId} video to ${outcome.videoPath}`,
+    };
+  }
+
+  const startMs = performance.now();
+
+  // 1. Render Frames using Satori (or software fallback)
+  const frameRenderer = args.rendererType === 'software'
+    ? new SoftwareFrameRenderer()
+    : new SatoriFrameRenderer();
+
+  const renderInput = {
+    challenge,
+    game: {
+      metadata: { gameId, mechanic: (args.mechanic ?? 'HI_LO') as any, seed },
+      content: { title: challenge.title },
+      gameplay: {},
+      entities: challenge.rounds.flatMap((r) => r.products),
+      publishing: { caption: challenge.title, hashtags: ['#game', '#multi'] },
+    },
+    timeline: { slots: timeline.slots, totalDuration: timeline.totalDuration },
+    audio: {
+      voiceWavPath: '',
+      voiceStartAt: 0,
+      voiceDuration: 0,
+      duration: timeline.totalDuration,
+      revealAt: 0,
+      syncDelta: 0,
+      sfxCues: [],
+      music: { track: 'tension_01', volume: 0.18 },
+    },
+    theme: args.theme ?? 'dai_hoi_sieu_thi',
+    rootDir,
+  };
+
+  await frameRenderer.renderFrames(renderInput as any, {
+    framesDir,
+    width: 1080,
+    height: 1920,
+    fps,
+    frameCount,
+    config: DEFAULT_RENDER_CONFIG,
+  });
+
+  // 2. Audio Composition
+  const audioPath = path.join(tempDir, 'audio.wav');
+  const audioComposer = new MultiRoundAudioComposer();
+  await audioComposer.composeAudio(challenge, timeline, {
+    rootDir,
+    outputPath: audioPath,
+    musicTrack: 'tension_01',
+    musicVolume: 0.18,
+  });
+
+  // 3. Mux MP4
+  const videoPath = path.join(exportDir, `${gameId}_${seed}.mp4`);
+  const muxer = new FFmpegMuxer();
+  await muxer.mux({
+    framesPattern: path.join(framesDir, 'frame_%05d.png'),
+    fps,
+    audioWavPath: audioPath,
+    outputPath: videoPath,
+    cc: DEFAULT_RENDER_CONFIG,
+    timeoutMs: 120000,
+  });
+
+  // 4. Caption file
+  const captionPath = path.join(exportDir, `${gameId}_${seed}.caption.json`);
+  writeFileSync(
+    captionPath,
+    JSON.stringify(
+      {
+        caption: `${challenge.title} 🔥 ${challenge.rounds.length} vòng chơi đỉnh cao!`,
+        hashtags: [`#${challenge.gameId}`, '#multiround', '#viral', '#game', '#sieuthi'],
+        affiliate_link: challenge.rounds[0]?.products[0]?.affiliate_link ?? '',
+      },
+      null,
+      2,
+    ) + '\n',
+  );
+
+  rmSync(tempDir, { recursive: true, force: true });
+  const renderMs = Math.round(performance.now() - startMs);
+
   return {
     exitCode: 0,
-    jobId: outcome.jobId,
-    videoPath: outcome.videoPath,
-    captionPath: outcome.captionPath,
-    reportPath,
-    renderMs: outcome.log.render_ms,
-    summary: BatchReporter.formatSummary(report),
+    jobId,
+    videoPath,
+    captionPath,
+    renderMs,
+    summary: `Successfully rendered ${timeline.totalDuration.toFixed(1)}s multi-round ${challenge.gameId} video to ${videoPath}`,
   };
 }
 

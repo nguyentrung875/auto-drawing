@@ -35,7 +35,9 @@ Usage:
 render / batch flags:
   --mechanic hi_lo|most_expensive|one_away|odd_one_out|guess_the_price|grocery_basket|deal_or_scam
   --products p001,p042                     Comma-separated SKU ids
-  --theme hay_chon_gia_dung|sieu_thi_gia_dinh|bep_am_noi_tro|gio_vang_san_deal|tap_hoa_vui_ve
+  --theme hay_chon_gia_dung|sieu_thi_gia_dinh|bep_am_noi_tro|gio_vang_san_deal|tap_hoa_vui_ve|dai_hoi_sieu_thi
+  --rounds 3                               Number of challenge rounds (default: 3)
+  --timer 5.0                              Seconds per round countdown (default: 5.0)
   --seed 839271                            Deterministic seed (same seed → same answer)
   --result-variant in_video|comment        Where the answer appears
   --hidden-index 3                         ONE_AWAY: masked digit index

@@ -307,6 +307,40 @@ export const BUILTIN_THEMES: Record<string, VisualTheme> = {
       countdownSfx: 'audio/sfx/countdown_pop.wav',
     },
   },
+  dai_hoi_sieu_thi: {
+    id: 'dai_hoi_sieu_thi',
+    name: 'Đại Hội Siêu Thị Giờ Vàng',
+    colors: {
+      backgroundGradient: ['#FACC15', '#FDE68A'],
+      stageOverlay: 'sunburst',
+      cardBackground: '#ffffff',
+      cardBorder: '#DC2626',
+      cardShadow: '0 16px 32px rgba(220, 38, 38, 0.3)',
+      accent: '#DC2626',
+      textPrimary: '#0f172a',
+      textSecondary: '#15803d',
+      countdownRing: '#DC2626',
+      revealBannerSuccess: '#16a34a',
+      revealBannerWarning: '#DC2626',
+    },
+    typography: {
+      fontFamilyHeadline: 'Be Vietnam Pro',
+      fontFamilyBody: 'Inter',
+      fontFamilyPrice: 'Montserrat',
+      textTransformHeadline: 'uppercase',
+    },
+    geometry: {
+      cardBorderRadius: 20,
+      cardBorderWidth: 5,
+      glowIntensity: 6,
+    },
+    assets: {
+      bgmTrack: 'audio/bgm/shopping_upbeat.mp3',
+      correctSfx: 'audio/sfx/cash_register.wav',
+      wrongSfx: 'audio/sfx/buzzer_soft.wav',
+      countdownSfx: 'audio/sfx/countdown_pop.wav',
+    },
+  },
 };
 
 export function getTheme(id: VisualThemeId): VisualTheme {

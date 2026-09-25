@@ -87,17 +87,20 @@ Lệnh trên sẽ thực thi chuỗi:
 
 Hệ thống cung cấp file thực thi CLI thông qua `bin/game.js` (tự động chạy trực tiếp bằng `tsx`).
 
-### 5.1. Render 1 Video Multi-Round (Khuyến nghị cho TikTok / Reels)
-Chạy thử game **Hi-Lo (Cao Hơn hay Thấp Hơn)** với 3 vòng thi, mỗi vòng 5 giây, sử dụng giao diện gameshow "Hãy Chọn Giá Đúng":
+### 5.1. Render Video Multi-Round (Chuẩn Mặc định)
+Chạy thử game **Hi-Lo (Cao Hơn hay Thấp Hơn)** với 3 vòng thi, mỗi vòng 4.0 giây đếm ngược, sử dụng giao diện Satori Pop-Art Siêu Thị (`dai_hoi_sieu_thi`):
 
 ```bash
-# Mặc định sử dụng Satori Frame Renderer & theme hay_chon_gia_dung (thẻ trắng, tương phản cao)
-node bin/game.js render --mode multi --mechanic hi_lo --rounds 3 --timer 5.0 --theme hay_chon_gia_dung --seed 839271
+# Mặc định sử dụng Satori Frame Renderer & theme dai_hoi_sieu_thi (Pop-Art thẻ to, đồng hồ LED)
+node bin/game.js render --mechanic hi_lo --rounds 3 --timer 4.0 --seed 839271
 
 # Hoặc tùy chọn các tham số nếu muốn:
+# --rounds <N>             (Số vòng chơi, mặc định: 3)
+# --timer <M>              (Thời gian đếm ngược mỗi vòng tính bằng giây, hỗ trợ từ 1.0s: 3.0, 4.0, 5.0...)
 # --renderer satori        (mặc định, siêu nhẹ & keyframe caching nhanh gấp 3.5x)
 # --renderer software      (phương án fallback thuần CPU pixel)
-# --theme <theme_id>       (mặc định: hay_chon_gia_dung)
+# --theme <theme_id>       (mặc định: dai_hoi_sieu_thi)
+#   + dai_hoi_sieu_thi     : Đại Hội Siêu Thị Giờ Vàng (Pop-Art truyện tranh rực rỡ, thẻ to chuẩn Safe Zone, đồng hồ LED)
 #   + hay_chon_gia_dung    : Sân khấu gameshow Hãy Chọn Giá Đúng (Xanh dương - Vàng gold)
 #   + sieu_thi_gia_dinh    : Bách hóa & Siêu thị gia đình (Xanh lá - Đỏ tươi)
 #   + bep_am_noi_tro       : Gian bếp ấm cúng & nội trợ (Cam kem pastel)
@@ -106,10 +109,10 @@ node bin/game.js render --mode multi --mechanic hi_lo --rounds 3 --timer 5.0 --t
 ```
 
 **Quá trình thực thi sẽ hiển thị tiến độ:**
-1. `[challenge]` Curating 3 rounds using DSL `g1_hi_lo` (seed 839271).
-2. `[scene]` Building timeline slots: Series Hook (1.0s) -> Round 1 (5.0s play + 2.0s reveal) -> MicroHook -> Round 2 -> Round 3 -> Scorecard (1.5s).
+1. `[challenge]` Curating 3 rounds using DSL `g1_hi_lo` (seed 839271, roundTimer: 4.0s).
+2. `[scene]` Building timeline slots: Supermarket Hook (2.0s) -> Round 1 (4.0s play + 2.0s reveal) -> Round 2 -> Round 3 -> Scorecard (2.5s).
 3. `[audio]` Synthesizing Edge TTS voiceovers, mixing tick SFX, and ducking tension BGM.
-4. `[render]` Painting ~735 frames (30 FPS) with `scenePainter` & `RenderAssetCache` (Theme: `hay_chon_gia_dung`).
+4. `[render]` Painting frames (30 FPS) with `SatoriFrameRenderer` (Theme: `dai_hoi_sieu_thi`, 100% SVG Vector icons).
 5. `[mux]` FFmpeg combining PNG sequence + WAV audio bed into `export/g1_hi_lo_839271.mp4`.
 6. `[caption]` Generating `export/g1_hi_lo_839271.caption.json`.
 
@@ -119,27 +122,27 @@ Video thành phẩm sẽ nằm tại:
 
 ### 5.2. Render các Game Mechanics & UI Templates khác
 ```bash
-# Game 2: Tìm sản phẩm đắt nhất (4 sản phẩm) với theme Siêu Thị Gia Đình
-node bin/game.js render --mode multi --mechanic most_expensive --theme sieu_thi_gia_dinh --rounds 3 --seed 123456
+# Game 2: Tìm sản phẩm đắt nhất (3-4 sản phẩm) với theme Siêu Thị Gia Đình
+node bin/game.js render --mechanic most_expensive --theme sieu_thi_gia_dinh --rounds 3 --timer 5.0 --seed 123456
 
 # Game 41: Deal Hời hay Bẫy Scam với theme Giờ Vàng Săn Deal
-node bin/game.js render --mode multi --mechanic deal_or_scam --theme gio_vang_san_deal --rounds 3 --seed 777888
+node bin/game.js render --mechanic deal_or_scam --theme gio_vang_san_deal --rounds 3 --timer 4.0 --seed 777888
 
 # Game 7: Giỏ hàng siêu thị (Bài toán Knapsack) với theme Bếp Ấm Nội Trợ
-node bin/game.js render --mode multi --mechanic grocery_basket --theme bep_am_noi_tro --rounds 2 --seed 999111
+node bin/game.js render --mechanic grocery_basket --theme bep_am_noi_tro --rounds 2 --timer 6.0 --seed 999111
 
 # Game 5: Đoán chữ số bị che với theme Tiệm Tạp Hóa Bình Dân
-node bin/game.js render --mode multi --mechanic one_away --theme tap_hoa_vui_ve --rounds 3 --seed 555888
+node bin/game.js render --mechanic one_away --theme tap_hoa_vui_ve --rounds 3 --timer 3.5 --seed 555888
 
 # Game 9: Đoán khoảng giá với theme Sân Khấu Hãy Chọn Giá Đúng
-node bin/game.js render --mode multi --mechanic guess_the_price --theme hay_chon_gia_dung --rounds 3 --seed 456789
+node bin/game.js render --mechanic guess_the_price --theme hay_chon_gia_dung --rounds 3 --timer 5.0 --seed 456789
 ```
 
 ### 5.3. Xem trước (Preview) không cần render video
 Nếu bạn chỉ muốn xem layout giao diện và kịch bản dưới dạng file HTML tương tác nhanh mà không tốn tài nguyên encode video:
 
 ```bash
-node bin/game.js render --mode multi --mechanic hi_lo --rounds 3 --seed 839271 --preview
+node bin/game.js render --mechanic hi_lo --rounds 3 --seed 839271 --preview
 ```
 File HTML preview sẽ được sinh ra tại `export/preview_g1_hi_lo_839271.html`. Mở trực tiếp bằng trình duyệt để xem.
 
